@@ -1,8 +1,5 @@
-*.conf
-*.config
-*.log
-*.sqlite
-*.pem
-*.key
-*.elf
-coverage.*
+db-*-blocks
+db-*-lengths
+server.log
+coverage.out
+test-log
