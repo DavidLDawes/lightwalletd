@@ -16,9 +16,9 @@ import (
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/reflection"
 
-	"github.com/zcash/lightwalletd/common"
-	"github.com/zcash/lightwalletd/frontend"
-	"github.com/zcash/lightwalletd/walletrpc"
+	"github.com/asherda/lightwalletd/common"
+	"github.com/asherda/lightwalletd/frontend"
+	"github.com/asherda/lightwalletd/walletrpc"
 )
 
 const version = "v0.3.0"

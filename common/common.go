@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/asherda/lightwalletd/parser"
+	"github.com/asherda/lightwalletd/walletrpc"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/zcash/lightwalletd/parser"
-	"github.com/zcash/lightwalletd/walletrpc"
 )
 
 // RawRequest points to the function to send a an RPC request to zcashd;

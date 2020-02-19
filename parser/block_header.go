@@ -7,8 +7,8 @@ import (
 	"log"
 	"math/big"
 
+	"github.com/asherda/lightwalletd/parser/internal/bytestring"
 	"github.com/pkg/errors"
-	"github.com/zcash/lightwalletd/parser/internal/bytestring"
 )
 
 const (
