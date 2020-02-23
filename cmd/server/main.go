@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -15,6 +16,8 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/reflection"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/zcash/lightwalletd/common"
 	"github.com/zcash/lightwalletd/frontend"
@@ -42,6 +45,8 @@ func init() {
 }
 
 // TODO stream logging
+
+
 
 func LoggingInterceptor() grpc.ServerOption {
 	return grpc.UnaryInterceptor(logInterceptor)
@@ -83,6 +88,8 @@ type Options struct {
 	logLevel      uint64 `json:"log_level,omitempty"`
 	logPath       string `json:"log_file,omitempty"`
 	zcashConfPath string `json:"zcash_conf,omitempty"`
+	verusConfPath string `json:"verus_conf,omitempty"`
+
 	veryInsecure  bool   `json:"very_insecure,omitempty"`
 	cacheSize     int    `json:"cache_size,omitempty"`
 	wantVersion   bool
@@ -103,12 +110,12 @@ func main() {
 	flag.StringVar(&opts.tlsKeyPath, "tls-key", "", "the path to a TLS key file")
 	flag.Uint64Var(&opts.logLevel, "log-level", uint64(logrus.InfoLevel), "log level (logrus 1-7)")
 	flag.StringVar(&opts.logPath, "log-file", "./server.log", "log file to write to")
-	flag.StringVar(&opts.zcashConfPath, "conf-file", "./zcash.conf", "conf file to pull RPC creds from")
+	flag.StringVar(&opts.zcashConfPath, "zconf-file", "./zcash.conf", "conf file to pull zcash RPC creds from")
+	flag.StringVar(&opts.verusConfPath, "conf-file", "~/komodo/VRSC/VRSC.conf", "conf file to pull Verus RPC creds from")
 	flag.BoolVar(&opts.veryInsecure, "no-tls-very-insecure", false, "run without the required TLS certificate, only for debugging, DO NOT use in production")
 	flag.BoolVar(&opts.wantVersion, "version", false, "version (major.minor.patch)")
 	flag.IntVar(&opts.cacheSize, "cache-size", 80000, "number of blocks to hold in the cache")
 
-	// TODO prod metrics
 	// TODO support config from file and env vars
 	flag.Parse()
 
@@ -135,7 +142,8 @@ func main() {
 	logger.SetLevel(logrus.Level(opts.logLevel))
 
 	filesThatShouldExist := []string{
-		opts.zcashConfPath,
+		// opts.zcashConfPath,
+		opts.verusConfPath,
 	}
 	if opts.tlsCertPath != "" {
 		filesThatShouldExist = append(filesThatShouldExist, opts.tlsCertPath)
@@ -153,6 +161,10 @@ func main() {
 			os.Exit(1)
 		}
 	}
+
+	// /metrics endpoint, set Prometheus up to collect metrics from this.
+	http.Handle("/metrics", promhttp.Handler())
+	http.ListenAndServe(":2112", nil)
 
 	// gRPC initialization
 	var server *grpc.Server
@@ -188,7 +200,8 @@ func main() {
 	// sending transactions, but in the future it could back a different type
 	// of block streamer.
 
-	rpcClient, err := frontend.NewZRPCFromConf(opts.zcashConfPath)
+	// TODO: VerusCoin
+	rpcClient, err := frontend.NewZRPCFromConf(opts.verusConfPath)
 	if err != nil {
 		common.Log.WithFields(logrus.Fields{
 			"error": err,

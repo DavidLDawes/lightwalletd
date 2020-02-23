@@ -10,7 +10,8 @@ services:
     command:
       - -bind-addr=0.0.0.0:$LWD_PORT
       - -cache-size=80000
-      - -conf-file=$ZCASHD_CONF_PATH
+      - -zconf-file=$ZCASHD_CONF_PATH
+      - -conf-file=$VERUSD_CONF_PATH
       - -log-file=/dev/stdout
       - -log-level=7
       - -tls-cert=./cert.pem

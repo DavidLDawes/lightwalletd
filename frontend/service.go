@@ -10,6 +10,9 @@ import (
 	"strings"
 	"time"
 
+        "github.com/prometheus/client_golang/prometheus"
+        "github.com/prometheus/client_golang/prometheus/promauto"
+
 	"github.com/zcash/lightwalletd/common"
 	"github.com/zcash/lightwalletd/walletrpc"
 )
@@ -27,10 +30,27 @@ func NewLwdStreamer(cache *common.BlockCache) (walletrpc.CompactTxStreamerServer
 	return &LwdStreamer{cache}, nil
 }
 
+// Metrics per API: GetLatestBlock
+var (
+        getLatestBlocksProcessed = promauto.NewCounter(prometheus.CounterOpts{
+                Name: "service_GetLatestBlock",
+                Help: "The total number of GetLatestBlock calls",
+        })
+)
+
+var (
+        getLatestBlocksErrors = promauto.NewCounter(prometheus.CounterOpts{
+                Name: "service_GetLatestBlockErrors",
+                Help: "The total number of GetLatestBlock calls that returned an error",
+        })
+)
+
 func (s *LwdStreamer) GetLatestBlock(ctx context.Context, placeholder *walletrpc.ChainSpec) (*walletrpc.BlockID, error) {
+	getLatestBlocksProcessed.Inc()
 	latestBlock := s.cache.GetLatestHeight()
 
 	if latestBlock == -1 {
+		getLatestBlocksErrors.Inc()
 		return nil, errors.New("Cache is empty. Server is probably not yet ready")
 	}
 
@@ -38,10 +58,34 @@ func (s *LwdStreamer) GetLatestBlock(ctx context.Context, placeholder *walletrpc
 	return &walletrpc.BlockID{Height: uint64(latestBlock)}, nil
 }
 
+// Metrics per API: GetAddressTxids
+var (
+        getAddressTxidsProcessed = promauto.NewCounter(prometheus.CounterOpts{
+                Name: "service_GetAddressTxids",
+                Help: "Total number of GetAddressTxids calls",
+        })
+)
+
+var (
+        getAddressTxidsInvalidAddressErrors = promauto.NewCounter(prometheus.CounterOpts{
+                Name: "service_GetAddressTxidsInvalidAddressErrors",
+                Help: "The total number of GetAddressTxids calls that returned an invalid address error",
+        })
+)
+
+var (
+        getAddressTxidsOtherErrors = promauto.NewCounter(prometheus.CounterOpts{
+                Name: "service_GetAddressTxidsErrors",
+                Help: "The total number of GetAddressTxids calls that returned an error, excluding invalid address errors",
+        })
+)
+
 func (s *LwdStreamer) GetAddressTxids( addressBlockFilter *walletrpc.TransparentAddressBlockFilter, resp walletrpc.CompactTxStreamer_GetAddressTxidsServer) error {
+	getAddressTxidsProcessed.Inc()
 	// Test to make sure Address is a single t address
 	match, err := regexp.Match("\\At[a-zA-Z0-9]{34}\\z", []byte(addressBlockFilter.Address))
 	if err != nil || !match {
+		getAddressTxidsInvalidAddressErrors.Inc()
 		common.Log.Error("Invalid address:", addressBlockFilter.Address)
 		return errors.New("Invalid address")
 	}
@@ -57,6 +101,7 @@ func (s *LwdStreamer) GetAddressTxids( addressBlockFilter *walletrpc.Transparent
 
 	// For some reason, the error responses are not JSON
 	if rpcErr != nil {
+		getAddressTxidsOtherErrors.Inc()
 		common.Log.Errorf("GetAddressTxids error: %s", rpcErr.Error())
 		return err
 	}
@@ -64,6 +109,7 @@ func (s *LwdStreamer) GetAddressTxids( addressBlockFilter *walletrpc.Transparent
 	var txids []string
 	err = json.Unmarshal(result, &txids)
 	if err != nil {
+		getAddressTxidsOtherErrors.Inc()
 		common.Log.Errorf("GetAddressTxids error: %s", err.Error())
 		return err
 	}
@@ -80,36 +126,74 @@ func (s *LwdStreamer) GetAddressTxids( addressBlockFilter *walletrpc.Transparent
 		}
 		tx, err := s.GetTransaction(timeout, &walletrpc.TxFilter{Hash: txid})
 		if err != nil {
+			getAddressTxidsOtherErrors.Inc()
 			common.Log.Errorf("GetTransaction error: %s", err.Error())
 			return err
 		}
 		if err = resp.Send(tx); err != nil {
+			getAddressTxidsOtherErrors.Inc()
 			return err
 		}
 	}
 	return nil
 }
 
+
+// Metrics per API: getBlock
+var (
+        getBlocks = promauto.NewCounter(prometheus.CounterOpts{
+                Name: "service_GetBlock",
+                Help: "The total number of GetBlock calls",
+        })
+)
+
+var (
+        getBlockErrors = promauto.NewCounter(prometheus.CounterOpts{
+                Name: "service_GetBlockErrors",
+                Help: "The total number of GetBlock calls that returned an error",
+        })
+)
+
 func (s *LwdStreamer) GetBlock(ctx context.Context, id *walletrpc.BlockID) (*walletrpc.CompactBlock, error) {
+	getBlocks.Inc()
 	if id.Height == 0 && id.Hash == nil {
 		return nil, ErrUnspecified
 	}
 
 	// Precedence: a hash is more specific than a height. If we have it, use it first.
 	if id.Hash != nil {
+		getBlockErrors.Inc()
 		// TODO: Get block by hash
 		return nil, errors.New("GetBlock by Hash is not yet implemented")
 	}
 	cBlock, err := common.GetBlock(s.cache, int(id.Height))
 
 	if err != nil {
+		getBlockErrors.Inc()
 		return nil, err
 	}
 
 	return cBlock, err
 }
 
+
+// Metrics per API: GetBlockRange
+var (
+        getBlockRanges = promauto.NewCounter(prometheus.CounterOpts{
+                Name: "service_GetBlockRange",
+                Help: "The total number of GetBlockRange calls",
+        })
+)
+
+var (
+        getBlockRangeErrors = promauto.NewCounter(prometheus.CounterOpts{
+                Name: "service_GetBlockRangeErrors",
+                Help: "The total number of GetBlockRange calls that returned an error",
+        })
+)
+
 func (s *LwdStreamer) GetBlockRange(span *walletrpc.BlockRange, resp walletrpc.CompactTxStreamer_GetBlockRangeServer) error {
+	getBlockRanges.Inc()
 	blockChan := make(chan walletrpc.CompactBlock)
 	errChan := make(chan error)
 
@@ -119,17 +203,35 @@ func (s *LwdStreamer) GetBlockRange(span *walletrpc.BlockRange, resp walletrpc.C
 		select {
 		case err := <-errChan:
 			// this will also catch context.DeadlineExceeded from the timeout
+			getBlockRangeErrors.Inc()
 			return err
 		case cBlock := <-blockChan:
 			err := resp.Send(&cBlock)
 			if err != nil {
+				getBlockRangeErrors.Inc()
 				return err
 			}
 		}
 	}
 }
 
+// Metrics per API: GetTransaction
+var (
+        getTransactions = promauto.NewCounter(prometheus.CounterOpts{
+                Name: "service_GetTransaction",
+                Help: "The total number of GetTransaction calls",
+        })
+)
+
+var (
+        getTransactionErrors = promauto.NewCounter(prometheus.CounterOpts{
+                Name: "service_GetTransactionErrors",
+                Help: "The total number of GetTransaction calls that returned an error",
+        })
+)
+
 func (s *LwdStreamer) GetTransaction(ctx context.Context, txf *walletrpc.TxFilter) (*walletrpc.RawTransaction, error) {
+	getTransactions.Inc()
 	if txf.Hash != nil {
 		txid := txf.Hash
 		for left, right := 0, len(txid)-1; left < right; left, right = left+1, right-1 {
@@ -146,12 +248,14 @@ func (s *LwdStreamer) GetTransaction(ctx context.Context, txf *walletrpc.TxFilte
 
 		// For some reason, the error responses are not JSON
 		if rpcErr != nil {
+			getTransactionErrors.Inc()
 			common.Log.Errorf("GetTransaction error: %s", rpcErr.Error())
 			return nil, errors.New((strings.Split(rpcErr.Error(), ":"))[0])
 		}
 		var txinfo interface{}
 		err := json.Unmarshal(result, &txinfo)
 		if err != nil {
+			getTransactionErrors.Inc()
 			return nil, err
 		}
 		txBytes := txinfo.(map[string]interface{})["hex"].(string)
@@ -160,15 +264,26 @@ func (s *LwdStreamer) GetTransaction(ctx context.Context, txf *walletrpc.TxFilte
 	}
 
 	if txf.Block != nil && txf.Block.Hash != nil {
+		getTransactionErrors.Inc()
 		common.Log.Error("Can't GetTransaction with a blockhash+num. Please call GetTransaction with txid")
 		return nil, errors.New("Can't GetTransaction with a blockhash+num. Please call GetTransaction with txid")
 	}
+	getTransactionErrors.Inc()
 	common.Log.Error("Please call GetTransaction with txid")
 	return nil, errors.New("Please call GetTransaction with txid")
 }
 
+// Metrics per API: getLightdInfo
+var (
+        getLightdInfos = promauto.NewCounter(prometheus.CounterOpts{
+                Name: "service_GetLightdInfo",
+                Help: "The total number of GetLightdInfo calls",
+        })
+)
+
 // GetLightdInfo gets the LightWalletD (this server) info
 func (s *LwdStreamer) GetLightdInfo(ctx context.Context, in *walletrpc.Empty) (*walletrpc.LightdInfo, error) {
+	getLightdInfos.Inc()
 	saplingHeight, blockHeight, chainName, consensusBranchId := common.GetSaplingInfo()
 
 	return &walletrpc.LightdInfo{
@@ -182,6 +297,28 @@ func (s *LwdStreamer) GetLightdInfo(ctx context.Context, in *walletrpc.Empty) (*
 	}, nil
 }
 
+
+// Metrics per API: SendTransaction
+var (
+        sendTransactions = promauto.NewCounter(prometheus.CounterOpts{
+                Name: "service_SendTransaction",
+                Help: "The total number of SendTransaction calls",
+        })
+)
+
+var (
+        sendTransactionSoftErrors = promauto.NewCounter(prometheus.CounterOpts{
+                Name: "service_SendTransactionErrors",
+                Help: "The total number of SendTransaction calls that returned an error",
+        })
+)
+
+var (
+        sendTransactionCriticalErrors = promauto.NewCounter(prometheus.CounterOpts{
+                Name: "service_SendTransactionCriticalErrors",
+                Help: "The total number of SendTransaction calls that returned a critical error",
+        })
+)
 // SendTransaction forwards raw transaction bytes to a zcashd instance over JSON-RPC
 func (s *LwdStreamer) SendTransaction(ctx context.Context, rawtx *walletrpc.RawTransaction) (*walletrpc.SendResponse, error) {
 	// sendrawtransaction "hexstring" ( allowhighfees )
@@ -196,6 +333,9 @@ func (s *LwdStreamer) SendTransaction(ctx context.Context, rawtx *walletrpc.RawT
 	//
 	// Result:
 	// "hex"             (string) The transaction hash in hex
+
+	// Metrics first
+	sendTransactions.Inc()
 
 	// Construct raw JSON-RPC params
 	params := make([]json.RawMessage, 1)
@@ -213,11 +353,15 @@ func (s *LwdStreamer) SendTransaction(ctx context.Context, rawtx *walletrpc.RawT
 		errMsg = strings.TrimSpace(errParts[1])
 		errCode, err = strconv.ParseInt(errParts[0], 10, 32)
 		if err != nil {
+			sendTransactionCriticalErrors.Inc()
 			// This should never happen. We can't panic here, but it's that class of error.
 			// This is why we need integration testing to work better than regtest currently does. TODO.
 			return nil, errors.New("SendTransaction couldn't parse error code")
+		} else {
+			sendTransactionSoftErrors.Inc()
 		}
 	} else {
+		sendTransactionSoftErrors.Inc()
 		errMsg = string(result)
 	}
 
