@@ -44,7 +44,7 @@ Now clone this repo and start the ingester. The first run will start slow as Go 
 ```
 $ git clone https://github.com/asherda/lightwalletd
 $ cd lightwalletd
-$ go run cmd/ingest/main.go --conf-file <path_to_zcash.conf> --db-path <path_to_sqllightdb>
+$ go run cmd/ingest/main.go --conf-file <path_to_verus.conf> --db-path <path_to_sqllightdb>
 ```
 
 To see the other command line options, run `go run cmd/ingest/main.go --help`.
