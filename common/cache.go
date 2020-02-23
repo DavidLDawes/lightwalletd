@@ -1,96 +1,181 @@
 package common
 
 import (
-	"bytes"
+	"encoding/binary"
+	"fmt"
+	"io/ioutil"
+	"os"
 	"sync"
 
+	"github.com/asherda/lightwalletd/walletrpc"
 	"github.com/golang/protobuf/proto"
-	"github.com/zcash/lightwalletd/walletrpc"
 )
 
 type blockCacheEntry struct {
 	data []byte
-	hash []byte
 }
 
-// BlockCache contains a set of recent compact blocks in marshalled form.
+// BlockCache contains a consecutive set of recent compact blocks in marshalled form.
 type BlockCache struct {
-	MaxEntries int
+	lengthsName, blocksName string // pathnames
+	lengthsFile, blocksFile *os.File
+	starts                  []int64 // Starting offset of each block within blocksFile
+	FirstBlock              int     // height of the first block in the cache (usually Sapling activation)
+	NextBlock               int     // height of the first block not in the cache
+	LatestHash              []byte  // hash of the most recent (highest height) block, for detecting reorgs.
+	mutex                   sync.RWMutex
+}
 
-	// m[firstBlock..nextBlock) are valid
-	m          map[int]*blockCacheEntry
-	firstBlock int
-	nextBlock  int
-
-	mutex sync.RWMutex
+func (c *BlockCache) blockLength(height int) int {
+	index := height - c.FirstBlock
+	return int(c.starts[index+1] - c.starts[index])
 }
 
 // NewBlockCache returns an instance of a block cache object.
-func NewBlockCache(maxEntries int) *BlockCache {
-	return &BlockCache{
-		MaxEntries: maxEntries,
-		m:          make(map[int]*blockCacheEntry),
+// Note if you call this with a different height than was used
+// to create the db files, first delete those files (fixme)
+func NewBlockCache(chainName string, startHeight int) *BlockCache {
+	c := &BlockCache{}
+	c.FirstBlock = startHeight
+	c.NextBlock = startHeight
+	c.lengthsName, c.blocksName = fileNames(chainName)
+	var err error
+	c.blocksFile, err = os.OpenFile(c.blocksName, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
+	if err != nil {
+		Log.Fatal("open ", c.blocksName, " failed: ", err)
 	}
+	c.lengthsFile, err = os.OpenFile(c.lengthsName, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
+	if err != nil {
+		Log.Fatal("open ", c.lengthsName, " failed: ", err)
+	}
+	lengths, err := ioutil.ReadFile(c.lengthsName)
+	if err != nil {
+		Log.Fatal("read ", c.lengthsName, " failed: ", err)
+	}
+	// the last entry in starts[] is where to write the next block
+	var offset int64
+	c.starts = append(c.starts, 0)
+	for i := 0; i < len(lengths)/4; i++ {
+		length := binary.LittleEndian.Uint32(lengths[i*4 : i*4+4])
+		offset += int64(length)
+		c.starts = append(c.starts, offset)
+		c.NextBlock++
+	}
+	if c.NextBlock > c.FirstBlock {
+		// There is at least one block; get the last block's hash
+		b := make([]byte, c.blockLength(c.NextBlock-1))
+		_, err := c.blocksFile.ReadAt(b, c.starts[c.NextBlock-c.FirstBlock-1])
+		if err != nil {
+			Log.Fatal("blocks read failed: ", err)
+		}
+		block := &walletrpc.CompactBlock{}
+		err = proto.Unmarshal(b, block)
+		if err != nil {
+			println("Error unmarshalling compact block")
+			return nil
+		}
+		c.LatestHash = make([]byte, len(block.Hash))
+		copy(c.LatestHash, block.Hash)
+	}
+	return c
+}
+
+func fileNames(chainName string) (string, string) {
+	return fmt.Sprintf("db-%s-lengths", chainName),
+		fmt.Sprintf("db-%s-blocks", chainName)
+}
+
+// only used for testing to ensure we're not using files from a previous run
+func CacheTestClean(chainName string) {
+	lengthsName, blockName := fileNames(chainName)
+	os.Remove(lengthsName)
+	os.Remove(blockName)
 }
 
 // Add adds the given block to the cache at the given height, returning true
 // if a reorg was detected.
-func (c *BlockCache) Add(height int, block *walletrpc.CompactBlock) (bool, error) {
-	// Invariant: m[firstBlock..nextBlock) are valid.
+func (c *BlockCache) Add(block *walletrpc.CompactBlock) error {
+	// Invariant: m[FirstBlock..NextBlock) are valid.
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	if height > c.nextBlock {
-		// restarting the cache (never happens currently), or first time
-		for i := c.firstBlock; i < c.nextBlock; i++ {
-			delete(c.m, i)
-		}
-		c.firstBlock = height
-		c.nextBlock = height
-	}
-	// Invariant: m[firstBlock..nextBlock) are valid.
-
-	// If we already have this block, a reorg must have occurred;
-	// this block (and all higher) must be re-added.
-	h := height
-	if h < c.firstBlock {
-		h = c.firstBlock
-	}
-	for i := h; i < c.nextBlock; i++ {
-		delete(c.m, i)
-	}
-	c.nextBlock = height
-	if c.firstBlock > c.nextBlock {
-		c.firstBlock = c.nextBlock
-	}
-	// Invariant: m[firstBlock..nextBlock) are valid.
-
-	// Detect reorg, ingestor needs to handle it
-	if height > c.firstBlock && !bytes.Equal(block.PrevHash, c.m[height-1].hash) {
-		return true, nil
+	height := int(block.Height)
+	if height != c.NextBlock {
+		Log.Fatalf("bug, cache.Add non-consecutive blocks: height: %v, ccache: %+v", height, c)
 	}
 
-	// Add the entry and update the counters
+	// Add the new block and its length to the db files
 	data, err := proto.Marshal(block)
 	if err != nil {
-		return false, err
+		return err
 	}
-	c.m[height] = &blockCacheEntry{
-		data: data,
-		hash: block.GetHash(),
+	_, err = c.blocksFile.Write(data)
+	if err != nil {
+		Log.Fatal("blocks write failed: ", err)
 	}
-	c.nextBlock++
-	// Invariant: m[firstBlock..nextBlock) are valid.
+	b := make([]byte, 4)
+	binary.LittleEndian.PutUint32(b, uint32(len(data)))
+	_, err = c.lengthsFile.Write(b)
+	if err != nil {
+		Log.Fatal("lengths write failed: ", err)
+	}
 
-	// remove any blocks that are older than the capacity of the cache
-	for c.firstBlock < c.nextBlock-c.MaxEntries {
-		// Invariant: m[firstBlock..nextBlock) are valid.
-		delete(c.m, c.firstBlock)
-		c.firstBlock++
-	}
-	// Invariant: m[firstBlock..nextBlock) are valid.
+	// update the in-memory variables
+	offset := c.starts[len(c.starts)-1]
+	c.starts = append(c.starts, offset+int64(len(data)))
 
-	return false, nil
+	if c.LatestHash == nil {
+		c.LatestHash = make([]byte, len(block.Hash))
+	}
+	copy(c.LatestHash, block.Hash)
+	c.NextBlock++
+	// Invariant: m[FirstBlock..NextBlock) are valid.
+	return nil
+}
+
+// Reorg resets NextBlock (the block that should be Add()ed next) to the given
+// height, taking care of all the details. It returns the height that should be
+// added next (different if less than FirstBlock).
+func (c *BlockCache) Reorg(height int) int {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	if height < c.FirstBlock {
+		height = c.FirstBlock
+	}
+	if height > c.NextBlock {
+		Log.Fatalf("bug, cache.Reorg moves ahead: height: %v, ccache: %+v", height, c)
+	}
+	// Remove the end of the cache.
+	c.NextBlock = height
+	newCacheLen := height - c.FirstBlock
+	c.starts = c.starts[:newCacheLen+1]
+
+	if err := c.lengthsFile.Truncate(int64(4 * newCacheLen)); err != nil {
+		Log.Fatal("truncate failed: ", err)
+	}
+	if err := c.blocksFile.Truncate(c.starts[newCacheLen]); err != nil {
+		Log.Fatal("truncate failed: ", err)
+	}
+	c.Sync()
+	c.LatestHash = nil
+	if c.NextBlock > c.FirstBlock {
+		// There is at least one block; get the last block's hash
+		b := make([]byte, c.blockLength(c.NextBlock-1))
+		_, err := c.blocksFile.ReadAt(b, c.starts[c.NextBlock-c.FirstBlock-1])
+		if err != nil {
+			Log.Fatal("blocks read failed: ", err)
+		}
+		block := &walletrpc.CompactBlock{}
+		err = proto.Unmarshal(b, block)
+		if err != nil {
+			Log.Warn("Error unmarshalling compact block: ", err)
+			return height
+		}
+		c.LatestHash = make([]byte, 32)
+		copy(c.LatestHash, block.Hash)
+	}
+	return height
 }
 
 // Get returns the compact block at the requested height if it is
@@ -99,18 +184,22 @@ func (c *BlockCache) Get(height int) *walletrpc.CompactBlock {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 
-	if height < c.firstBlock || height >= c.nextBlock {
+	if height < c.FirstBlock || height >= c.NextBlock {
 		return nil
 	}
 
-	serialized := &walletrpc.CompactBlock{}
-	err := proto.Unmarshal(c.m[height].data, serialized)
+	b := make([]byte, c.blockLength(height))
+	_, err := c.blocksFile.ReadAt(b, c.starts[height-c.FirstBlock])
+	if err != nil {
+		Log.Fatal("blocks read failed: ", err)
+	}
+	block := &walletrpc.CompactBlock{}
+	err = proto.Unmarshal(b, block)
 	if err != nil {
 		println("Error unmarshalling compact block")
 		return nil
 	}
-
-	return serialized
+	return block
 }
 
 // GetLatestHeight returns the block with the greatest height, or nil
@@ -118,8 +207,26 @@ func (c *BlockCache) Get(height int) *walletrpc.CompactBlock {
 func (c *BlockCache) GetLatestHeight() int {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
-	if c.firstBlock == c.nextBlock {
+	if c.FirstBlock == c.NextBlock {
 		return -1
 	}
-	return c.nextBlock - 1
+	return c.NextBlock - 1
+}
+
+func (c *BlockCache) Sync() {
+	c.lengthsFile.Sync()
+	c.blocksFile.Sync()
+}
+
+// Currently used only for testing.
+func (c *BlockCache) Close() {
+	// Some operating system require you to close files before you can remove them.
+	if c.lengthsFile != nil {
+		c.lengthsFile.Close()
+		c.lengthsFile = nil
+	}
+	if c.blocksFile != nil {
+		c.blocksFile.Close()
+		c.blocksFile = nil
+	}
 }

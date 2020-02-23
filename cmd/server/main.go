@@ -19,10 +19,12 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	"github.com/zcash/lightwalletd/common"
-	"github.com/zcash/lightwalletd/frontend"
-	"github.com/zcash/lightwalletd/walletrpc"
+	"github.com/asherda/lightwalletd/common"
+	"github.com/asherda/lightwalletd/frontend"
+	"github.com/asherda/lightwalletd/walletrpc"
 )
+
+const version = "v0.3.0"
 
 var logger = logrus.New()
 
@@ -91,7 +93,6 @@ type Options struct {
 	verusConfPath string `json:"verus_conf,omitempty"`
 
 	veryInsecure  bool   `json:"very_insecure,omitempty"`
-	cacheSize     int    `json:"cache_size,omitempty"`
 	wantVersion   bool
 }
 
@@ -114,13 +115,12 @@ func main() {
 	flag.StringVar(&opts.verusConfPath, "conf-file", "~/komodo/VRSC/VRSC.conf", "conf file to pull Verus RPC creds from")
 	flag.BoolVar(&opts.veryInsecure, "no-tls-very-insecure", false, "run without the required TLS certificate, only for debugging, DO NOT use in production")
 	flag.BoolVar(&opts.wantVersion, "version", false, "version (major.minor.patch)")
-	flag.IntVar(&opts.cacheSize, "cache-size", 80000, "number of blocks to hold in the cache")
 
 	// TODO support config from file and env vars
 	flag.Parse()
 
 	if opts.wantVersion {
-		fmt.Println("lightwalletd version v0.3.0")
+		fmt.Println("Lightwalletd version ", version)
 		return
 	}
 
@@ -140,6 +140,7 @@ func main() {
 		logger.SetFormatter(&logrus.JSONFormatter{})
 	}
 	logger.SetLevel(logrus.Level(opts.logLevel))
+	common.Log.Info("Lightwalletd starting version ", version)
 
 	filesThatShouldExist := []string{
 		// opts.zcashConfPath,
@@ -214,19 +215,13 @@ func main() {
 	// Get the sapling activation height from the RPC
 	// (this first RPC also verifies that we can communicate with zcashd)
 	saplingHeight, blockHeight, chainName, branchID := common.GetSaplingInfo()
-	common.Log.Info("Got sapling height ", saplingHeight, " chain ", chainName, " branchID ", branchID)
+	common.Log.Info("Got sapling height ", saplingHeight, " block height ", blockHeight, " chain ", chainName, " branchID ", branchID)
 
 	// Initialize the cache
-	cache := common.NewBlockCache(opts.cacheSize)
-
-	// Start the block cache importer at cacheSize blocks before current height
-	cacheStart := blockHeight - opts.cacheSize
-	if cacheStart < saplingHeight {
-		cacheStart = saplingHeight
-	}
+	cache := common.NewBlockCache(chainName, saplingHeight)
 
 	// The last argument, repetition count, is only nonzero for testing
-	go common.BlockIngestor(cache, cacheStart, 0)
+	go common.BlockIngestor(cache, cache.NextBlock, 0)
 
 	// Compact transaction service initialization
 	service, err := frontend.NewLwdStreamer(cache)
@@ -253,6 +248,7 @@ func main() {
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		s := <-signals
+		cache.Sync()
 		common.Log.WithFields(logrus.Fields{
 			"signal": s.String(),
 		}).Info("caught signal, stopping gRPC server")

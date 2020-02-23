@@ -13,15 +13,14 @@ import (
         "github.com/prometheus/client_golang/prometheus"
         "github.com/prometheus/client_golang/prometheus/promauto"
 
-	"github.com/zcash/lightwalletd/common"
-	"github.com/zcash/lightwalletd/walletrpc"
+	"github.com/asherda/lightwalletd/common"
+	"github.com/asherda/lightwalletd/walletrpc"
 )
 
 var (
 	ErrUnspecified = errors.New("request for unspecified identifier")
 )
 
-// the service type
 type LwdStreamer struct {
 	cache *common.BlockCache
 }
@@ -45,6 +44,7 @@ var (
         })
 )
 
+// GetLatestBlock returns the height of the best chain, according to zcashd.
 func (s *LwdStreamer) GetLatestBlock(ctx context.Context, placeholder *walletrpc.ChainSpec) (*walletrpc.BlockID, error) {
 	getLatestBlocksProcessed.Inc()
 	latestBlock := s.cache.GetLatestHeight()
@@ -80,7 +80,9 @@ var (
         })
 )
 
-func (s *LwdStreamer) GetAddressTxids( addressBlockFilter *walletrpc.TransparentAddressBlockFilter, resp walletrpc.CompactTxStreamer_GetAddressTxidsServer) error {
+// GetAddressTxids is a streaming RPC that returns transaction IDs that have
+// the given transparent address (taddr) as either an input or output.
+func (s *LwdStreamer) GetAddressTxids(addressBlockFilter *walletrpc.TransparentAddressBlockFilter, resp walletrpc.CompactTxStreamer_GetAddressTxidsServer) error {
 	getAddressTxidsProcessed.Inc()
 	// Test to make sure Address is a single t address
 	match, err := regexp.Match("\\At[a-zA-Z0-9]{34}\\z", []byte(addressBlockFilter.Address))
@@ -138,7 +140,6 @@ func (s *LwdStreamer) GetAddressTxids( addressBlockFilter *walletrpc.Transparent
 	return nil
 }
 
-
 // Metrics per API: getBlock
 var (
         getBlocks = promauto.NewCounter(prometheus.CounterOpts{
@@ -154,6 +155,8 @@ var (
         })
 )
 
+// GetBlock returns the compact block at the requested height. Requesting a
+// block by hash is not yet supported.
 func (s *LwdStreamer) GetBlock(ctx context.Context, id *walletrpc.BlockID) (*walletrpc.CompactBlock, error) {
 	getBlocks.Inc()
 	if id.Height == 0 && id.Hash == nil {
@@ -176,7 +179,6 @@ func (s *LwdStreamer) GetBlock(ctx context.Context, id *walletrpc.BlockID) (*wal
 	return cBlock, err
 }
 
-
 // Metrics per API: GetBlockRange
 var (
         getBlockRanges = promauto.NewCounter(prometheus.CounterOpts{
@@ -192,6 +194,9 @@ var (
         })
 )
 
+// GetBlockRange is a streaming RPC that returns blocks, in compact form,
+// (as also returned by GetBlock) from the block height 'start' to height
+// 'end' inclusively.
 func (s *LwdStreamer) GetBlockRange(span *walletrpc.BlockRange, resp walletrpc.CompactTxStreamer_GetBlockRangeServer) error {
 	getBlockRanges.Inc()
 	blockChan := make(chan walletrpc.CompactBlock)
@@ -230,6 +235,8 @@ var (
         })
 )
 
+// GetTransaction returns the raw transaction bytes that are returned
+// by the zcashd 'getrawtransaction' RPC.
 func (s *LwdStreamer) GetTransaction(ctx context.Context, txf *walletrpc.TxFilter) (*walletrpc.RawTransaction, error) {
 	getTransactions.Inc()
 	if txf.Hash != nil {
@@ -281,7 +288,8 @@ var (
         })
 )
 
-// GetLightdInfo gets the LightWalletD (this server) info
+// GetLightdInfo gets the LightWalletD (this server) info, and includes information
+// it gets from its backend verusd.
 func (s *LwdStreamer) GetLightdInfo(ctx context.Context, in *walletrpc.Empty) (*walletrpc.LightdInfo, error) {
 	getLightdInfos.Inc()
 	saplingHeight, blockHeight, chainName, consensusBranchId := common.GetSaplingInfo()
@@ -296,7 +304,6 @@ func (s *LwdStreamer) GetLightdInfo(ctx context.Context, in *walletrpc.Empty) (*
 		BlockHeight:             uint64(blockHeight),
 	}, nil
 }
-
 
 // Metrics per API: SendTransaction
 var (
@@ -319,6 +326,7 @@ var (
                 Help: "The total number of SendTransaction calls that returned a critical error",
         })
 )
+
 // SendTransaction forwards raw transaction bytes to a zcashd instance over JSON-RPC
 func (s *LwdStreamer) SendTransaction(ctx context.Context, rawtx *walletrpc.RawTransaction) (*walletrpc.SendResponse, error) {
 	// sendrawtransaction "hexstring" ( allowhighfees )

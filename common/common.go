@@ -1,16 +1,17 @@
 package common
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/asherda/lightwalletd/parser"
+	"github.com/asherda/lightwalletd/walletrpc"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/zcash/lightwalletd/parser"
-	"github.com/zcash/lightwalletd/walletrpc"
 )
 
 // RawRequest points to the function to send a an RPC request to zcashd;
@@ -105,18 +106,21 @@ func getBlockFromRPC(height int) (*walletrpc.CompactBlock, error) {
 	if len(rest) != 0 {
 		return nil, errors.New("received overlong message")
 	}
+	if block.GetHeight() != height {
+		return nil, errors.New("received unexpected height block")
+	}
 
 	return block.ToCompact(), nil
 }
 
 // BlockIngestor runs as a goroutine and polls zcashd for new blocks, adding them
 // to the cache. The repetition count, rep, is nonzero only for unit-testing.
-func BlockIngestor(cache *BlockCache, startHeight int, rep int) {
+func BlockIngestor(c *BlockCache, height int, rep int) {
 	reorgCount := 0
-	height := startHeight
 
 	// Start listening for new blocks
 	retryCount := 0
+	waiting := false
 	for i := 0; rep == 0 || i < rep; i++ {
 		block, err := getBlockFromRPC(height)
 		if block == nil || err != nil {
@@ -133,26 +137,24 @@ func BlockIngestor(cache *BlockCache, startHeight int, rep int) {
 				}
 			}
 			// We're up to date in our polling; wait for a new block
+			c.Sync()
+			waiting = true
 			Sleep(10 * time.Second)
 			continue
 		}
 		retryCount = 0
 
-		if (height % 100) == 0 {
+		if waiting || (height%100) == 0 {
 			Log.Info("Ingestor adding block to cache: ", height)
-		}
-		reorg, err := cache.Add(height, block)
-		if err != nil {
-			Log.Fatal("Cache add failed")
 		}
 
 		// Check for reorgs once we have inital block hash from startup
-		if reorg {
+		if c.LatestHash != nil && !bytes.Equal(block.PrevHash, c.LatestHash) {
 			// This must back up at least 1, but it's arbitrary, any value
 			// will work; this is probably a good balance.
-			height -= 2
-			reorgCount++
-			if reorgCount > 10 {
+			height = c.Reorg(height - 2)
+			reorgCount += 2
+			if reorgCount > 100 {
 				Log.Fatal("Reorg exceeded max of 100 blocks! Help!")
 			}
 			Log.WithFields(logrus.Fields{
@@ -162,6 +164,9 @@ func BlockIngestor(cache *BlockCache, startHeight int, rep int) {
 				"reorg":  reorgCount,
 			}).Warn("REORG")
 			continue
+		}
+		if err := c.Add(block); err != nil {
+			Log.Fatal("Cache add failed:", err)
 		}
 		reorgCount = 0
 		height++

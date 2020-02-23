@@ -64,7 +64,7 @@ To checkout an existing branch (assuming you are in `lightwalletd` directory):
 ```bash
 git checkout [existing_branch_name]
 ```
-If you are fixing a bug or implementing a new feature, you likely will want to create a new branch. If you are reviewing code or working on existing branches, you likely will checkout an existing branch. To view the list of current Lightwalletd GitHub issues, click [here](https://github.com/zcash/lightwalletd/issues). 
+If you are fixing a bug or implementing a new feature, you likely will want to create a new branch. If you are reviewing code or working on existing branches, you likely will checkout an existing branch. To view the list of current Lightwalletd GitHub issues, click [here](https://github.com/asherda/lightwalletd/issues). 
 
 ## Make & Commit Changes
 If you have created a new branch or checked out an existing one, it is time to make changes to your local source code. Below are some formalities for commits:

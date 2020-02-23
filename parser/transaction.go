@@ -3,9 +3,9 @@ package parser
 import (
 	"crypto/sha256"
 
+	"github.com/asherda/lightwalletd/parser/internal/bytestring"
+	"github.com/asherda/lightwalletd/walletrpc"
 	"github.com/pkg/errors"
-	"github.com/zcash/lightwalletd/parser/internal/bytestring"
-	"github.com/zcash/lightwalletd/walletrpc"
 )
 
 type rawTransaction struct {
