@@ -30,18 +30,18 @@ func connFromConf(confPath interface{}) (*rpcclient.ConnConfig, error) {
 	}
 	rpcport := cfg.Section("").Key("rpcport").String()
 	if rpcport == "" {
-		rpcport = "8232" // mainnet
+		rpcport = "27486" // VerusCoin RPC port
 	}
 	username := cfg.Section("").Key("rpcuser").String()
 	password := cfg.Section("").Key("rpcpassword").String()
 
-	// Connect to local Zcash RPC server using HTTP POST mode.
+	// Connect to local verusd RPC server using HTTP POST mode.
 	connCfg := &rpcclient.ConnConfig{
 		Host:         net.JoinHostPort(rpcaddr, rpcport),
 		User:         username,
 		Pass:         password,
-		HTTPPostMode: true, // Zcash only supports HTTP POST mode
-		DisableTLS:   true, // Zcash does not provide TLS by default
+		HTTPPostMode: true, // Zcash only supports HTTP POST mode, unmodified for VerusCoin
+		DisableTLS:   true, // Zcash does not provide TLS by default, unmodified for VerusCoin - wait, what?
 	}
 	// Notice the notification parameter is nil since notifications are
 	// not supported in HTTP POST mode.

@@ -199,23 +199,21 @@ func main() {
 		reflection.Register(server)
 	}
 
-	// Initialize Zcash RPC client. Right now (Jan 2018) this is only for
+	// Initialize VerusCoin RPC client. Right now (Feb 2020) this is only for
 	// sending transactions, but in the future it could back a different type
 	// of block streamer.
-
-	// TODO: VerusCoin
 	rpcClient, err := frontend.NewZRPCFromConf(opts.verusConfPath)
 	if err != nil {
 		common.Log.WithFields(logrus.Fields{
 			"error": err,
-		}).Fatal("setting up RPC connection to zcashd")
+		}).Fatal("setting up RPC connection to verusd")
 	}
 
 	// indirect function for test mocking (so unit tests can talk to stub functions)
 	common.RawRequest = rpcClient.RawRequest
 
 	// Get the sapling activation height from the RPC
-	// (this first RPC also verifies that we can communicate with zcashd)
+	// (this first RPC also verifies that we can communicate with verusd)
 	saplingHeight, blockHeight, chainName, branchID := common.GetSaplingInfo()
 	common.Log.Info("Got sapling height ", saplingHeight, " block height ", blockHeight, " chain ", chainName, " branchID ", branchID)
 
