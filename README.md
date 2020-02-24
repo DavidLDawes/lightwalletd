@@ -47,6 +47,17 @@ Assuming you used `make` to build SERVER:
 ./server --no-tls-very-insecure=true --conf-file /home/.komodo/VRSC/VRSC.conf --zconf-file /home/zcash/.zcash/zcash.conf --log-file /logs/server.log --bind-addr 127.0.0.1:18232
 ```
 
+### To capture metrics
+Simply add the -metrics flag to the server command to enable Prometheus compatible metrics collection.
+```
+./server --no-tls-very-insecure=true --conf-file /home/.komodo/VRSC/VRSC.conf --zconf-file /home/zcash/.zcash/zcash.conf --log-file /logs/server.log --bind-addr 127.0.0.1:18232 -metrics
+```
+
+When enabled the Prometheus metrics data is served on port 2112. You can see the accumulated metrics data by using:
+```
+curl http://localhost:2112/metrics
+```
+
 # Production Usage
 
 Ensure [Go >= 1.11](https://golang.org/dl/#stable) is installed.
@@ -82,6 +93,15 @@ Example using server binary built from Makefile:
 ```
 ./server --tls-cert cert.pem --tls-key key.pem --conf-file /home/.komodo/VRSC/VRSC.conf --zconf-file /home/zcash/.zcash/zcash.conf --log-file /logs/server.log --bind-addr 127.0.0.1:18232
 ```
+### Prometheus metrics with production SERVER
+Use the -metrics flag when running server to enable the metrics endpoint.
+
+Here's the above production example with metrics enable:
+```
+./server --tls-cert cert.pem --tls-key key.pem --conf-file /home/.komodo/VRSC/VRSC.conf --zconf-file /home/zcash/.zcash/zcash.conf --log-file /logs/server.log --bind-addr 127.0.0.1:18232 -metrics
+```
+
+You will need to bring up a prometheus server and configure it to scrape our 2112 port for data. [Prometheus docs include a walk through for go programmers](https://prometheus.io/docs/guides/go-application/).
 
 # Pull Requests
 

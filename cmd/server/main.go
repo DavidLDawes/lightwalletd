@@ -91,8 +91,8 @@ type Options struct {
 	logPath       string `json:"log_file,omitempty"`
 	zcashConfPath string `json:"zcash_conf,omitempty"`
 	verusConfPath string `json:"verus_conf,omitempty"`
-
 	veryInsecure  bool   `json:"very_insecure,omitempty"`
+	metrics       bool   `json:"metrics,omitempty"`
 	wantVersion   bool
 }
 
@@ -114,6 +114,7 @@ func main() {
 	flag.StringVar(&opts.zcashConfPath, "zconf-file", "./zcash.conf", "conf file to pull zcash RPC creds from")
 	flag.StringVar(&opts.verusConfPath, "conf-file", "~/komodo/VRSC/VRSC.conf", "conf file to pull Verus RPC creds from")
 	flag.BoolVar(&opts.veryInsecure, "no-tls-very-insecure", false, "run without the required TLS certificate, only for debugging, DO NOT use in production")
+	flag.BoolVar(&opts.metrics, "metrics", false, "Enable Prometheus compatible metrics endpoint on port 2112; default is false")
 	flag.BoolVar(&opts.wantVersion, "version", false, "version (major.minor.patch)")
 
 	// TODO support config from file and env vars
@@ -143,7 +144,6 @@ func main() {
 	common.Log.Info("Lightwalletd starting version ", version)
 
 	filesThatShouldExist := []string{
-		// opts.zcashConfPath,
 		opts.verusConfPath,
 	}
 	if opts.tlsCertPath != "" {
@@ -163,9 +163,11 @@ func main() {
 		}
 	}
 
-	// /metrics endpoint, set Prometheus up to collect metrics from this.
-	http.Handle("/metrics", promhttp.Handler())
-	http.ListenAndServe(":2112", nil)
+	if opts.metrics {
+		// /metrics endpoint, set Prometheus up to collect metrics from this.
+		http.Handle("/metrics", promhttp.Handler())
+		http.ListenAndServe(":2112", nil)
+}
 
 	// gRPC initialization
 	var server *grpc.Server
