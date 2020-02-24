@@ -113,7 +113,7 @@ func getBlockFromRPC(height int) (*walletrpc.CompactBlock, error) {
 	return block.ToCompact(), nil
 }
 
-// BlockIngestor runs as a goroutine and polls zcashd for new blocks, adding them
+// BlockIngestor runs as a goroutine and polls verusd for new blocks, adding them
 // to the cache. The repetition count, rep, is nonzero only for unit-testing.
 func BlockIngestor(c *BlockCache, height int, rep int) {
 	reorgCount := 0
