@@ -96,7 +96,7 @@ Example using server binary built from Makefile:
 ### Prometheus metrics with production SERVER
 Use the -metrics flag when running server to enable the metrics endpoint.
 
-Here's the above production example with metrics enable:
+Here's the above production example with metrics enabled:
 ```
 ./server --tls-cert cert.pem --tls-key key.pem --conf-file /home/.komodo/VRSC/VRSC.conf --zconf-file /home/zcash/.zcash/zcash.conf --log-file /logs/server.log --bind-addr 127.0.0.1:18232 -metrics
 ```
