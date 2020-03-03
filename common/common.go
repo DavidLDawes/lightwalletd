@@ -13,7 +13,7 @@ import (
 
 
 	"github.com/davidldawes/lightwalletd/parser"
-	"github.com/daidldawes/lightwalletd/walletrpc"
+	"github.com/davidldawes/lightwalletd/walletrpc"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
