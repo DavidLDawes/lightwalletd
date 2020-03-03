@@ -34,21 +34,21 @@ var Log *logrus.Entry
 // Metrics per API: GetSaplingInfo
 var (
 	GetSaplingInfoProcessed = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "service_GetSaplingInfo_processed",
+		Name: "common_GetSaplingInfo_processed",
 		Help: "The total number of GetLatestBlock calls",
 	})
 )
 
 var (
 	GetSaplingInfoRetries = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "service_GetSaplingInfo_retries",
+		Name: "common_GetSaplingInfo_retries",
 		Help: "The total number of GetSaplingInfo retries",
 	})
 )
 
 var (
 	GetSaplingInfoErrors = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "service_GetSaplingInfo_errors",
+		Name: "common_GetSaplingInfo_errors",
 		Help: "The total number of GetSaplingInfo calls that returned an error",
 	})
 )
@@ -105,14 +105,14 @@ func GetSaplingInfo() (int, int, string, string) {
 // Metrics per API: getBlockFromRPC
 var (
 	getBlockFromRPCProcessed = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "service_getBlockFromRPC_processed",
+		Name: "common_getBlockFromRPC_processed",
 		Help: "The total number of getBlockFromRPC calls",
 	})
 )
 
 var (
 	getBlockFromRPCErrors = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "service_getBlockFromRPC_Errors",
+		Name: "common_getBlockFromRPC_Errors",
 		Help: "The total number of getBlockFromRPC calls that returned an error",
 	})
 )
@@ -168,21 +168,21 @@ func getBlockFromRPC(height int) (*walletrpc.CompactBlock, error) {
 // BlockIngestor Metrics
 var (
 	BlockIngestorProcessed = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "service_BlockIngestor_processed",
+		Name: "common_BlockIngestor_processed",
 		Help: "The total number of BlockIngestor calls",
 	})
 )
 
 var (
 	BlockIngestorRetries = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "service_BlockIngestor_retries",
+		Name: "common_BlockIngestor_retries",
 		Help: "The total number of BlockIngestor retries",
 	})
 )
 
 var (
 	BlockIngestorErrors = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "service_BlockIngestor_Errors",
+		Name: "common_BlockIngestor_Errors",
 		Help: "The total number of BlockIngestor calls that returned an error",
 	})
 )
@@ -255,21 +255,21 @@ func BlockIngestor(c *BlockCache, height int, rep int) {
 // Metrics per API: GetBlock
 var (
 	GetBlockProcessed = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "service_GetBlockProcessed",
+		Name: "common_GetBlockProcessed",
 		Help: "The total number of GetBlock calls",
 	})
 )
 
 var (
 	GetBlockTooNewErrors = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "service_GetBlockTooNewErrors",
+		Name: "common_GetBlockTooNewErrors",
 		Help: "The total number of GetBlock calls requesting a height above the current block height",
 	})
 )
 
 var (
 	GetBlockErrors = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "service_GetBlockErrors",
+		Name: "common_GetBlockErrors",
 		Help: "The total number of GetBlock calls that returned an error other than TooNew",
 	})
 )
@@ -302,14 +302,14 @@ func GetBlock(cache *BlockCache, height int) (*walletrpc.CompactBlock, error) {
 // Metrics per API: GetBlockRange
 var (
 	GetBlockRangeProcessed = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "service_GetBlockRangeProcessed",
+		Name: "common_GetBlockRangeProcessed",
 		Help: "The total number of GetBlockRange calls",
 	})
 )
 
 var (
 	GetBlockRangeErrors = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "service_GetBlockRangeErrors",
+		Name: "common_GetBlockRangeErrors",
 		Help: "The total number of GetBlockRange calls that returned an error other than TooNew",
 	})
 )
