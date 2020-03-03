@@ -43,8 +43,8 @@
 # Create layer in case you want to modify local lightwalletd code
 FROM golang:1.13 AS lightwalletd_base
 
-ADD . /go/src/github.com/asherda/lightwalletd
-WORKDIR /go/src/github.com/asherda/lightwalletd
+ADD . /go/src/github.com/davidldawes/lightwalletd
+WORKDIR /go/src/github.com/davidldawes/lightwalletd
 RUN make \
   && /usr/bin/install -c ./server /usr/bin/
 

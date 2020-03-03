@@ -19,9 +19,9 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	"github.com/asherda/lightwalletd/common"
-	"github.com/asherda/lightwalletd/frontend"
-	"github.com/asherda/lightwalletd/walletrpc"
+	"github.com/davidldawes/lightwalletd/common"
+	"github.com/davidldawes/lightwalletd/frontend"
+	"github.com/davidldawes/lightwalletd/walletrpc"
 )
 
 const version = "v0.3.0"

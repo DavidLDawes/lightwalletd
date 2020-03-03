@@ -7,7 +7,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/asherda/lightwalletd/walletrpc"
+	"github.com/davidldawes/lightwalletd/walletrpc"
 	"github.com/golang/protobuf/proto"
 )
 

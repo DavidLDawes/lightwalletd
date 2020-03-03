@@ -6,8 +6,8 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/asherda/lightwalletd/parser"
-	"github.com/asherda/lightwalletd/walletrpc"
+	"github.com/davidldawes/lightwalletd/parser"
+	"github.com/davidldawes/lightwalletd/walletrpc"
 )
 
 var compacts []*walletrpc.CompactBlock

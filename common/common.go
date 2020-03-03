@@ -8,8 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/asherda/lightwalletd/parser"
-	"github.com/asherda/lightwalletd/walletrpc"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+
+
+	"github.com/davidldawes/lightwalletd/parser"
+	"github.com/daidldawes/lightwalletd/walletrpc"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -27,10 +31,33 @@ var Sleep func(d time.Duration)
 // Log as a global variable simplifies logging
 var Log *logrus.Entry
 
+// Metrics per API: GetSaplingInfo
+var (
+	GetSaplingInfoProcessed = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "service_GetSaplingInfo_processed",
+		Help: "The total number of GetLatestBlock calls",
+	})
+)
+
+var (
+	GetSaplingInfoRetries = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "service_GetSaplingInfo_retries",
+		Help: "The total number of GetSaplingInfo retries",
+	})
+)
+
+var (
+	GetSaplingInfoErrors = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "service_GetSaplingInfo_errors",
+		Help: "The total number of GetSaplingInfo calls that returned an error",
+	})
+)
+
 // GetSaplingInfo returns the result of the getblockchaininfo RPC to zcashd
 func GetSaplingInfo() (int, int, string, string) {
 	// This request must succeed or we can't go on; give zcashd time to start up
 	var f interface{}
+	GetSaplingInfoProcessed.Inc()
 	retryCount := 0
 	for {
 		result, rpcErr := RawRequest("getblockchaininfo", []json.RawMessage{})
@@ -40,12 +67,15 @@ func GetSaplingInfo() (int, int, string, string) {
 			}
 			err := json.Unmarshal(result, &f)
 			if err != nil {
+				GetSaplingInfoErrors.Inc()
 				Log.Fatalf("error parsing JSON getblockchaininfo response: %v", err)
 			}
 			break
 		}
+		GetSaplingInfoRetries.Inc()
 		retryCount++
 		if retryCount > 10 {
+			GetSaplingInfoErrors.Inc()
 			Log.WithFields(logrus.Fields{
 				"timeouts": retryCount,
 			}).Fatal("unable to issue getblockchaininfo RPC call to zcashd node")
@@ -72,7 +102,23 @@ func GetSaplingInfo() (int, int, string, string) {
 	return int(saplingHeight), int(blockHeight), chainName, branchID
 }
 
+// Metrics per API: getBlockFromRPC
+var (
+	getBlockFromRPCProcessed = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "service_getBlockFromRPC_processed",
+		Help: "The total number of getBlockFromRPC calls",
+	})
+)
+
+var (
+	getBlockFromRPCErrors = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "service_getBlockFromRPC_Errors",
+		Help: "The total number of getBlockFromRPC calls that returned an error",
+	})
+)
+
 func getBlockFromRPC(height int) (*walletrpc.CompactBlock, error) {
+	getBlockFromRPCProcessed.Inc()
 	params := make([]json.RawMessage, 2)
 	params[0] = json.RawMessage("\"" + strconv.Itoa(height) + "\"")
 	params[1] = json.RawMessage("0") // non-verbose (raw hex)
@@ -80,6 +126,7 @@ func getBlockFromRPC(height int) (*walletrpc.CompactBlock, error) {
 
 	// For some reason, the error responses are not JSON
 	if rpcErr != nil {
+		getBlockFromRPCErrors.Inc()
 		// Check to see if we are requesting a height the zcashd doesn't have yet
 		if (strings.Split(rpcErr.Error(), ":"))[0] == "-8" {
 			return nil, nil
@@ -90,32 +137,60 @@ func getBlockFromRPC(height int) (*walletrpc.CompactBlock, error) {
 	var blockDataHex string
 	err := json.Unmarshal(result, &blockDataHex)
 	if err != nil {
+		getBlockFromRPCErrors.Inc()
 		return nil, errors.Wrap(err, "error reading JSON response")
 	}
 
 	blockData, err := hex.DecodeString(blockDataHex)
 	if err != nil {
+		getBlockFromRPCErrors.Inc()
 		return nil, errors.Wrap(err, "error decoding getblock output")
 	}
 
 	block := parser.NewBlock()
 	rest, err := block.ParseFromSlice(blockData)
 	if err != nil {
+		getBlockFromRPCErrors.Inc()
 		return nil, errors.Wrap(err, "error parsing block")
 	}
 	if len(rest) != 0 {
+		getBlockFromRPCErrors.Inc()
 		return nil, errors.New("received overlong message")
 	}
 	if block.GetHeight() != height {
+		getBlockFromRPCErrors.Inc()
 		return nil, errors.New("received unexpected height block")
 	}
 
 	return block.ToCompact(), nil
 }
 
+// BlockIngestor Metrics
+var (
+	BlockIngestorProcessed = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "service_BlockIngestor_processed",
+		Help: "The total number of BlockIngestor calls",
+	})
+)
+
+var (
+	BlockIngestorRetries = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "service_BlockIngestor_retries",
+		Help: "The total number of BlockIngestor retries",
+	})
+)
+
+var (
+	BlockIngestorErrors = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "service_BlockIngestor_Errors",
+		Help: "The total number of BlockIngestor calls that returned an error",
+	})
+)
+
 // BlockIngestor runs as a goroutine and polls verusd for new blocks, adding them
 // to the cache. The repetition count, rep, is nonzero only for unit-testing.
 func BlockIngestor(c *BlockCache, height int, rep int) {
+	BlockIngestorProcessed.Inc()
 	reorgCount := 0
 
 	// Start listening for new blocks
@@ -129,8 +204,10 @@ func BlockIngestor(c *BlockCache, height int, rep int) {
 					"height": height,
 					"error":  err,
 				}).Warn("error with getblock rpc")
+				BlockIngestorRetries.Inc()
 				retryCount++
 				if retryCount > 10 {
+					BlockIngestorErrors.Inc()
 					Log.WithFields(logrus.Fields{
 						"timeouts": retryCount,
 					}).Fatal("unable to issue RPC call to zcashd node")
@@ -155,6 +232,7 @@ func BlockIngestor(c *BlockCache, height int, rep int) {
 			height = c.Reorg(height - 2)
 			reorgCount += 2
 			if reorgCount > 100 {
+				BlockIngestorErrors.Inc()
 				Log.Fatal("Reorg exceeded max of 100 blocks! Help!")
 			}
 			Log.WithFields(logrus.Fields{
@@ -166,6 +244,7 @@ func BlockIngestor(c *BlockCache, height int, rep int) {
 			continue
 		}
 		if err := c.Add(block); err != nil {
+			BlockIngestorErrors.Inc()
 			Log.Fatal("Cache add failed:", err)
 		}
 		reorgCount = 0
@@ -173,10 +252,33 @@ func BlockIngestor(c *BlockCache, height int, rep int) {
 	}
 }
 
+// Metrics per API: GetBlock
+var (
+	GetBlockProcessed = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "service_GetBlockProcessed",
+		Help: "The total number of GetBlock calls",
+	})
+)
+
+var (
+	GetBlockTooNewErrors = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "service_GetBlockTooNewErrors",
+		Help: "The total number of GetBlock calls requesting a height above the current block height",
+	})
+)
+
+var (
+	GetBlockErrors = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "service_GetBlockErrors",
+		Help: "The total number of GetBlock calls that returned an error other than TooNew",
+	})
+)
+
 // GetBlock returns the compact block at the requested height, first by querying
 // the cache, then, if not found, will request the block from zcashd. It returns
 // nil if no block exists at this height.
 func GetBlock(cache *BlockCache, height int) (*walletrpc.CompactBlock, error) {
+	GetBlockProcessed.Inc()
 	// First, check the cache to see if we have the block
 	block := cache.Get(height)
 	if block != nil {
@@ -186,21 +288,39 @@ func GetBlock(cache *BlockCache, height int) (*walletrpc.CompactBlock, error) {
 	// Not in the cache, ask zcashd
 	block, err := getBlockFromRPC(height)
 	if err != nil {
+		GetBlockErrors.Inc()
 		return nil, err
 	}
 	if block == nil {
 		// Block height is too large
+		GetBlockTooNewErrors.Inc()
 		return nil, errors.New("block requested is newer than latest block")
 	}
 	return block, nil
 }
 
+// Metrics per API: GetBlockRange
+var (
+	GetBlockRangeProcessed = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "service_GetBlockRangeProcessed",
+		Help: "The total number of GetBlockRange calls",
+	})
+)
+
+var (
+	GetBlockRangeErrors = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "service_GetBlockRangeErrors",
+		Help: "The total number of GetBlockRange calls that returned an error other than TooNew",
+	})
+)
 // GetBlockRange returns a sequence of consecutive blocks in the given range.
 func GetBlockRange(cache *BlockCache, blockOut chan<- walletrpc.CompactBlock, errOut chan<- error, start, end int) {
+	GetBlockRangeProcessed.Inc()
 	// Go over [start, end] inclusive
 	for i := start; i <= end; i++ {
 		block, err := GetBlock(cache, i)
 		if err != nil {
+			GetBlockRangeErrors.Inc()
 			errOut <- err
 			return
 		}

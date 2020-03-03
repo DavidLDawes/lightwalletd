@@ -3,8 +3,8 @@ package parser
 import (
 	"crypto/sha256"
 
-	"github.com/asherda/lightwalletd/parser/internal/bytestring"
-	"github.com/asherda/lightwalletd/walletrpc"
+	"github.com/davidldawes/lightwalletd/parser/internal/bytestring"
+	"github.com/davidldawes/lightwalletd/walletrpc"
 	"github.com/pkg/errors"
 )
 

@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-        "github.com/prometheus/client_golang/prometheus"
-        "github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 
-	"github.com/asherda/lightwalletd/common"
-	"github.com/asherda/lightwalletd/walletrpc"
+	"github.com/davidldawes/lightwalletd/common"
+	"github.com/davidldawes/lightwalletd/walletrpc"
 )
 
 var (

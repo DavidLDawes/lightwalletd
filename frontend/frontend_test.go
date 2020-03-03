@@ -13,8 +13,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/asherda/lightwalletd/common"
-	"github.com/asherda/lightwalletd/walletrpc"
+	"github.com/davidldawes/lightwalletd/common"
+	"github.com/davidldawes/lightwalletd/walletrpc"
 	"github.com/sirupsen/logrus"
 )
 

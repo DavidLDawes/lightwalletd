@@ -7,7 +7,7 @@ import (
 	"log"
 	"math/big"
 
-	"github.com/asherda/lightwalletd/parser/internal/bytestring"
+	"github.com/davidldawes/lightwalletd/parser/internal/bytestring"
 	"github.com/pkg/errors"
 )
 

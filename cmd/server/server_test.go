@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"errors"
-	"github.com/asherda/lightwalletd/common"
+	"github.com/davidldawes/lightwalletd/common"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"

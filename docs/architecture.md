@@ -42,7 +42,7 @@ First, install [Go >= 1.11](https://golang.org/dl/#stable). Older versions of Go
 Now clone this repo and start the ingester. The first run will start slow as Go builds the sqlite C interface:
 
 ```
-$ git clone https://github.com/asherda/lightwalletd
+$ git clone https://github.com/davidldawes/lightwalletd
 $ cd lightwalletd
 $ go run cmd/ingest/main.go --conf-file <path_to_verus.conf> --db-path <path_to_sqllightdb>
 ```
