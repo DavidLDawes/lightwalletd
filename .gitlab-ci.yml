@@ -47,8 +47,9 @@ build:build-linux:
   script:
     - make
 
-.build-mac:
+build-mac:
   stage: build
+  tags: ["Mojave"]
   script:
     - make
 
