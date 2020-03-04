@@ -80,10 +80,9 @@ var (
         })
 )
 
-	// GetAddressTxids is a streaming RPC that returns transaction IDs that have
-	// the given transparent address (taddr) as either an input or output.
-func (s *LwdStreamer) GetAddressTxids( addressBlockFilter *walletrpc.TransparentAddressBlockFilter, resp walletrpc.CompactTxStreamer_GetAddressTxidsServer) error {
-	getAddressTxidsProcessed.Inc()
+// GetAddressTxids is a streaming RPC that returns transaction IDs that have
+// the given transparent address (taddr) as either an input or output.
+func (s *LwdStreamer) GetAddressTxids(addressBlockFilter *walletrpc.TransparentAddressBlockFilter, resp walletrpc.CompactTxStreamer_GetAddressTxidsServer) error {
 	// Test to make sure Address is a single t address
 	match, err := regexp.Match("\\At[a-zA-Z0-9]{34}\\z", []byte(addressBlockFilter.Address))
 	if err != nil || !match {

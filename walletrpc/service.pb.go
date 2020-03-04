@@ -25,8 +25,7 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 // A BlockID message contains identifiers to select a block: a height or a
-// hash. If the hash is present it takes precedence. NB: lookup by hash is
-// not currently implemented.
+// hash. Specification by hash is not implemented, but may be in the future.
 type BlockID struct {
 	Height               uint64   `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
 	Hash                 []byte   `protobuf:"bytes,2,opt,name=hash,proto3" json:"hash,omitempty"`
@@ -280,7 +279,7 @@ func (m *SendResponse) GetErrorMessage() string {
 	return ""
 }
 
-// Empty placeholder. Someday we may want to specify e.g. a particular chain fork.
+// Chainspec is a placeholder to allow specification of a particular chain fork.
 type ChainSpec struct {
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -312,7 +311,7 @@ func (m *ChainSpec) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ChainSpec proto.InternalMessageInfo
 
-// Empty is an empty argument list.
+// Empty is for gRPCs that take no arguments, currently only GetLightdInfo.
 type Empty struct {
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -433,6 +432,8 @@ func (m *LightdInfo) GetBlockHeight() uint64 {
 	return 0
 }
 
+// TransparentAddressBlockFilter restricts the results to the given address
+// or block range.
 type TransparentAddressBlockFilter struct {
 	Address              string      `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 	Range                *BlockRange `protobuf:"bytes,2,opt,name=range,proto3" json:"range,omitempty"`

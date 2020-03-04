@@ -5,8 +5,7 @@ option swift_prefix = "";
 import "compact_formats.proto";
 
 // A BlockID message contains identifiers to select a block: a height or a
-// hash. If the hash is present it takes precedence. NB: lookup by hash is
-// not currently implemented.
+// hash. Specification by hash is not implemented, but may be in the future.
 message BlockID {
      uint64 height = 1;
      bytes hash = 2;
@@ -43,10 +42,10 @@ message SendResponse {
     string errorMessage = 2;
 }
 
-// Empty placeholder. Someday we may want to specify e.g. a particular chain fork.
+// Chainspec is a placeholder to allow specification of a particular chain fork.
 message ChainSpec {}
 
-// Empty is an empty argument list.
+// Empty is for gRPCs that take no arguments, currently only GetLightdInfo.
 message Empty {}
 
 // The LightdInfo returns various information about this lightwalletd instance
@@ -57,10 +56,12 @@ message LightdInfo {
     bool   taddrSupport = 3;
     string chainName = 4;
     uint64 saplingActivationHeight = 5;
-    string consensusBranchId = 6;   // This should really be u32 or []byte, but string for readability
+    string consensusBranchId = 6;
     uint64 blockHeight = 7;
 }
 
+// TransparentAddressBlockFilter restricts the results to the given address
+// or block range.
 message TransparentAddressBlockFilter {
     string address = 1;
     BlockRange range = 2;

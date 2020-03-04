@@ -1,5 +1,7 @@
-db-*-blocks
-db-*-lengths
+server
 server.log
 coverage.out
 test-log
+lwd-api.html
+db-*-blocks
+db-*-lengths
