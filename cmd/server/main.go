@@ -90,8 +90,8 @@ type Options struct {
 	zcashConfPath string `json:"zcash_conf,omitempty"`
 	verusConfPath string `json:"verus_conf,omitempty"`
 
-	veryInsecure  bool   `json:"very_insecure,omitempty"`
-	wantVersion   bool
+	veryInsecure bool `json:"very_insecure,omitempty"`
+	wantVersion  bool
 }
 
 func fileExists(filename string) bool {
@@ -104,7 +104,7 @@ func fileExists(filename string) bool {
 
 func main() {
 	opts := &Options{}
-	flag.StringVar(&opts.bindAddr, "bind-addr", "127.0.0.1:9067", "the address to listen on")
+	flag.StringVar(&opts.bindAddr, "bind-addr", "127.0.0.1:9077", "the address to listen on")
 	flag.StringVar(&opts.tlsCertPath, "tls-cert", "", "the path to a TLS certificate")
 	flag.StringVar(&opts.tlsKeyPath, "tls-key", "", "the path to a TLS key file")
 	flag.Uint64Var(&opts.logLevel, "log-level", uint64(logrus.InfoLevel), "log level (logrus 1-7)")
