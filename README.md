@@ -17,9 +17,9 @@ The Lightwalletd Server is experimental and a work in progress. Use it at your o
 
 # Overview
 
-[lightwalletd](https://github.com/davidldawes/lightwalletd) is a backend service that provides a bandwidth-efficient interface to the Zcash blockchain. Currently, lightwalletd supports the Sapling protocol version as its primary concern. The intended purpose of lightwalletd is to support the development of mobile-friendly shielded light wallets.
+[lightwalletd](https://github.com/davidldawes/lightwalletd) is a backend service that provides a bandwidth-efficient interface to the VerusCoin blockchain. Currently, lightwalletd supports the Sapling protocol version as its primary concern. The intended purpose of lightwalletd is to support the development of mobile-friendly shielded light wallets.
 
-lightwalletd is a backend service that provides a bandwidth-efficient interface to the Zcash blockchain for mobile and other wallets, such as [Zecwallet](https://github.com/adityapk00/zecwallet-lite-lib).
+lightwalletd is a backend service that provides a bandwidth-efficient interface to the VerusCoin blockchain for mobile and other wallets, such as [Zecwallet](https://github.com/adityapk00/zecwallet-lite-lib).
 
 Lightwalletd has not yet undergone audits or been subject to rigorous testing. It lacks some affordances necessary for production-level reliability. We do not recommend using it to handle customer funds at this time (October 2019).
 
@@ -40,9 +40,7 @@ To build the server, run `make`.
 This will build the server binary, where you can use the below commands to configure how it runs.
 
 ## To run SERVER
-
-Assuming you used `make` to build SERVER:
-
+Once you run make it produces server in the root archive directory. This is the frontend service.
 ```
 ./server --no-tls-very-insecure=true --conf-file /home/.komodo/VRSC/VRSC.conf --zconf-file /home/zcash/.zcash/zcash.conf --log-file /logs/server.log --bind-addr 127.0.0.1:18232
 ```

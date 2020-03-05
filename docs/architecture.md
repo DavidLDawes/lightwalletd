@@ -10,7 +10,7 @@ A **compact block** is a collection of compact transactions along with certain m
 
 ```
 +----------+
-|  zcashd  |                       +----------+    +-------+
+|  verusd  |                       +----------+    +-------+
 +----+-----+              +------->+ frontend +--->+       |
      |                    |        +----------+    |  L    +<----Client
      | raw blocks    +----+----+                   |  O B  |
@@ -27,9 +27,9 @@ A **compact block** is a collection of compact transactions along with certain m
 
 ## Ingester
 
-The ingester is the component responsible for transforming raw Zcash block data into a compact block.
+The ingester is the component responsible for transforming raw VerusCoin block data into a compact block.
 
-The ingester is a modular component. Anything that can retrieve the necessary data and put it into storage can fulfill this role. Currently, the only ingester available communicated to zcashd through RPCs and parses that raw block data. 
+The ingester is a modular component. Anything that can retrieve the necessary data and put it into storage can fulfill this role. Currently, the only ingester available communicated to verusd through RPCs and parses that raw block data.
 
 **How do I run it?**
 
@@ -44,10 +44,9 @@ Now clone this repo and start the ingester. The first run will start slow as Go 
 ```
 $ git clone https://github.com/davidldawes/lightwalletd
 $ cd lightwalletd
-$ go run cmd/ingest/main.go --conf-file <path_to_verus.conf> --db-path <path_to_sqllightdb>
+$ go run cmd/server/main.go --conf-file ~/.komodo/VRSC/VRSC.conf --log-file /logs/servermain.log
 ```
-
-To see the other command line options, run `go run cmd/ingest/main.go --help`.
+To see the other command line options, run `go run cmd/server/main.go --help`.
 
 ## Frontend
 

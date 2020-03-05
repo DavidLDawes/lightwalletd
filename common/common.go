@@ -18,9 +18,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// RawRequest points to the function to send a an RPC request to zcashd;
+// RawRequest points to the function to send a an RPC request to verusd;
 // in production, it points to btcsuite/btcd/rpcclient/rawrequest.go:RawRequest();
-// in unit tests it points to a function to mock RPCs to zcashd.
+// in unit tests it points to a function to mock RPCs to verusd (pending).
 var RawRequest func(method string, params []json.RawMessage) (json.RawMessage, error)
 
 // Sleep allows a request to time.Sleep() to be mocked for testing;
@@ -53,9 +53,9 @@ var (
 	})
 )
 
-// GetSaplingInfo returns the result of the getblockchaininfo RPC to zcashd
+// GetSaplingInfo returns the result of the getblockchaininfo RPC to verusd
 func GetSaplingInfo() (int, int, string, string) {
-	// This request must succeed or we can't go on; give zcashd time to start up
+	// This request must succeed or we can't go on; give verusd time to start up
 	var f interface{}
 	GetSaplingInfoProcessed.Inc()
 	retryCount := 0
@@ -78,7 +78,7 @@ func GetSaplingInfo() (int, int, string, string) {
 			GetSaplingInfoErrors.Inc()
 			Log.WithFields(logrus.Fields{
 				"timeouts": retryCount,
-			}).Fatal("unable to issue getblockchaininfo RPC call to zcashd node")
+			}).Fatal("unable to issue getblockchaininfo RPC call to verusd node")
 		}
 		Log.WithFields(logrus.Fields{
 			"error": rpcErr.Error(),
@@ -127,7 +127,7 @@ func getBlockFromRPC(height int) (*walletrpc.CompactBlock, error) {
 	// For some reason, the error responses are not JSON
 	if rpcErr != nil {
 		getBlockFromRPCErrors.Inc()
-		// Check to see if we are requesting a height the zcashd doesn't have yet
+		// Check to see if we are requesting a height the verusd doesn't have yet
 		if (strings.Split(rpcErr.Error(), ":"))[0] == "-8" {
 			return nil, nil
 		}
@@ -210,7 +210,7 @@ func BlockIngestor(c *BlockCache, height int, rep int) {
 					BlockIngestorErrors.Inc()
 					Log.WithFields(logrus.Fields{
 						"timeouts": retryCount,
-					}).Fatal("unable to issue RPC call to zcashd node")
+					}).Fatal("unable to issue RPC call to verusd node")
 				}
 			}
 			// We're up to date in our polling; wait for a new block
@@ -275,7 +275,7 @@ var (
 )
 
 // GetBlock returns the compact block at the requested height, first by querying
-// the cache, then, if not found, will request the block from zcashd. It returns
+// the cache, then, if not found, will request the block from verusd. It returns
 // nil if no block exists at this height.
 func GetBlock(cache *BlockCache, height int) (*walletrpc.CompactBlock, error) {
 	GetBlockProcessed.Inc()
@@ -285,7 +285,7 @@ func GetBlock(cache *BlockCache, height int) (*walletrpc.CompactBlock, error) {
 		return block, nil
 	}
 
-	// Not in the cache, ask zcashd
+	// Not in the cache, ask verusd
 	block, err := getBlockFromRPC(height)
 	if err != nil {
 		GetBlockErrors.Inc()
