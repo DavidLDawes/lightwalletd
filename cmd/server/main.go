@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"net"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -16,8 +15,6 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/reflection"
-
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/asherda/lightwalletd/common"
 	"github.com/asherda/lightwalletd/frontend"
@@ -160,10 +157,6 @@ func main() {
 			os.Exit(1)
 		}
 	}
-
-	// /metrics endpoint, set Prometheus up to collect metrics from this.
-	http.Handle("/metrics", promhttp.Handler())
-	http.ListenAndServe(":2112", nil)
 
 	// gRPC initialization
 	var server *grpc.Server

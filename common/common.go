@@ -149,7 +149,7 @@ func BlockIngestor(c *BlockCache, height int, rep int) {
 		}
 
 		// Check for reorgs once we have inital block hash from startup
-		if c.LatestHash != nil && !bytes.Equal(block.PrevHash, c.LatestHash) {
+		if c.LatestHash != nil && !bytes.Equal(block.PrevHash, c.LatestHash) && false {
 			// This must back up at least 1, but it's arbitrary, any value
 			// will work; this is probably a good balance.
 			height = c.Reorg(height - 2)
@@ -218,4 +218,173 @@ func displayHash(hash []byte) string {
 		rhash[i], rhash[j] = rhash[j], rhash[i]
 	}
 	return hex.EncodeToString(rhash)
+}
+
+// Identity
+
+// Registers a name commitment, which is required as a source for the name to be used when registering an identity. The name commitment hides the name itself
+// while ensuring that the miner who mines in the registration cannot front-run the name unless they have also registered a name commitment for the same name or
+// are willing to forfeit the offer of payment for the chance that a commitment made now will allow them to register the name in the future.
+func RegisterNameCommitment(request *walletrpc.RegisterNameCommitmentRequest) (response *walletrpc.RegisterNameCommitmentResponse, err error) {
+	paramCount := 2
+	if request.Referralidentity != "" {
+		paramCount = 3
+	}
+	params := make([]json.RawMessage, paramCount)
+	params[0] = json.RawMessage("\"" + request.GetName() + "\"")
+	params[1] = json.RawMessage("\"" + request.GetControllingaddress() + "\"")
+	if request.Referralidentity != "" {
+		params[2] = json.RawMessage("\"" + request.GetReferralidentity() + "\"")
+	}
+	result, rpcErr := RawRequest("registernamecommitment", params)
+
+	// For some reason, the error responses are not JSON
+	if rpcErr != nil {
+		return nil, rpcErr
+	}
+
+	err = json.Unmarshal(result, &response)
+	if err != nil {
+		return nil, errors.Wrap(err, "error reading JSON response")
+	}
+
+	return response, nil
+}
+
+func RegisterIdentity(request *walletrpc.RegisterIdentityRequest) (response *walletrpc.RegisterIdentityResponse, err error) {
+
+	params := make([]json.RawMessage, 1)
+	requestBytes, err := json.Marshal(&request)
+	params[0] = json.RawMessage(string(requestBytes))
+	if err != nil {
+		return nil, errors.Wrap(err, "error reading request")
+	}
+	result, rpcErr := RawRequest("registeridentity", params)
+
+	if rpcErr != nil {
+		return nil, rpcErr
+	}
+
+	var txid string
+	err = json.Unmarshal(result, &txid)
+	if err != nil {
+		return nil, errors.Wrap(err, "error reading JSON response")
+	}
+	return &walletrpc.RegisterIdentityResponse{
+		Txid: txid,
+	}, nil
+}
+
+func RevokeIdentity(request *walletrpc.RevokeIdentityRequest) (response *walletrpc.RevokeIdentityResponse, err error) {
+
+	params := make([]json.RawMessage, 1)
+	params[0] = json.RawMessage("\"" + request.GetIdentity() + "\"")
+	result, rpcErr := RawRequest("revokeidentity", params)
+
+	if rpcErr != nil {
+		return nil, rpcErr
+	}
+
+	var txid string
+	err = json.Unmarshal(result, txid)
+	if err != nil {
+		return nil, errors.Wrap(err, "error reading JSON response")
+	}
+
+	return &walletrpc.RevokeIdentityResponse{
+		Txid: txid,
+	}, nil
+}
+
+func RecoverIdentity(request *walletrpc.RecoverIdentityRequest) (response *walletrpc.RecoverIdentityResponse, err error) {
+
+	params := make([]json.RawMessage, 1)
+	requestBytes, err := json.Marshal(request.GetIdentity())
+	params[0] = json.RawMessage(string(requestBytes))
+
+	if err != nil {
+		return nil, errors.Wrap(err, "error reading request")
+	}
+
+	result, rpcErr := RawRequest("recoveridentity", params)
+
+	if rpcErr != nil {
+		return nil, rpcErr
+	}
+
+	var txid string
+	err = json.Unmarshal(result, txid)
+	if err != nil {
+		return nil, errors.Wrap(err, "error reading JSON response")
+	}
+
+	return &walletrpc.RecoverIdentityResponse{
+		Txid: txid,
+	}, nil
+}
+
+func UpdateIdentity(request *walletrpc.UpdateIdentityRequest) (*walletrpc.UpdateIdentityResponse, error) {
+
+	params := make([]json.RawMessage, 1)
+	requestBytes, err := json.Marshal(request.GetIdentity())
+	params[0] = json.RawMessage(string(requestBytes))
+
+	result, rpcErr := RawRequest("updateidentity", params)
+
+	if rpcErr != nil {
+		return nil, rpcErr
+	}
+
+	response := &walletrpc.UpdateIdentityResponse{}
+	err = json.Unmarshal(result, response.Txid)
+	if err != nil {
+		return nil, errors.Wrap(err, "error reading JSON response")
+	}
+
+	return response, nil
+}
+
+func GetIdentity(request *walletrpc.GetIdentityRequest) (*walletrpc.GetIdentityResponse, error) {
+
+	params := make([]json.RawMessage, 1)
+	params[0] = json.RawMessage("\"" + request.GetIdentity() + "\"")
+	result, rpcErr := RawRequest("getidentity", params)
+
+	if rpcErr != nil {
+		return nil, rpcErr
+	}
+
+	response := &walletrpc.GetIdentityResponse{}
+	err := json.Unmarshal(result, &response.Identityinfo)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "error reading JSON response")
+	}
+
+	return response, nil
+}
+
+func VerifyMessage(request *walletrpc.VerifyMessageRequest) (*walletrpc.VerifyMessageResponse, error) {
+	params := make([]json.RawMessage, 4)
+	params[0] = json.RawMessage("\"" + request.Signer + "\"")
+	params[1] = json.RawMessage("\"" + request.Signature + "\"")
+	params[2] = json.RawMessage("\"" + request.Message + "\"")
+	params[3] = json.RawMessage("\"" + strconv.FormatBool(request.Checklatest) + "\"")
+
+	result, rpcErr := RawRequest("verifymessage", params)
+
+	if rpcErr != nil {
+		return nil, rpcErr
+	}
+
+	var signatureisvalid bool
+	err := json.Unmarshal(result, &signatureisvalid)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "error reading JSON response")
+	}
+
+	return &walletrpc.VerifyMessageResponse{
+		Signatureisvalid: signatureisvalid,
+	}, err
 }
