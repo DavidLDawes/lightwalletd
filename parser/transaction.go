@@ -1,8 +1,6 @@
 package parser
 
 import (
-	"crypto/sha256"
-
 	"github.com/asherda/lightwalletd/parser/internal/bytestring"
 	"github.com/asherda/lightwalletd/walletrpc"
 	"github.com/pkg/errors"
@@ -27,7 +25,7 @@ type rawTransaction struct {
 
 // Txin format as described in https://en.bitcoin.it/wiki/Transaction
 type txIn struct {
-	// SHA256d of a previous (to-be-used) transaction
+	// VerusCoin Hash of a previous (to-be-used) transaction
 	PrevTxHash []byte
 
 	// Index of the to-be-used output in the previous tx
@@ -275,9 +273,7 @@ func (tx *Transaction) GetDisplayHash() []byte {
 		return tx.txId
 	}
 
-	// SHA256d
-	digest := sha256.Sum256(tx.rawBytes)
-	digest = sha256.Sum256(digest[:])
+    digest = C.wrapVerushash(tx.rawBytes)
 
 	// Reverse byte order
 	for i := 0; i < len(digest)/2; i++ {
@@ -291,8 +287,7 @@ func (tx *Transaction) GetDisplayHash() []byte {
 
 // GetEncodableHash returns the transaction hash in little-endian wire format order.
 func (tx *Transaction) GetEncodableHash() []byte {
-	digest := sha256.Sum256(tx.rawBytes)
-	digest = sha256.Sum256(digest[:])
+    digest = C.wrapVerushash(tx.rawBytes)
 	return digest[:]
 }
 
