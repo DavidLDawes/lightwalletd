@@ -16,6 +16,19 @@ const (
 	equihashSizeMainnet             = 1344 // size of a mainnet / testnet Equihash solution in bytes
 )
 
+//#cgo CPPFLAGS: -O2 -march=x86-64 -msse4 -msse2 -msse -msse4.1 -msse4.2 -msse3 -mavx -maes -fomit-frame-pointer -fPIC -Wno-builtin-declaration-mismatch -I/home/virtualsoundnw/lightwalletd/parser -I/home/virtualsoundnw/lightwalletd/parser/bitcoin/src -I/usr/include/c++/8-I/usr/include/x86_64-linux-gnu/c++/8 -I/home/virtualsoundnw/lightwalletd/parser/bitcoin/src  -pthread -w
+//#cgo CXXFLAGS: -O2 -march=x86-64 -msse2 -msse -msse4 -msse4.1 -msse4.2 -msse3 -mavx -maes -fomit-frame-pointer -fPIC -Wno-builtin-declaration-mismatch -I/home/virtualsoundnw/lightwalletd/parser -I/home/virtualsoundnw/lightwalletd/parser/bitcoin/src -I/usr/include/c++/8 -I/usr/include/x86_64-linux-gnu/c++/8 -I/home/virtualsoundnw/lightwalletd/parser/bitcoin/src  -pthread -w
+//#cgo CFLAGS: -O2 -march=x86-64 -msse2 -msse -msse4 -msse4.1 -msse4.2 -msse3 -mavx -maes -fomit-frame-pointer -fPIC -Wno-builtin-declaration-mismatch -I/home/virtualsoundnw/lightwalletd/parser -I/home/virtualsoundnw/lightwalletd/parser/bitcoin/src -I/usr/include/c++/8 -I/usr/include/x86_64-linux-gnu/c++/8 -I/home/virtualsoundnw/lightwalletd/parser/bitcoin/src  -pthread -w
+//char *  wrapVerushash(char * s)
+//{
+//  char * hash = wrapVerushash(s);
+//  return hash;
+//}
+import "C"
+
+// verushash_v2
+// verushash_v2b
+
 // A block header as defined in version 2018.0-beta-29 of the Zcash Protocol Spec.
 type rawBlockHeader struct {
 	// The block version number indicates which set of block validation rules
