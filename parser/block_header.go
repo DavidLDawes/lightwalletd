@@ -13,6 +13,7 @@ import (
 //#cgo CPPFLAGS: -O2 -march=x86-64 -msse4 -msse2 -msse -msse4.1 -msse4.2 -msse3 -mavx -maes -fomit-frame-pointer -fPIC -Wno-builtin-declaration-mismatch -I/home/virtualsoundnw/lightwalletd/parser -I/home/virtualsoundnw/lightwalletd/parser/bitcoin/src -I/usr/include/c++/8-I/usr/include/x86_64-linux-gnu/c++/8 -I/home/virtualsoundnw/lightwalletd/parser/bitcoin/src  -pthread -w
 //#cgo CXXFLAGS: -O2 -march=x86-64 -msse2 -msse -msse4 -msse4.1 -msse4.2 -msse3 -mavx -maes -fomit-frame-pointer -fPIC -Wno-builtin-declaration-mismatch -I/home/virtualsoundnw/lightwalletd/parser -I/home/virtualsoundnw/lightwalletd/parser/bitcoin/src -I/usr/include/c++/8 -I/usr/include/x86_64-linux-gnu/c++/8 -I/home/virtualsoundnw/lightwalletd/parser/bitcoin/src  -pthread -w
 //#cgo CFLAGS: -O2 -march=x86-64 -msse2 -msse -msse4 -msse4.1 -msse4.2 -msse3 -mavx -maes -fomit-frame-pointer -fPIC -Wno-builtin-declaration-mismatch -I/home/virtualsoundnw/lightwalletd/parser -I/home/virtualsoundnw/lightwalletd/parser/bitcoin/src -I/usr/include/c++/8 -I/usr/include/x86_64-linux-gnu/c++/8 -I/home/virtualsoundnw/lightwalletd/parser/bitcoin/src  -pthread -w
+//#cgo LDFLAGS: -L. -l libverus_crypto
 //char *  wrapVerushash(char * s)
 //{
 //  char * hash = verushash(s);
