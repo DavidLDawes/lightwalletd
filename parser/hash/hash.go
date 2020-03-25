@@ -14,6 +14,7 @@ package hash
 
 /*
 #define intgo swig_intgo
+#cgo LDFLAGS: -L/home/virtualsoundnw/lightwalletd -l:veruslib.so -L/usr/lib/x86_64-linux-gnu -l:libboost_system.so
 typedef void *swig_voidp;
 
 #include <stdint.h>
@@ -28,16 +29,36 @@ typedef struct { char *p; intgo n; } _gostring_;
 typedef struct { void* array; intgo len; intgo cap; } _goslice_;
 
 
+typedef _gostring_ swig_type_1;
+typedef _gostring_ swig_type_2;
+typedef _gostring_ swig_type_3;
+typedef _gostring_ swig_type_4;
+typedef _gostring_ swig_type_5;
+typedef _gostring_ swig_type_6;
+typedef _gostring_ swig_type_7;
+typedef _gostring_ swig_type_8;
+typedef _gostring_ swig_type_9;
+typedef _gostring_ swig_type_10;
+typedef _gostring_ swig_type_11;
+typedef _gostring_ swig_type_12;
+typedef _gostring_ swig_type_13;
+typedef _gostring_ swig_type_14;
+typedef _gostring_ swig_type_15;
+typedef _gostring_ swig_type_16;
 extern void _wrap_Swig_free_hash_9b6d006aa466106b(uintptr_t arg1);
 extern uintptr_t _wrap_Swig_malloc_hash_9b6d006aa466106b(swig_intgo arg1);
 extern uintptr_t _wrap_new_Hash_hash_9b6d006aa466106b(void);
 extern void _wrap_delete_Hash_hash_9b6d006aa466106b(uintptr_t arg1);
 extern void _wrap_Hash_result_set_hash_9b6d006aa466106b(uintptr_t arg1, swig_voidp arg2);
 extern swig_voidp _wrap_Hash_result_get_hash_9b6d006aa466106b(uintptr_t arg1);
-extern swig_voidp _wrap_Hash_verushash_hash_9b6d006aa466106b(uintptr_t arg1, uintptr_t arg2, swig_intgo arg3);
-extern swig_voidp _wrap_Hash_verushash_v2_hash_9b6d006aa466106b(uintptr_t arg1, uintptr_t arg2, swig_intgo arg3);
-extern swig_voidp _wrap_Hash_verushash_v2b_hash_9b6d006aa466106b(uintptr_t arg1, uintptr_t arg2, swig_intgo arg3);
-extern swig_voidp _wrap_Hash_verushash_v2b1_hash_9b6d006aa466106b(uintptr_t arg1, uintptr_t arg2, swig_intgo arg3);
+extern void _wrap_Hash_verushash_hash_9b6d006aa466106b(uintptr_t arg1, swig_type_1 arg2, swig_type_2 arg3, swig_intgo arg4);
+extern void _wrap_Hash_verushash_reverse_hash_9b6d006aa466106b(uintptr_t arg1, swig_type_3 arg2, swig_type_4 arg3, swig_intgo arg4);
+extern void _wrap_Hash_verushash_v2_hash_9b6d006aa466106b(uintptr_t arg1, swig_type_5 arg2, swig_type_6 arg3, swig_intgo arg4);
+extern void _wrap_Hash_verushash_v2_reverse_hash_9b6d006aa466106b(uintptr_t arg1, swig_type_7 arg2, swig_type_8 arg3, swig_intgo arg4);
+extern void _wrap_Hash_verushash_v2b_hash_9b6d006aa466106b(uintptr_t arg1, swig_type_9 arg2, swig_type_10 arg3, swig_intgo arg4);
+extern void _wrap_Hash_verushash_v2b_reverse_hash_9b6d006aa466106b(uintptr_t arg1, swig_type_11 arg2, swig_type_12 arg3, swig_intgo arg4);
+extern void _wrap_Hash_verushash_v2b1_hash_9b6d006aa466106b(uintptr_t arg1, swig_type_13 arg2, swig_type_14 arg3, swig_intgo arg4);
+extern void _wrap_Hash_verushash_v2b1_reverse_hash_9b6d006aa466106b(uintptr_t arg1, swig_type_15 arg2, swig_type_16 arg3, swig_intgo arg4);
 #undef intgo
 */
 import "C"
@@ -106,40 +127,116 @@ func (arg1 SwigcptrHash) GetResult() (_swig_ret *byte) {
 	return swig_r
 }
 
-func (arg1 SwigcptrHash) Verushash(arg2 uintptr, arg3 int) (_swig_ret *byte) {
-	var swig_r *byte
+func (arg1 SwigcptrHash) Verushash(arg2 string, arg3 string, arg4 int) {
 	_swig_i_0 := arg1
 	_swig_i_1 := arg2
 	_swig_i_2 := arg3
-	swig_r = (*byte)(C._wrap_Hash_verushash_hash_9b6d006aa466106b(C.uintptr_t(_swig_i_0), C.uintptr_t(_swig_i_1), C.swig_intgo(_swig_i_2)))
-	return swig_r
+	_swig_i_3 := arg4
+	C._wrap_Hash_verushash_hash_9b6d006aa466106b(C.uintptr_t(_swig_i_0), *(*C.swig_type_1)(unsafe.Pointer(&_swig_i_1)), *(*C.swig_type_2)(unsafe.Pointer(&_swig_i_2)), C.swig_intgo(_swig_i_3))
+	if Swig_escape_always_false {
+		Swig_escape_val = arg2
+	}
+	if Swig_escape_always_false {
+		Swig_escape_val = arg3
+	}
 }
 
-func (arg1 SwigcptrHash) Verushash_v2(arg2 uintptr, arg3 int) (_swig_ret *byte) {
-	var swig_r *byte
+func (arg1 SwigcptrHash) Verushash_reverse(arg2 string, arg3 string, arg4 int) {
 	_swig_i_0 := arg1
 	_swig_i_1 := arg2
 	_swig_i_2 := arg3
-	swig_r = (*byte)(C._wrap_Hash_verushash_v2_hash_9b6d006aa466106b(C.uintptr_t(_swig_i_0), C.uintptr_t(_swig_i_1), C.swig_intgo(_swig_i_2)))
-	return swig_r
+	_swig_i_3 := arg4
+	C._wrap_Hash_verushash_reverse_hash_9b6d006aa466106b(C.uintptr_t(_swig_i_0), *(*C.swig_type_3)(unsafe.Pointer(&_swig_i_1)), *(*C.swig_type_4)(unsafe.Pointer(&_swig_i_2)), C.swig_intgo(_swig_i_3))
+	if Swig_escape_always_false {
+		Swig_escape_val = arg2
+	}
+	if Swig_escape_always_false {
+		Swig_escape_val = arg3
+	}
 }
 
-func (arg1 SwigcptrHash) Verushash_v2b(arg2 uintptr, arg3 int) (_swig_ret *byte) {
-	var swig_r *byte
+func (arg1 SwigcptrHash) Verushash_v2(arg2 string, arg3 string, arg4 int) {
 	_swig_i_0 := arg1
 	_swig_i_1 := arg2
 	_swig_i_2 := arg3
-	swig_r = (*byte)(C._wrap_Hash_verushash_v2b_hash_9b6d006aa466106b(C.uintptr_t(_swig_i_0), C.uintptr_t(_swig_i_1), C.swig_intgo(_swig_i_2)))
-	return swig_r
+	_swig_i_3 := arg4
+	C._wrap_Hash_verushash_v2_hash_9b6d006aa466106b(C.uintptr_t(_swig_i_0), *(*C.swig_type_5)(unsafe.Pointer(&_swig_i_1)), *(*C.swig_type_6)(unsafe.Pointer(&_swig_i_2)), C.swig_intgo(_swig_i_3))
+	if Swig_escape_always_false {
+		Swig_escape_val = arg2
+	}
+	if Swig_escape_always_false {
+		Swig_escape_val = arg3
+	}
 }
 
-func (arg1 SwigcptrHash) Verushash_v2b1(arg2 uintptr, arg3 int) (_swig_ret *byte) {
-	var swig_r *byte
+func (arg1 SwigcptrHash) Verushash_v2_reverse(arg2 string, arg3 string, arg4 int) {
 	_swig_i_0 := arg1
 	_swig_i_1 := arg2
 	_swig_i_2 := arg3
-	swig_r = (*byte)(C._wrap_Hash_verushash_v2b1_hash_9b6d006aa466106b(C.uintptr_t(_swig_i_0), C.uintptr_t(_swig_i_1), C.swig_intgo(_swig_i_2)))
-	return swig_r
+	_swig_i_3 := arg4
+	C._wrap_Hash_verushash_v2_reverse_hash_9b6d006aa466106b(C.uintptr_t(_swig_i_0), *(*C.swig_type_7)(unsafe.Pointer(&_swig_i_1)), *(*C.swig_type_8)(unsafe.Pointer(&_swig_i_2)), C.swig_intgo(_swig_i_3))
+	if Swig_escape_always_false {
+		Swig_escape_val = arg2
+	}
+	if Swig_escape_always_false {
+		Swig_escape_val = arg3
+	}
+}
+
+func (arg1 SwigcptrHash) Verushash_v2b(arg2 string, arg3 string, arg4 int) {
+	_swig_i_0 := arg1
+	_swig_i_1 := arg2
+	_swig_i_2 := arg3
+	_swig_i_3 := arg4
+	C._wrap_Hash_verushash_v2b_hash_9b6d006aa466106b(C.uintptr_t(_swig_i_0), *(*C.swig_type_9)(unsafe.Pointer(&_swig_i_1)), *(*C.swig_type_10)(unsafe.Pointer(&_swig_i_2)), C.swig_intgo(_swig_i_3))
+	if Swig_escape_always_false {
+		Swig_escape_val = arg2
+	}
+	if Swig_escape_always_false {
+		Swig_escape_val = arg3
+	}
+}
+
+func (arg1 SwigcptrHash) Verushash_v2b_reverse(arg2 string, arg3 string, arg4 int) {
+	_swig_i_0 := arg1
+	_swig_i_1 := arg2
+	_swig_i_2 := arg3
+	_swig_i_3 := arg4
+	C._wrap_Hash_verushash_v2b_reverse_hash_9b6d006aa466106b(C.uintptr_t(_swig_i_0), *(*C.swig_type_11)(unsafe.Pointer(&_swig_i_1)), *(*C.swig_type_12)(unsafe.Pointer(&_swig_i_2)), C.swig_intgo(_swig_i_3))
+	if Swig_escape_always_false {
+		Swig_escape_val = arg2
+	}
+	if Swig_escape_always_false {
+		Swig_escape_val = arg3
+	}
+}
+
+func (arg1 SwigcptrHash) Verushash_v2b1(arg2 string, arg3 string, arg4 int) {
+	_swig_i_0 := arg1
+	_swig_i_1 := arg2
+	_swig_i_2 := arg3
+	_swig_i_3 := arg4
+	C._wrap_Hash_verushash_v2b1_hash_9b6d006aa466106b(C.uintptr_t(_swig_i_0), *(*C.swig_type_13)(unsafe.Pointer(&_swig_i_1)), *(*C.swig_type_14)(unsafe.Pointer(&_swig_i_2)), C.swig_intgo(_swig_i_3))
+	if Swig_escape_always_false {
+		Swig_escape_val = arg2
+	}
+	if Swig_escape_always_false {
+		Swig_escape_val = arg3
+	}
+}
+
+func (arg1 SwigcptrHash) Verushash_v2b1_reverse(arg2 string, arg3 string, arg4 int) {
+	_swig_i_0 := arg1
+	_swig_i_1 := arg2
+	_swig_i_2 := arg3
+	_swig_i_3 := arg4
+	C._wrap_Hash_verushash_v2b1_reverse_hash_9b6d006aa466106b(C.uintptr_t(_swig_i_0), *(*C.swig_type_15)(unsafe.Pointer(&_swig_i_1)), *(*C.swig_type_16)(unsafe.Pointer(&_swig_i_2)), C.swig_intgo(_swig_i_3))
+	if Swig_escape_always_false {
+		Swig_escape_val = arg2
+	}
+	if Swig_escape_always_false {
+		Swig_escape_val = arg3
+	}
 }
 
 type Hash interface {
@@ -147,10 +244,14 @@ type Hash interface {
 	SwigIsHash()
 	SetResult(arg2 *byte)
 	GetResult() (_swig_ret *byte)
-	Verushash(arg2 uintptr, arg3 int) (_swig_ret *byte)
-	Verushash_v2(arg2 uintptr, arg3 int) (_swig_ret *byte)
-	Verushash_v2b(arg2 uintptr, arg3 int) (_swig_ret *byte)
-	Verushash_v2b1(arg2 uintptr, arg3 int) (_swig_ret *byte)
+	Verushash(arg2 string, arg3 string, arg4 int)
+	Verushash_reverse(arg2 string, arg3 string, arg4 int)
+	Verushash_v2(arg2 string, arg3 string, arg4 int)
+	Verushash_v2_reverse(arg2 string, arg3 string, arg4 int)
+	Verushash_v2b(arg2 string, arg3 string, arg4 int)
+	Verushash_v2b_reverse(arg2 string, arg3 string, arg4 int)
+	Verushash_v2b1(arg2 string, arg3 string, arg4 int)
+	Verushash_v2b1_reverse(arg2 string, arg3 string, arg4 int)
 }
 
 

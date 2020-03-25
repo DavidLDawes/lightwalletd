@@ -6,9 +6,18 @@ import (
 	"log"
 	"math/big"
 
+	"github.com/asherda/lightwalletd/parser/hash"
 	"github.com/asherda/lightwalletd/parser/internal/bytestring"
 	"github.com/pkg/errors"
 )
+/*
+#cgo CPPFLAGS: -O2 -march=x86-64 -msse4 -msse2 -msse -msse4.1 -msse4.2 -msse3 -mavx -maes -fomit-frame-pointer -fPIC -Wno-builtin-declaration-mismatch -I/home/virtualsoundnw/lightwalletd/parser/hash -I/usr/include/c++/8-I/usr/include/x86_64-linux-gnu/c++/8  -pthread -w
+#cgo CXXFLAGS: -O2 -march=x86-64 -msse2 -msse -msse4 -msse4.1 -msse4.2 -msse3 -mavx -maes -fomit-frame-pointer -fPIC -Wno-builtin-declaration-mismatch -I/home/virtualsoundnw/lightwalletd/parser/hash -I/usr/include/c++/8 -I/usr/include/x86_64-linux-gnu/c++/8  -pthread -w
+#cgo CFLAGS: -O2 -march=x86-64 -msse2 -msse -msse4 -msse4.1 -msse4.2 -msse3 -mavx -maes -fomit-frame-pointer -fPIC -Wno-builtin-declaration-mismatch -I/home/virtualsoundnw/lightwalletd/parser/hash -I/usr/include/c++/8 -I/usr/include/x86_64-linux-gnu/c++/8  -pthread -w
+#include <stdint.h>
+#include <stdlib.h>
+*/
+import "C"
 
 const (
 	serBlockHeaderMinusEquihashSize = 140  // size of a serialized block header minus the Equihash solution
@@ -198,20 +207,13 @@ func (hdr *BlockHeader) GetDisplayHash() []byte {
 		return nil
 	}
 
-	h := NewHash()
-	defer DeleteHash(h)
+	h := hash.NewHash()
+	defer hash.DeleteHash(h)
+	pHash := "12345678901234567890123456789012"
 	// Use the Wrap object
-	inputtohash := C.CString(serializedHeader)
-	defer C.free(unsafe.Pointer(inputtohash), len(serializedHeader))
-	digest := h.verushash(inputtohash, len(serializedHeader))
+	h.Verushash_reverse(pHash, string(serializedHeader), len(string(serializedHeader)))
 
-	// Reverse byte order
-	for i := 0; i < len(digest)/2; i++ {
-		j := len(digest) - 1 - i
-		digest[i], digest[j] = digest[j], digest[i]
-	}
-
-	hdr.cachedHash = digest[:]
+	hdr.cachedHash = []byte(pHash)
 	return hdr.cachedHash
 }
 
@@ -223,18 +225,13 @@ func (hdr *BlockHeader) GetEncodableHash() []byte {
 		log.Fatalf("error marshaling block header: %v", err)
 		return nil
 	}
-/*
-	o := NewHash()
-	defer DeleteHash(o)
-	// get input as a C string
-	inputtohash := C.CString(serializedHeader)
-	defer C.free(unsafe.Pointer(inputtohash))
-	// Use the Wrap object
-	digest := o.verushash(inputtohash, len(serializedHeader))
-*/
-    digest := serializedHeader
 
-	return digest[:]
+	h := hash.NewHash()
+	defer hash.DeleteHash(h)
+	pHash := "12345678901234567890123456789012"
+	// Use the Wrap object
+	h.Verushash(pHash, string(serializedHeader), len(string(serializedHeader)))
+    return []byte(pHash)
 }
 
 func (hdr *BlockHeader) GetDisplayPrevHash() []byte {

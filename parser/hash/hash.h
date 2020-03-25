@@ -7,6 +7,7 @@
 #ifndef _HASH_H_
 #define _HASH_H_/* File : hash.h */
 
+#include <stdio.h>
 class Hash {
 public:
   Hash() {
@@ -17,9 +18,13 @@ public:
   }
 
   unsigned char *result;
-  unsigned char * verushash(const void * bytes, int length);
-  unsigned char * verushash_v2(const void * bytes, int length);
-  unsigned char * verushash_v2b(const void * bytes, int length);
-  unsigned char * verushash_v2b1(const void * bytes, int length);
+  void verushash(char * hash_result, const char * bytes, int length);
+  void verushash_reverse(char * hash_result, const char * bytes, int length);
+  void verushash_v2(char * hash_result, const char * bytes, int length);
+  void verushash_v2_reverse(char * hash_result, const char * bytes, int length);
+  void verushash_v2b(char * hash_result, const char * bytes, int length);
+  void verushash_v2b_reverse(char * hash_result, const char * bytes, int length);
+  void verushash_v2b1(char * hash_result, const char * bytes, int length);
+  void verushash_v2b1_reverse(char * hash_result, const char * bytes, int length);
 };
 #endif

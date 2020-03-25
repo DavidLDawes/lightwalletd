@@ -1,10 +1,19 @@
 package parser
 
 import (
+	"github.com/asherda/lightwalletd/parser/hash"
 	"github.com/asherda/lightwalletd/parser/internal/bytestring"
 	"github.com/asherda/lightwalletd/walletrpc"
 	"github.com/pkg/errors"
 )
+
+/*
+#cgo LDFLAGS: -L/home/virtualsoundnw/lightwalletd -l:veruslib.so -L/usr/lib/x86_64-linux-gnu -l:libboost_system.so
+#cgo CPPFLAGS: -O2 -march=x86-64 -msse4 -msse2 -msse -msse4.1 -msse4.2 -msse3 -mavx -maes -fomit-frame-pointer -fPIC -Wno-builtin-declaration-mismatch -I/home/virtualsoundnw/lightwalletd/parser/hash -I/usr/include/c++/8-I/usr/include/x86_64-linux-gnu/c++/8  -pthread -w
+#cgo CXXFLAGS: -O2 -march=x86-64 -msse2 -msse -msse4 -msse4.1 -msse4.2 -msse3 -mavx -maes -fomit-frame-pointer -fPIC -Wno-builtin-declaration-mismatch -I/home/virtualsoundnw/lightwalletd/parser/hash -I/usr/include/c++/8 -I/usr/include/x86_64-linux-gnu/c++/8  -pthread -w
+#cgo CFLAGS: -O2 -march=x86-64 -msse2 -msse -msse4 -msse4.1 -msse4.2 -msse3 -mavx -maes -fomit-frame-pointer -fPIC -Wno-builtin-declaration-mismatch -I/home/virtualsoundnw/lightwalletd/parser/hash -I/usr/include/c++/8 -I/usr/include/x86_64-linux-gnu/c++/8  -pthread -w
+*/
+import "C"
 
 type rawTransaction struct {
 	fOverwintered      bool
@@ -273,30 +282,24 @@ func (tx *Transaction) GetDisplayHash() []byte {
 		return tx.txId
 	}
 
-	o := NewHash()
-	defer DeleteHash(o)
+	h := hash.NewHash()
+	defer hash.DeleteHash(h)
+	pHash := "12345678901234567890123456789012"
 	// Use the Wrap object
-	digest := o.verushash(tx.rawTransaction, len(tx.rawBytes))
-
-	// Reverse byte order
-	for i := 0; i < len(digest)/2; i++ {
-		j := len(digest) - 1 - i
-		digest[i], digest[j] = digest[j], digest[i]
-	}
-
-	tx.txId = digest[:]
+	h.Verushash_reverse(pHash, string(tx.rawBytes), len(tx.rawBytes))
+	tx.txId = []byte(pHash)
 	return tx.txId
 }
 
 // GetEncodableHash returns the transaction hash in little-endian wire format order.
 func (tx *Transaction) GetEncodableHash() []byte {
 
-	o := NewHash()
-	defer DeleteHash(o)
+	h := hash.NewHash()
+	defer hash.DeleteHash(h)
+	pHash := "12345678901234567890123456789012"
 	// Use the Wrap object
-	digest := o.verushash(tx.rawTransaction, len(tx.rawBytes))
-
-	return digest[:]
+	h.Verushash(pHash, string(tx.rawBytes), len(tx.rawBytes))
+    return []byte(pHash)
 }
 
 func (tx *Transaction) Bytes() []byte {
