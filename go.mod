@@ -4,7 +4,8 @@ go 1.12
 
 require (
 	github.com/btcsuite/btcd v0.20.1-beta
-	github.com/golang/protobuf v1.3.2
+	github.com/fullstorydev/grpcurl v1.5.0 // indirect
+	github.com/golang/protobuf v1.3.5
 	github.com/google/go-cmp v0.4.0 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20191106031601-ce3c9ade29de // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
@@ -19,7 +20,7 @@ require (
 	golang.org/x/sys v0.0.0-20200122134326-e047566fdf82 // indirect
 	golang.org/x/text v0.3.2 // indirect
 	google.golang.org/genproto v0.0.0-20191115221424-83cc0476cb11 // indirect
-	google.golang.org/grpc v1.27.1
+	google.golang.org/grpc v1.28.0
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/ini.v1 v1.51.0
 	gopkg.in/yaml.v2 v2.2.5 // indirect

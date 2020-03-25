@@ -1,12 +1,9 @@
 # /************************************************************************
  #  File: Makefile
- #  Author: mdr0id
- #  Date: 7/16/2019
+ #  Author: David Dawes, cloned form mdr0id
+ #  Date: 3/24/2020
  #  Description:  Used for local and container dev in CI deployments
  #  Usage: make <target_name>
- #
- #  Known bugs/missing features:
- #  1. make msan is not stable as of 9/20/2019
  #
  # ************************************************************************/
 PROJECT_NAME := "lightwalletd"
@@ -15,6 +12,8 @@ GO_TEST_FILES := $(shell find . -name '*_test.go' -type f | rev | cut -d "/" -f2
 GO_BUILD_FILES := $(shell find . -name 'main.go')
 
 PWD := $(shell pwd)
+
+
 
 .PHONY: all dep build clean test coverage coverhtml lint doc simpledoc
 

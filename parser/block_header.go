@@ -10,32 +10,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-//#cgo CPPFLAGS: -O2 -march=x86-64 -msse4 -msse2 -msse -msse4.1 -msse4.2 -msse3 -mavx -maes -fomit-frame-pointer -fPIC -Wno-builtin-declaration-mismatch -I/home/virtualsoundnw/lightwalletd/parser -I/home/virtualsoundnw/lightwalletd/parser/bitcoin/src -I/usr/include/c++/8-I/usr/include/x86_64-linux-gnu/c++/8 -I/home/virtualsoundnw/lightwalletd/parser/bitcoin/src  -pthread -w
-//#cgo CXXFLAGS: -O2 -march=x86-64 -msse2 -msse -msse4 -msse4.1 -msse4.2 -msse3 -mavx -maes -fomit-frame-pointer -fPIC -Wno-builtin-declaration-mismatch -I/home/virtualsoundnw/lightwalletd/parser -I/home/virtualsoundnw/lightwalletd/parser/bitcoin/src -I/usr/include/c++/8 -I/usr/include/x86_64-linux-gnu/c++/8 -I/home/virtualsoundnw/lightwalletd/parser/bitcoin/src  -pthread -w
-//#cgo CFLAGS: -O2 -march=x86-64 -msse2 -msse -msse4 -msse4.1 -msse4.2 -msse3 -mavx -maes -fomit-frame-pointer -fPIC -Wno-builtin-declaration-mismatch -I/home/virtualsoundnw/lightwalletd/parser -I/home/virtualsoundnw/lightwalletd/parser/bitcoin/src -I/usr/include/c++/8 -I/usr/include/x86_64-linux-gnu/c++/8 -I/home/virtualsoundnw/lightwalletd/parser/bitcoin/src  -pthread -w
-//#cgo LDFLAGS: -L. -l libverus_crypto
-//char *  wrapVerushash(char * s)
-//{
-//  char * hash = verushash(s);
-//  return hash;
-//}
-//char *  wrapVerushash_v2(char * s)
-//{
-//  char * hash = verushash_v2(s);
-//  return hash;
-//}
-//char *  wrapVerushash_v2b(char * s)
-//{
-//  char * hash = verushash_v2b(s);
-//  return hash;
-//}
-//char *  wrapVerushash_v2b1(char * s)
-//{
-//  char * hash = verushash_v2b1(s);
-//  return hash;
-//}
-import "C"
-
 const (
 	serBlockHeaderMinusEquihashSize = 140  // size of a serialized block header minus the Equihash solution
 	equihashSizeMainnet             = 1344 // size of a mainnet / testnet Equihash solution in bytes
@@ -224,7 +198,12 @@ func (hdr *BlockHeader) GetDisplayHash() []byte {
 		return nil
 	}
 
-    digest = C.wrapVerushash(serializedHeader)
+	h := NewHash()
+	defer DeleteHash(h)
+	// Use the Wrap object
+	inputtohash := C.CString(serializedHeader)
+	defer C.free(unsafe.Pointer(inputtohash), len(serializedHeader))
+	digest := h.verushash(inputtohash, len(serializedHeader))
 
 	// Reverse byte order
 	for i := 0; i < len(digest)/2; i++ {
@@ -244,8 +223,17 @@ func (hdr *BlockHeader) GetEncodableHash() []byte {
 		log.Fatalf("error marshaling block header: %v", err)
 		return nil
 	}
+/*
+	o := NewHash()
+	defer DeleteHash(o)
+	// get input as a C string
+	inputtohash := C.CString(serializedHeader)
+	defer C.free(unsafe.Pointer(inputtohash))
+	// Use the Wrap object
+	digest := o.verushash(inputtohash, len(serializedHeader))
+*/
+    digest := serializedHeader
 
-    digest = C.wrapVerushash(serializedHeader)
 	return digest[:]
 }
 

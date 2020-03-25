@@ -273,7 +273,10 @@ func (tx *Transaction) GetDisplayHash() []byte {
 		return tx.txId
 	}
 
-    digest = C.wrapVerushash(tx.rawBytes)
+	o := NewHash()
+	defer DeleteHash(o)
+	// Use the Wrap object
+	digest := o.verushash(tx.rawTransaction, len(tx.rawBytes))
 
 	// Reverse byte order
 	for i := 0; i < len(digest)/2; i++ {
@@ -287,7 +290,12 @@ func (tx *Transaction) GetDisplayHash() []byte {
 
 // GetEncodableHash returns the transaction hash in little-endian wire format order.
 func (tx *Transaction) GetEncodableHash() []byte {
-    digest = C.wrapVerushash(tx.rawBytes)
+
+	o := NewHash()
+	defer DeleteHash(o)
+	// Use the Wrap object
+	digest := o.verushash(tx.rawTransaction, len(tx.rawBytes))
+
 	return digest[:]
 }
 

@@ -1,12 +1,9 @@
-
-[![pipeline status](https://gitlab.com/zcash/lightwalletd/badges/master/pipeline.svg)](https://gitlab.com/zcash/lightwalletd/commits/master)
-[![coverage report](https://gitlab.com/zcash/lightwalletd/badges/master/coverage.svg)](https://gitlab.com/zcash/lightwalletd/commits/master)
-
 # Disclaimer
 This is an alpha build and is currently under active development. Please be advised of the following:
 
 - This code currently is not audited by an external security auditor, use it at your own risk
 - The code **has not been subjected to thorough review** by engineers at the Electric Coin Company
+- The ZCash version was forked to ceate this VerusHash version
 - We **are actively changing** the codebase and adding features where/when needed
 
 🔒 Security Warnings
@@ -28,6 +25,18 @@ To view status of [CI pipeline](https://gitlab.com/mdr0id/lightwalletd/pipelines
 To view detailed [Codecov](https://codecov.io/gh/zcash/lightwalletd) report
 
 Documentation for lightwalletd clients (the gRPC interface) is in `docs/rtd/index.html`. The current version of this file corresponds to the two `.proto` files; if you change these files, please regenerate the documentation by running `make doc`, which requires docker to be installed. 
+# VerusCoin support
+Using swig to get to the C++ VerusCoin hash implementations.
+
+You can generate the hash.go and hash_wrap.cxx files from the hash/hash.i file via this swig command: 
+```
+ swig -go  -intgosize 64 -c++ -cgo -Wall -v parser/hash/hash.i
+```
+
+Once that has completed a simple make comand should assemble everything.
+
+Currently broken as we work out how to get the VerusCoin code included as a lib.
+
 # Local/Developer docker-compose Usage
 
 [docs/docker-compose-setup.md](./docs/docker-compose-setup.md)
