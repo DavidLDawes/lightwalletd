@@ -6,7 +6,7 @@ import (
 	"log"
 	"math/big"
 
-	"github.com/asherda/lightwalletd/parser/hash"
+	"github.com/asherda/lightwalletd/parser/gohash"
 	"github.com/asherda/lightwalletd/parser/internal/bytestring"
 	"github.com/pkg/errors"
 )
@@ -207,11 +207,10 @@ func (hdr *BlockHeader) GetDisplayHash() []byte {
 		return nil
 	}
 
-	h := hash.NewHash()
-	defer hash.DeleteHash(h)
-	pHash := "12345678901234567890123456789012"
+	h := gohash.NewGohash()
+	defer gohash.DeleteGohash(h)
 	// Use the Wrap object
-	h.Verushash_reverse(pHash, string(serializedHeader), len(string(serializedHeader)))
+	pHash := h.Verushash_reverse(string(serializedHeader), len(string(serializedHeader)))
 
 	hdr.cachedHash = []byte(pHash)
 	return hdr.cachedHash
@@ -226,11 +225,10 @@ func (hdr *BlockHeader) GetEncodableHash() []byte {
 		return nil
 	}
 
-	h := hash.NewHash()
-	defer hash.DeleteHash(h)
-	pHash := "12345678901234567890123456789012"
+	h := gohash.NewGohash()
+	defer gohash.DeleteGohash(h)
 	// Use the Wrap object
-	h.Verushash(pHash, string(serializedHeader), len(string(serializedHeader)))
+	pHash := h.Verushash(string(serializedHeader), len(string(serializedHeader)))
     return []byte(pHash)
 }
 
