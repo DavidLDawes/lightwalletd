@@ -47,10 +47,9 @@ typedef _gostring_ swig_type_15;
 typedef _gostring_ swig_type_16;
 extern void _wrap_Swig_free_hash_9b6d006aa466106b(uintptr_t arg1);
 extern uintptr_t _wrap_Swig_malloc_hash_9b6d006aa466106b(swig_intgo arg1);
-extern uintptr_t _wrap_new_Hash_hash_9b6d006aa466106b(void);
-extern void _wrap_delete_Hash_hash_9b6d006aa466106b(uintptr_t arg1);
-extern void _wrap_Hash_result_set_hash_9b6d006aa466106b(uintptr_t arg1, swig_voidp arg2);
-extern swig_voidp _wrap_Hash_result_get_hash_9b6d006aa466106b(uintptr_t arg1);
+extern void _wrap_Hash_initialized_set_hash_9b6d006aa466106b(uintptr_t arg1, _Bool arg2);
+extern _Bool _wrap_Hash_initialized_get_hash_9b6d006aa466106b(uintptr_t arg1);
+extern void _wrap_Hash_initialize_hash_9b6d006aa466106b(uintptr_t arg1);
 extern void _wrap_Hash_verushash_hash_9b6d006aa466106b(uintptr_t arg1, swig_type_1 arg2, swig_type_2 arg3, swig_intgo arg4);
 extern void _wrap_Hash_verushash_reverse_hash_9b6d006aa466106b(uintptr_t arg1, swig_type_3 arg2, swig_type_4 arg3, swig_intgo arg4);
 extern void _wrap_Hash_verushash_v2_hash_9b6d006aa466106b(uintptr_t arg1, swig_type_5 arg2, swig_type_6 arg3, swig_intgo arg4);
@@ -59,13 +58,20 @@ extern void _wrap_Hash_verushash_v2b_hash_9b6d006aa466106b(uintptr_t arg1, swig_
 extern void _wrap_Hash_verushash_v2b_reverse_hash_9b6d006aa466106b(uintptr_t arg1, swig_type_11 arg2, swig_type_12 arg3, swig_intgo arg4);
 extern void _wrap_Hash_verushash_v2b1_hash_9b6d006aa466106b(uintptr_t arg1, swig_type_13 arg2, swig_type_14 arg3, swig_intgo arg4);
 extern void _wrap_Hash_verushash_v2b1_reverse_hash_9b6d006aa466106b(uintptr_t arg1, swig_type_15 arg2, swig_type_16 arg3, swig_intgo arg4);
+extern uintptr_t _wrap_new_Hash_hash_9b6d006aa466106b(void);
+extern void _wrap_delete_Hash_hash_9b6d006aa466106b(uintptr_t arg1);
 #undef intgo
 */
 import "C"
 
+import "syscall"
 import "unsafe"
-import _ "runtime/cgo"
 import "sync"
+
+
+type _ syscall.Sockaddr
+
+
 
 
 type _ unsafe.Pointer
@@ -103,28 +109,22 @@ func (p SwigcptrHash) Swigcptr() uintptr {
 func (p SwigcptrHash) SwigIsHash() {
 }
 
-func NewHash() (_swig_ret Hash) {
-	var swig_r Hash
-	swig_r = (Hash)(SwigcptrHash(C._wrap_new_Hash_hash_9b6d006aa466106b()))
-	return swig_r
-}
-
-func DeleteHash(arg1 Hash) {
-	_swig_i_0 := arg1.Swigcptr()
-	C._wrap_delete_Hash_hash_9b6d006aa466106b(C.uintptr_t(_swig_i_0))
-}
-
-func (arg1 SwigcptrHash) SetResult(arg2 *byte) {
+func (arg1 SwigcptrHash) SetInitialized(arg2 bool) {
 	_swig_i_0 := arg1
 	_swig_i_1 := arg2
-	C._wrap_Hash_result_set_hash_9b6d006aa466106b(C.uintptr_t(_swig_i_0), C.swig_voidp(_swig_i_1))
+	C._wrap_Hash_initialized_set_hash_9b6d006aa466106b(C.uintptr_t(_swig_i_0), C._Bool(_swig_i_1))
 }
 
-func (arg1 SwigcptrHash) GetResult() (_swig_ret *byte) {
-	var swig_r *byte
+func (arg1 SwigcptrHash) GetInitialized() (_swig_ret bool) {
+	var swig_r bool
 	_swig_i_0 := arg1
-	swig_r = (*byte)(C._wrap_Hash_result_get_hash_9b6d006aa466106b(C.uintptr_t(_swig_i_0)))
+	swig_r = (bool)(C._wrap_Hash_initialized_get_hash_9b6d006aa466106b(C.uintptr_t(_swig_i_0)))
 	return swig_r
+}
+
+func (arg1 SwigcptrHash) Initialize() {
+	_swig_i_0 := arg1
+	C._wrap_Hash_initialize_hash_9b6d006aa466106b(C.uintptr_t(_swig_i_0))
 }
 
 func (arg1 SwigcptrHash) Verushash(arg2 string, arg3 string, arg4 int) {
@@ -239,11 +239,23 @@ func (arg1 SwigcptrHash) Verushash_v2b1_reverse(arg2 string, arg3 string, arg4 i
 	}
 }
 
+func NewHash() (_swig_ret Hash) {
+	var swig_r Hash
+	swig_r = (Hash)(SwigcptrHash(C._wrap_new_Hash_hash_9b6d006aa466106b()))
+	return swig_r
+}
+
+func DeleteHash(arg1 Hash) {
+	_swig_i_0 := arg1.Swigcptr()
+	C._wrap_delete_Hash_hash_9b6d006aa466106b(C.uintptr_t(_swig_i_0))
+}
+
 type Hash interface {
 	Swigcptr() uintptr
 	SwigIsHash()
-	SetResult(arg2 *byte)
-	GetResult() (_swig_ret *byte)
+	SetInitialized(arg2 bool)
+	GetInitialized() (_swig_ret bool)
+	Initialize()
 	Verushash(arg2 string, arg3 string, arg4 int)
 	Verushash_reverse(arg2 string, arg3 string, arg4 int)
 	Verushash_v2(arg2 string, arg3 string, arg4 int)

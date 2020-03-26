@@ -10,14 +10,8 @@
 #include <stdio.h>
 class Hash {
 public:
-  Hash() {
-    result = new unsigned char[32];
-  }
-  virtual ~Hash() {
-    delete(result);
-  }
-
-  unsigned char *result;
+  bool initialized = false;
+  void initialize();
   void verushash(char * hash_result, const char * bytes, int length);
   void verushash_reverse(char * hash_result, const char * bytes, int length);
   void verushash_v2(char * hash_result, const char * bytes, int length);

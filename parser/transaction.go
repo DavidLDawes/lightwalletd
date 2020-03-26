@@ -283,11 +283,12 @@ func (tx *Transaction) GetDisplayHash() []byte {
 	}
 
 	h := hash.NewHash()
-	defer hash.DeleteHash(h)
+	h.Initialize();
 	pHash := "12345678901234567890123456789012"
 	// Use the Wrap object
 	h.Verushash_reverse(pHash, string(tx.rawBytes), len(tx.rawBytes))
 	tx.txId = []byte(pHash)
+	hash.DeleteHash(h)
 	return tx.txId
 }
 
@@ -295,10 +296,11 @@ func (tx *Transaction) GetDisplayHash() []byte {
 func (tx *Transaction) GetEncodableHash() []byte {
 
 	h := hash.NewHash()
-	defer hash.DeleteHash(h)
+	h.Initialize();
 	pHash := "12345678901234567890123456789012"
 	// Use the Wrap object
 	h.Verushash(pHash, string(tx.rawBytes), len(tx.rawBytes))
+	hash.DeleteHash(h)
     return []byte(pHash)
 }
 

@@ -11,6 +11,7 @@
 // source: parser/hash/hash.i
 
 #define SWIGMODULE hash
+#define SWIGGO_PREFIX go.hash
 
 #ifdef __cplusplus
 /* SwigValueWrapper is described in swig.swg */
@@ -172,58 +173,25 @@ typedef long long intgo;
 typedef unsigned long long uintgo;
 
 
-# if !defined(__clang__) && (defined(__i386__) || defined(__x86_64__))
-#   define SWIGSTRUCTPACKED __attribute__((__packed__, __gcc_struct__))
-# else
-#   define SWIGSTRUCTPACKED __attribute__((__packed__))
-# endif
-
-
 
 typedef struct { char *p; intgo n; } _gostring_;
 typedef struct { void* array; intgo len; intgo cap; } _goslice_;
 
 
 
-
-#define swiggo_size_assert_eq(x, y, name) typedef char name[(x-y)*(x-y)*-2+1];
-#define swiggo_size_assert(t, n) swiggo_size_assert_eq(sizeof(t), n, swiggo_sizeof_##t##_is_not_##n)
-
-swiggo_size_assert(char, 1)
-swiggo_size_assert(short, 2)
-swiggo_size_assert(int, 4)
-typedef long long swiggo_long_long;
-swiggo_size_assert(swiggo_long_long, 8)
-swiggo_size_assert(float, 4)
-swiggo_size_assert(double, 8)
+#define SWIGGO_GCCGO
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-extern void crosscall2(void (*fn)(void *, int), void *, int);
-extern char* _cgo_topofstack(void) __attribute__ ((weak));
-extern void _cgo_allocate(void *, int);
-extern void _cgo_panic(void *, int);
+extern void *_cgo_allocate(size_t);
+extern void _cgo_panic(const char *);
 #ifdef __cplusplus
 }
 #endif
 
-static char *_swig_topofstack() {
-  if (_cgo_topofstack) {
-    return _cgo_topofstack();
-  } else {
-    return 0;
-  }
-}
-
-static void _swig_gopanic(const char *p) {
-  struct {
-    const char *p;
-  } SWIGSTRUCTPACKED a;
-  a.p = p;
-  crosscall2(_cgo_panic, &a, (int) sizeof a);
-}
-
+#define _swig_goallocate _cgo_allocate
+#define _swig_gopanic _cgo_panic
 
 
 
@@ -269,49 +237,38 @@ void *_wrap_Swig_malloc_hash_9b6d006aa466106b(intgo _swig_go_0) {
 }
 
 
-Hash *_wrap_new_Hash_hash_9b6d006aa466106b() {
-  Hash *result = 0 ;
-  Hash *_swig_go_result;
+void _wrap_Hash_initialized_set_hash_9b6d006aa466106b(Hash *_swig_go_0, bool _swig_go_1) {
+  Hash *arg1 = (Hash *) 0 ;
+  bool arg2 ;
   
+  arg1 = *(Hash **)&_swig_go_0; 
+  arg2 = (bool)_swig_go_1; 
   
-  result = (Hash *)new Hash();
-  *(Hash **)&_swig_go_result = (Hash *)result; 
+  if (arg1) (arg1)->initialized = arg2;
+  
+}
+
+
+bool _wrap_Hash_initialized_get_hash_9b6d006aa466106b(Hash *_swig_go_0) {
+  Hash *arg1 = (Hash *) 0 ;
+  bool result;
+  bool _swig_go_result;
+  
+  arg1 = *(Hash **)&_swig_go_0; 
+  
+  result = (bool) ((arg1)->initialized);
+  _swig_go_result = result; 
   return _swig_go_result;
 }
 
 
-void _wrap_delete_Hash_hash_9b6d006aa466106b(Hash *_swig_go_0) {
+void _wrap_Hash_initialize_hash_9b6d006aa466106b(Hash *_swig_go_0) {
   Hash *arg1 = (Hash *) 0 ;
   
   arg1 = *(Hash **)&_swig_go_0; 
   
-  delete arg1;
+  (arg1)->initialize();
   
-}
-
-
-void _wrap_Hash_result_set_hash_9b6d006aa466106b(Hash *_swig_go_0, char *_swig_go_1) {
-  Hash *arg1 = (Hash *) 0 ;
-  unsigned char *arg2 = (unsigned char *) 0 ;
-  
-  arg1 = *(Hash **)&_swig_go_0; 
-  arg2 = *(unsigned char **)&_swig_go_1; 
-  
-  if (arg1) (arg1)->result = arg2;
-  
-}
-
-
-char *_wrap_Hash_result_get_hash_9b6d006aa466106b(Hash *_swig_go_0) {
-  Hash *arg1 = (Hash *) 0 ;
-  unsigned char *result = 0 ;
-  char *_swig_go_result;
-  
-  arg1 = *(Hash **)&_swig_go_0; 
-  
-  result = (unsigned char *) ((arg1)->result);
-  *(unsigned char **)&_swig_go_result = (unsigned char *)result; 
-  return _swig_go_result;
 }
 
 
@@ -520,6 +477,27 @@ void _wrap_Hash_verushash_v2b1_reverse_hash_9b6d006aa466106b(Hash *_swig_go_0, _
   
   free(arg2); 
   free(arg3); 
+}
+
+
+Hash *_wrap_new_Hash_hash_9b6d006aa466106b() {
+  Hash *result = 0 ;
+  Hash *_swig_go_result;
+  
+  
+  result = (Hash *)new Hash();
+  *(Hash **)&_swig_go_result = (Hash *)result; 
+  return _swig_go_result;
+}
+
+
+void _wrap_delete_Hash_hash_9b6d006aa466106b(Hash *_swig_go_0) {
+  Hash *arg1 = (Hash *) 0 ;
+  
+  arg1 = *(Hash **)&_swig_go_0; 
+  
+  delete arg1;
+  
 }
 
 

@@ -208,12 +208,13 @@ func (hdr *BlockHeader) GetDisplayHash() []byte {
 	}
 
 	h := hash.NewHash()
-	defer hash.DeleteHash(h)
+	h.Initialize()
 	pHash := "12345678901234567890123456789012"
 	// Use the Wrap object
 	h.Verushash_reverse(pHash, string(serializedHeader), len(string(serializedHeader)))
 
 	hdr.cachedHash = []byte(pHash)
+	hash.DeleteHash(h)
 	return hdr.cachedHash
 }
 
@@ -227,10 +228,11 @@ func (hdr *BlockHeader) GetEncodableHash() []byte {
 	}
 
 	h := hash.NewHash()
-	defer hash.DeleteHash(h)
+	h.Initialize()
 	pHash := "12345678901234567890123456789012"
 	// Use the Wrap object
 	h.Verushash(pHash, string(serializedHeader), len(string(serializedHeader)))
+    hash.DeleteHash(h)
     return []byte(pHash)
 }
 
