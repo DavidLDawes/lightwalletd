@@ -43,20 +43,24 @@ typedef _gostring_ swig_type_6;
 typedef _gostring_ swig_type_7;
 typedef _gostring_ swig_type_8;
 typedef _gostring_ swig_type_9;
+typedef _gostring_ swig_type_10;
+typedef _gostring_ swig_type_11;
 extern void _wrap_Swig_free_verushash_b5c2c4e4f55e7268(uintptr_t arg1);
 extern uintptr_t _wrap_Swig_malloc_verushash_b5c2c4e4f55e7268(swig_intgo arg1);
 extern void _wrap_Verushash_initialized_set_verushash_b5c2c4e4f55e7268(uintptr_t arg1, _Bool arg2);
 extern _Bool _wrap_Verushash_initialized_get_verushash_b5c2c4e4f55e7268(uintptr_t arg1);
 extern void _wrap_Verushash_initialize_verushash_b5c2c4e4f55e7268(uintptr_t arg1);
-extern void _wrap_Verushash_verushash_verushash_b5c2c4e4f55e7268(uintptr_t arg1, swig_type_1 arg2, swig_intgo arg3, uintptr_t arg4);
-extern void _wrap_Verushash_verushash_reverse_verushash_b5c2c4e4f55e7268(uintptr_t arg1, swig_type_2 arg2, swig_intgo arg3, uintptr_t arg4);
-extern void _wrap_Verushash_verushash_v2_verushash_b5c2c4e4f55e7268(uintptr_t arg1, swig_type_3 arg2, swig_intgo arg3, uintptr_t arg4);
-extern void _wrap_Verushash_verushash_v2_reverse_verushash_b5c2c4e4f55e7268(uintptr_t arg1, swig_type_4 arg2, swig_intgo arg3, uintptr_t arg4);
-extern void _wrap_Verushash_verushash_v2b_verushash_b5c2c4e4f55e7268(uintptr_t arg1, swig_type_5 arg2, swig_intgo arg3, uintptr_t arg4);
-extern void _wrap_Verushash_verushash_v2b_reverse_verushash_b5c2c4e4f55e7268(uintptr_t arg1, swig_type_6 arg2, swig_intgo arg3, uintptr_t arg4);
-extern void _wrap_Verushash_verushash_v2b1_verushash_b5c2c4e4f55e7268(uintptr_t arg1, swig_type_7 arg2, swig_intgo arg3, uintptr_t arg4);
-extern void _wrap_Verushash_verushash_v2b1_reverse_verushash_b5c2c4e4f55e7268(uintptr_t arg1, swig_type_8 arg2, swig_intgo arg3, uintptr_t arg4);
-extern void _wrap_Verushash_reverse_verushash_b5c2c4e4f55e7268(uintptr_t arg1, swig_type_9 arg2);
+extern void _wrap_Verushash_anyverushash_verushash_b5c2c4e4f55e7268(uintptr_t arg1, swig_type_1 arg2, swig_intgo arg3, uintptr_t arg4);
+extern void _wrap_Verushash_anyverushash_reverse_verushash_b5c2c4e4f55e7268(uintptr_t arg1, swig_type_2 arg2, swig_intgo arg3, uintptr_t arg4);
+extern void _wrap_Verushash_verushash_verushash_b5c2c4e4f55e7268(uintptr_t arg1, swig_type_3 arg2, swig_intgo arg3, uintptr_t arg4);
+extern void _wrap_Verushash_verushash_reverse_verushash_b5c2c4e4f55e7268(uintptr_t arg1, swig_type_4 arg2, swig_intgo arg3, uintptr_t arg4);
+extern void _wrap_Verushash_verushash_v2_verushash_b5c2c4e4f55e7268(uintptr_t arg1, swig_type_5 arg2, swig_intgo arg3, uintptr_t arg4);
+extern void _wrap_Verushash_verushash_v2_reverse_verushash_b5c2c4e4f55e7268(uintptr_t arg1, swig_type_6 arg2, swig_intgo arg3, uintptr_t arg4);
+extern void _wrap_Verushash_verushash_v2b_verushash_b5c2c4e4f55e7268(uintptr_t arg1, swig_type_7 arg2, swig_intgo arg3, uintptr_t arg4);
+extern void _wrap_Verushash_verushash_v2b_reverse_verushash_b5c2c4e4f55e7268(uintptr_t arg1, swig_type_8 arg2, swig_intgo arg3, uintptr_t arg4);
+extern void _wrap_Verushash_verushash_v2b1_verushash_b5c2c4e4f55e7268(uintptr_t arg1, swig_type_9 arg2, swig_intgo arg3, uintptr_t arg4);
+extern void _wrap_Verushash_verushash_v2b1_reverse_verushash_b5c2c4e4f55e7268(uintptr_t arg1, swig_type_10 arg2, swig_intgo arg3, uintptr_t arg4);
+extern void _wrap_Verushash_reverse_verushash_b5c2c4e4f55e7268(uintptr_t arg1, swig_type_11 arg2);
 extern uintptr_t _wrap_new_Verushash_verushash_b5c2c4e4f55e7268(void);
 extern void _wrap_delete_Verushash_verushash_b5c2c4e4f55e7268(uintptr_t arg1);
 #undef intgo
@@ -126,12 +130,34 @@ func (arg1 SwigcptrVerushash) Initialize() {
 	C._wrap_Verushash_initialize_verushash_b5c2c4e4f55e7268(C.uintptr_t(_swig_i_0))
 }
 
+func (arg1 SwigcptrVerushash) Anyverushash(arg2 string, arg3 int, arg4 uintptr) {
+	_swig_i_0 := arg1
+	_swig_i_1 := arg2
+	_swig_i_2 := arg3
+	_swig_i_3 := arg4
+	C._wrap_Verushash_anyverushash_verushash_b5c2c4e4f55e7268(C.uintptr_t(_swig_i_0), *(*C.swig_type_1)(unsafe.Pointer(&_swig_i_1)), C.swig_intgo(_swig_i_2), C.uintptr_t(_swig_i_3))
+	if Swig_escape_always_false {
+		Swig_escape_val = arg2
+	}
+}
+
+func (arg1 SwigcptrVerushash) Anyverushash_reverse(arg2 string, arg3 int, arg4 uintptr) {
+	_swig_i_0 := arg1
+	_swig_i_1 := arg2
+	_swig_i_2 := arg3
+	_swig_i_3 := arg4
+	C._wrap_Verushash_anyverushash_reverse_verushash_b5c2c4e4f55e7268(C.uintptr_t(_swig_i_0), *(*C.swig_type_2)(unsafe.Pointer(&_swig_i_1)), C.swig_intgo(_swig_i_2), C.uintptr_t(_swig_i_3))
+	if Swig_escape_always_false {
+		Swig_escape_val = arg2
+	}
+}
+
 func (arg1 SwigcptrVerushash) Verushash(arg2 string, arg3 int, arg4 uintptr) {
 	_swig_i_0 := arg1
 	_swig_i_1 := arg2
 	_swig_i_2 := arg3
 	_swig_i_3 := arg4
-	C._wrap_Verushash_verushash_verushash_b5c2c4e4f55e7268(C.uintptr_t(_swig_i_0), *(*C.swig_type_1)(unsafe.Pointer(&_swig_i_1)), C.swig_intgo(_swig_i_2), C.uintptr_t(_swig_i_3))
+	C._wrap_Verushash_verushash_verushash_b5c2c4e4f55e7268(C.uintptr_t(_swig_i_0), *(*C.swig_type_3)(unsafe.Pointer(&_swig_i_1)), C.swig_intgo(_swig_i_2), C.uintptr_t(_swig_i_3))
 	if Swig_escape_always_false {
 		Swig_escape_val = arg2
 	}
@@ -142,7 +168,7 @@ func (arg1 SwigcptrVerushash) Verushash_reverse(arg2 string, arg3 int, arg4 uint
 	_swig_i_1 := arg2
 	_swig_i_2 := arg3
 	_swig_i_3 := arg4
-	C._wrap_Verushash_verushash_reverse_verushash_b5c2c4e4f55e7268(C.uintptr_t(_swig_i_0), *(*C.swig_type_2)(unsafe.Pointer(&_swig_i_1)), C.swig_intgo(_swig_i_2), C.uintptr_t(_swig_i_3))
+	C._wrap_Verushash_verushash_reverse_verushash_b5c2c4e4f55e7268(C.uintptr_t(_swig_i_0), *(*C.swig_type_4)(unsafe.Pointer(&_swig_i_1)), C.swig_intgo(_swig_i_2), C.uintptr_t(_swig_i_3))
 	if Swig_escape_always_false {
 		Swig_escape_val = arg2
 	}
@@ -153,7 +179,7 @@ func (arg1 SwigcptrVerushash) Verushash_v2(arg2 string, arg3 int, arg4 uintptr) 
 	_swig_i_1 := arg2
 	_swig_i_2 := arg3
 	_swig_i_3 := arg4
-	C._wrap_Verushash_verushash_v2_verushash_b5c2c4e4f55e7268(C.uintptr_t(_swig_i_0), *(*C.swig_type_3)(unsafe.Pointer(&_swig_i_1)), C.swig_intgo(_swig_i_2), C.uintptr_t(_swig_i_3))
+	C._wrap_Verushash_verushash_v2_verushash_b5c2c4e4f55e7268(C.uintptr_t(_swig_i_0), *(*C.swig_type_5)(unsafe.Pointer(&_swig_i_1)), C.swig_intgo(_swig_i_2), C.uintptr_t(_swig_i_3))
 	if Swig_escape_always_false {
 		Swig_escape_val = arg2
 	}
@@ -164,7 +190,7 @@ func (arg1 SwigcptrVerushash) Verushash_v2_reverse(arg2 string, arg3 int, arg4 u
 	_swig_i_1 := arg2
 	_swig_i_2 := arg3
 	_swig_i_3 := arg4
-	C._wrap_Verushash_verushash_v2_reverse_verushash_b5c2c4e4f55e7268(C.uintptr_t(_swig_i_0), *(*C.swig_type_4)(unsafe.Pointer(&_swig_i_1)), C.swig_intgo(_swig_i_2), C.uintptr_t(_swig_i_3))
+	C._wrap_Verushash_verushash_v2_reverse_verushash_b5c2c4e4f55e7268(C.uintptr_t(_swig_i_0), *(*C.swig_type_6)(unsafe.Pointer(&_swig_i_1)), C.swig_intgo(_swig_i_2), C.uintptr_t(_swig_i_3))
 	if Swig_escape_always_false {
 		Swig_escape_val = arg2
 	}
@@ -175,7 +201,7 @@ func (arg1 SwigcptrVerushash) Verushash_v2b(arg2 string, arg3 int, arg4 uintptr)
 	_swig_i_1 := arg2
 	_swig_i_2 := arg3
 	_swig_i_3 := arg4
-	C._wrap_Verushash_verushash_v2b_verushash_b5c2c4e4f55e7268(C.uintptr_t(_swig_i_0), *(*C.swig_type_5)(unsafe.Pointer(&_swig_i_1)), C.swig_intgo(_swig_i_2), C.uintptr_t(_swig_i_3))
+	C._wrap_Verushash_verushash_v2b_verushash_b5c2c4e4f55e7268(C.uintptr_t(_swig_i_0), *(*C.swig_type_7)(unsafe.Pointer(&_swig_i_1)), C.swig_intgo(_swig_i_2), C.uintptr_t(_swig_i_3))
 	if Swig_escape_always_false {
 		Swig_escape_val = arg2
 	}
@@ -186,7 +212,7 @@ func (arg1 SwigcptrVerushash) Verushash_v2b_reverse(arg2 string, arg3 int, arg4 
 	_swig_i_1 := arg2
 	_swig_i_2 := arg3
 	_swig_i_3 := arg4
-	C._wrap_Verushash_verushash_v2b_reverse_verushash_b5c2c4e4f55e7268(C.uintptr_t(_swig_i_0), *(*C.swig_type_6)(unsafe.Pointer(&_swig_i_1)), C.swig_intgo(_swig_i_2), C.uintptr_t(_swig_i_3))
+	C._wrap_Verushash_verushash_v2b_reverse_verushash_b5c2c4e4f55e7268(C.uintptr_t(_swig_i_0), *(*C.swig_type_8)(unsafe.Pointer(&_swig_i_1)), C.swig_intgo(_swig_i_2), C.uintptr_t(_swig_i_3))
 	if Swig_escape_always_false {
 		Swig_escape_val = arg2
 	}
@@ -197,7 +223,7 @@ func (arg1 SwigcptrVerushash) Verushash_v2b1(arg2 string, arg3 int, arg4 uintptr
 	_swig_i_1 := arg2
 	_swig_i_2 := arg3
 	_swig_i_3 := arg4
-	C._wrap_Verushash_verushash_v2b1_verushash_b5c2c4e4f55e7268(C.uintptr_t(_swig_i_0), *(*C.swig_type_7)(unsafe.Pointer(&_swig_i_1)), C.swig_intgo(_swig_i_2), C.uintptr_t(_swig_i_3))
+	C._wrap_Verushash_verushash_v2b1_verushash_b5c2c4e4f55e7268(C.uintptr_t(_swig_i_0), *(*C.swig_type_9)(unsafe.Pointer(&_swig_i_1)), C.swig_intgo(_swig_i_2), C.uintptr_t(_swig_i_3))
 	if Swig_escape_always_false {
 		Swig_escape_val = arg2
 	}
@@ -208,7 +234,7 @@ func (arg1 SwigcptrVerushash) Verushash_v2b1_reverse(arg2 string, arg3 int, arg4
 	_swig_i_1 := arg2
 	_swig_i_2 := arg3
 	_swig_i_3 := arg4
-	C._wrap_Verushash_verushash_v2b1_reverse_verushash_b5c2c4e4f55e7268(C.uintptr_t(_swig_i_0), *(*C.swig_type_8)(unsafe.Pointer(&_swig_i_1)), C.swig_intgo(_swig_i_2), C.uintptr_t(_swig_i_3))
+	C._wrap_Verushash_verushash_v2b1_reverse_verushash_b5c2c4e4f55e7268(C.uintptr_t(_swig_i_0), *(*C.swig_type_10)(unsafe.Pointer(&_swig_i_1)), C.swig_intgo(_swig_i_2), C.uintptr_t(_swig_i_3))
 	if Swig_escape_always_false {
 		Swig_escape_val = arg2
 	}
@@ -217,7 +243,7 @@ func (arg1 SwigcptrVerushash) Verushash_v2b1_reverse(arg2 string, arg3 int, arg4
 func (arg1 SwigcptrVerushash) Reverse(arg2 string) {
 	_swig_i_0 := arg1
 	_swig_i_1 := arg2
-	C._wrap_Verushash_reverse_verushash_b5c2c4e4f55e7268(C.uintptr_t(_swig_i_0), *(*C.swig_type_9)(unsafe.Pointer(&_swig_i_1)))
+	C._wrap_Verushash_reverse_verushash_b5c2c4e4f55e7268(C.uintptr_t(_swig_i_0), *(*C.swig_type_11)(unsafe.Pointer(&_swig_i_1)))
 	if Swig_escape_always_false {
 		Swig_escape_val = arg2
 	}
@@ -240,6 +266,8 @@ type Verushash interface {
 	SetInitialized(arg2 bool)
 	GetInitialized() (_swig_ret bool)
 	Initialize()
+	Anyverushash(arg2 string, arg3 int, arg4 uintptr)
+	Anyverushash_reverse(arg2 string, arg3 int, arg4 uintptr)
 	Verushash(arg2 string, arg3 int, arg4 uintptr)
 	Verushash_reverse(arg2 string, arg3 int, arg4 uintptr)
 	Verushash_v2(arg2 string, arg3 int, arg4 uintptr)

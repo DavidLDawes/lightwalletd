@@ -12,14 +12,16 @@ class Verushash {
 public:
   bool initialized = false;
   void initialize();
-  void verushash(const char * bytes, int length, void *);
-  void verushash_reverse(const char * bytes, int length, void *);
-  void verushash_v2(const char * bytes, int length, void *);
-  void verushash_v2_reverse(const char * bytes, int length, void *);
-  void verushash_v2b(const char * bytes, int length, void *);
-  void verushash_v2b_reverse(const char * bytes, int length, void *);
-  void verushash_v2b1(const char * bytes, int length, void *);
-  void verushash_v2b1_reverse(const char * bytes, int length, void *);
+  void anyverushash(const char * bytes, int length, void * hashresult);
+  void anyverushash_reverse(const char * bytes, int length, void * hashresult);
+  void verushash(const char * bytes, int length, void * hashresult);
+  void verushash_reverse(const char * bytes, int length, void * hashresult);
+  void verushash_v2(const char * bytes, int length, void * hashresult);
+  void verushash_v2_reverse(const char * bytes, int length, void * hashresult);
+  void verushash_v2b(const char * bytes, int length, void * hashresult);
+  void verushash_v2b_reverse(const char * bytes, int length, void * hashresult);
+  void verushash_v2b1(const char * bytes, int length, void * hashresult);
+  void verushash_v2b1_reverse(const char * bytes, int length, void * hashresult);
   void reverse(char * swapme);
 };
 #endif

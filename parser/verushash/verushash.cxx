@@ -16,9 +16,33 @@ void Verushash::initialize() {
     initialized = true;
 }
 
+void Verushash::anyverushash(const char * bytes, int length, void * hashresult) {
+    if (bytes[0] == 4 and bytes[2] >= 1) {
+            if (bytes[2] < 3) {
+                verushash_v2b(bytes, length, hashresult);
+            } else {
+                verushash_v2b1(bytes, length, hashresult);
+            }
+    } else {
+                verushash(bytes, length, hashresult);
+    }
+}
+
+void Verushash::anyverushash_reverse(const char * bytes, int length, void * hashresult) {
+    if (bytes[0] == 4 and bytes[2] >= 1) {
+            if (bytes[2] < 3) {
+                verushash_v2b_reverse(bytes, length, hashresult);
+            } else {
+                verushash_v2b1_reverse(bytes, length, hashresult);
+            }
+    } else {
+            verushash_reverse(bytes, length, hashresult);
+    }
+}
+
 void Verushash::verushash(const char * bytes, int length, void * hashresult) {
     initialize();
-    verus_hash(hashresult, (const unsigned char*) bytes, length);
+    verus_hash(hashresult, bytes, length);
 }
 
 void Verushash::verushash_reverse(const char * bytes, int length, void * hashresult) {
