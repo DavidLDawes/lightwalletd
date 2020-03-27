@@ -2,7 +2,6 @@ package parser
 
 import (
 	"unsafe"
-	"github.com/asherda/lightwalletd/parser/verushash"
 	"github.com/asherda/lightwalletd/parser/internal/bytestring"
 	"github.com/asherda/lightwalletd/walletrpc"
 	"github.com/pkg/errors"
@@ -274,14 +273,11 @@ func (tx *Transaction) GetDisplayHash() []byte {
 	if tx.txId != nil {
 		return tx.txId
 	}
-
 	hash := make([]byte, 32)
 	ptrHash := uintptr(unsafe.Pointer(&hash[0]))
-	h := verushash.NewVerushash()
-	// Use the Wrap object
-	h.Verushash_reverse(string(tx.rawBytes), len(tx.rawBytes), ptrHash)
+
+	Verus_hash.Anyverushash_reverse(string(tx.rawBytes), len(tx.rawBytes), ptrHash)
 	tx.txId = hash
-	verushash.DeleteVerushash(h)
 	return tx.txId
 }
 
@@ -290,10 +286,7 @@ func (tx *Transaction) GetEncodableHash() []byte {
 	hash := make([]byte, 32)
 	ptrHash := uintptr(unsafe.Pointer(&hash[0]))
 
-	h := verushash.NewVerushash()
-	// Use the Wrap object
-	h.Verushash(string(tx.rawBytes), len(tx.rawBytes), ptrHash)
-	verushash.DeleteVerushash(h)
+	Verus_hash.Anyverushash(string(tx.rawBytes), len(tx.rawBytes), ptrHash)
 	return hash
 }
 

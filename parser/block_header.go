@@ -63,6 +63,8 @@ type BlockHeader struct {
 	targetThreshold *big.Int
 }
 
+var Verus_hash = verushash.NewVerushash()
+
 // CompactLengthPrefixedLen calculates the total number of bytes needed to
 // encode 'length' bytes.
 func CompactLengthPrefixedLen(length int) int {
@@ -199,35 +201,24 @@ func (hdr *BlockHeader) GetDisplayHash() []byte {
 		log.Fatalf("error marshaling block header: %v", err)
 		return nil
 	}
-
 	hash := make([]byte, 32)
 	ptrHash := uintptr(unsafe.Pointer(&hash[0]))
-
-	h := verushash.NewVerushash()
-	// Use the Wrap object
-	h.Verushash_reverse(string(serializedHeader), len(string(serializedHeader)), ptrHash)
+	Verus_hash.Anyverushash_reverse(string(serializedHeader), len(string(serializedHeader)), ptrHash)
 
 	hdr.cachedHash = hash
-	verushash.DeleteVerushash(h)
 	return hdr.cachedHash
 }
 
 // GetEncodableHash returns the bytes of a block hash in little-endian wire order.
 func (hdr *BlockHeader) GetEncodableHash() []byte {
 	serializedHeader, err := hdr.MarshalBinary()
-
 	if err != nil {
 		log.Fatalf("error marshaling block header: %v", err)
 		return nil
 	}
-
 	hash := make([]byte, 32)
 	ptrHash := uintptr(unsafe.Pointer(&hash[0]))
-
-	h := verushash.NewVerushash()
-	// Use the Wrap object
-	h.Verushash(string(serializedHeader), len(string(serializedHeader)), ptrHash)
-	verushash.DeleteVerushash(h)
+	Verus_hash.Anyverushash(string(serializedHeader), len(string(serializedHeader)), ptrHash)
 	return hash
 }
 
