@@ -1,19 +1,12 @@
 package parser
 
 import (
-	"github.com/asherda/lightwalletd/parser/hash"
+	"unsafe"
+	"github.com/asherda/lightwalletd/parser/verushash"
 	"github.com/asherda/lightwalletd/parser/internal/bytestring"
 	"github.com/asherda/lightwalletd/walletrpc"
 	"github.com/pkg/errors"
 )
-
-/*
-#cgo LDFLAGS: -L/home/virtualsoundnw/lightwalletd -l:veruslib.so -L/usr/lib/x86_64-linux-gnu -l:libboost_system.so
-#cgo CPPFLAGS: -O2 -march=x86-64 -msse4 -msse2 -msse -msse4.1 -msse4.2 -msse3 -mavx -maes -fomit-frame-pointer -fPIC -Wno-builtin-declaration-mismatch -I/home/virtualsoundnw/lightwalletd/parser/hash -I/usr/include/c++/8-I/usr/include/x86_64-linux-gnu/c++/8  -pthread -w
-#cgo CXXFLAGS: -O2 -march=x86-64 -msse2 -msse -msse4 -msse4.1 -msse4.2 -msse3 -mavx -maes -fomit-frame-pointer -fPIC -Wno-builtin-declaration-mismatch -I/home/virtualsoundnw/lightwalletd/parser/hash -I/usr/include/c++/8 -I/usr/include/x86_64-linux-gnu/c++/8  -pthread -w
-#cgo CFLAGS: -O2 -march=x86-64 -msse2 -msse -msse4 -msse4.1 -msse4.2 -msse3 -mavx -maes -fomit-frame-pointer -fPIC -Wno-builtin-declaration-mismatch -I/home/virtualsoundnw/lightwalletd/parser/hash -I/usr/include/c++/8 -I/usr/include/x86_64-linux-gnu/c++/8  -pthread -w
-*/
-import "C"
 
 type rawTransaction struct {
 	fOverwintered      bool
@@ -282,26 +275,26 @@ func (tx *Transaction) GetDisplayHash() []byte {
 		return tx.txId
 	}
 
-	h := hash.NewHash()
-	h.Initialize();
-	pHash := "12345678901234567890123456789012"
+	hash := make([]byte, 32)
+	ptrHash := uintptr(unsafe.Pointer(&hash[0]))
+	h := verushash.NewVerushash()
 	// Use the Wrap object
-	h.Verushash_reverse(pHash, string(tx.rawBytes), len(tx.rawBytes))
-	tx.txId = []byte(pHash)
-	hash.DeleteHash(h)
+	h.Verushash_reverse(string(tx.rawBytes), len(tx.rawBytes), ptrHash)
+	tx.txId = hash
+	verushash.DeleteVerushash(h)
 	return tx.txId
 }
 
 // GetEncodableHash returns the transaction hash in little-endian wire format order.
 func (tx *Transaction) GetEncodableHash() []byte {
+	hash := make([]byte, 32)
+	ptrHash := uintptr(unsafe.Pointer(&hash[0]))
 
-	h := hash.NewHash()
-	h.Initialize();
-	pHash := "12345678901234567890123456789012"
+	h := verushash.NewVerushash()
 	// Use the Wrap object
-	h.Verushash(pHash, string(tx.rawBytes), len(tx.rawBytes))
-	hash.DeleteHash(h)
-    return []byte(pHash)
+	h.Verushash(string(tx.rawBytes), len(tx.rawBytes), ptrHash)
+	verushash.DeleteVerushash(h)
+	return hash
 }
 
 func (tx *Transaction) Bytes() []byte {

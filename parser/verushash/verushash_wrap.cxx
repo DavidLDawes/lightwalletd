@@ -8,10 +8,10 @@
  * interface file instead.
  * ----------------------------------------------------------------------------- */
 
-// source: parser/hash/hash.i
+// source: parser/verushash/verushash.i
 
-#define SWIGMODULE hash
-#define SWIGGO_PREFIX go.hash
+#define SWIGMODULE verushash
+#define SWIGGO_PREFIX go.verushash
 
 #ifdef __cplusplus
 /* SwigValueWrapper is described in swig.swg */
@@ -208,13 +208,13 @@ static void* Swig_malloc(int c) {
 }
 
 
-#include "hash.h"
+#include "verushash.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void _wrap_Swig_free_hash_9b6d006aa466106b(void *_swig_go_0) {
+void _wrap_Swig_free_verushash_b5c2c4e4f55e7268(void *_swig_go_0) {
   void *arg1 = (void *) 0 ;
   
   arg1 = *(void **)&_swig_go_0; 
@@ -224,7 +224,7 @@ void _wrap_Swig_free_hash_9b6d006aa466106b(void *_swig_go_0) {
 }
 
 
-void *_wrap_Swig_malloc_hash_9b6d006aa466106b(intgo _swig_go_0) {
+void *_wrap_Swig_malloc_verushash_b5c2c4e4f55e7268(intgo _swig_go_0) {
   int arg1 ;
   void *result = 0 ;
   void *_swig_go_result;
@@ -237,11 +237,11 @@ void *_wrap_Swig_malloc_hash_9b6d006aa466106b(intgo _swig_go_0) {
 }
 
 
-void _wrap_Hash_initialized_set_hash_9b6d006aa466106b(Hash *_swig_go_0, bool _swig_go_1) {
-  Hash *arg1 = (Hash *) 0 ;
+void _wrap_Verushash_initialized_set_verushash_b5c2c4e4f55e7268(Verushash *_swig_go_0, bool _swig_go_1) {
+  Verushash *arg1 = (Verushash *) 0 ;
   bool arg2 ;
   
-  arg1 = *(Hash **)&_swig_go_0; 
+  arg1 = *(Verushash **)&_swig_go_0; 
   arg2 = (bool)_swig_go_1; 
   
   if (arg1) (arg1)->initialized = arg2;
@@ -249,12 +249,12 @@ void _wrap_Hash_initialized_set_hash_9b6d006aa466106b(Hash *_swig_go_0, bool _sw
 }
 
 
-bool _wrap_Hash_initialized_get_hash_9b6d006aa466106b(Hash *_swig_go_0) {
-  Hash *arg1 = (Hash *) 0 ;
+bool _wrap_Verushash_initialized_get_verushash_b5c2c4e4f55e7268(Verushash *_swig_go_0) {
+  Verushash *arg1 = (Verushash *) 0 ;
   bool result;
   bool _swig_go_result;
   
-  arg1 = *(Hash **)&_swig_go_0; 
+  arg1 = *(Verushash **)&_swig_go_0; 
   
   result = (bool) ((arg1)->initialized);
   _swig_go_result = result; 
@@ -262,239 +262,216 @@ bool _wrap_Hash_initialized_get_hash_9b6d006aa466106b(Hash *_swig_go_0) {
 }
 
 
-void _wrap_Hash_initialize_hash_9b6d006aa466106b(Hash *_swig_go_0) {
-  Hash *arg1 = (Hash *) 0 ;
+void _wrap_Verushash_initialize_verushash_b5c2c4e4f55e7268(Verushash *_swig_go_0) {
+  Verushash *arg1 = (Verushash *) 0 ;
   
-  arg1 = *(Hash **)&_swig_go_0; 
+  arg1 = *(Verushash **)&_swig_go_0; 
   
   (arg1)->initialize();
   
 }
 
 
-void _wrap_Hash_verushash_hash_9b6d006aa466106b(Hash *_swig_go_0, _gostring_ _swig_go_1, _gostring_ _swig_go_2, intgo _swig_go_3) {
-  Hash *arg1 = (Hash *) 0 ;
+void _wrap_Verushash_verushash_verushash_b5c2c4e4f55e7268(Verushash *_swig_go_0, _gostring_ _swig_go_1, intgo _swig_go_2, void *_swig_go_3) {
+  Verushash *arg1 = (Verushash *) 0 ;
   char *arg2 = (char *) 0 ;
-  char *arg3 = (char *) 0 ;
-  int arg4 ;
+  int arg3 ;
+  void *arg4 = (void *) 0 ;
   
-  arg1 = *(Hash **)&_swig_go_0; 
+  arg1 = *(Verushash **)&_swig_go_0; 
+  
+  arg2 = (char *)malloc(_swig_go_1.n + 1);
+  memcpy(arg2, _swig_go_1.p, _swig_go_1.n);
+  arg2[_swig_go_1.n] = '\0';
+  
+  arg3 = (int)_swig_go_2; 
+  arg4 = *(void **)&_swig_go_3; 
+  
+  (arg1)->verushash((char const *)arg2,arg3,arg4);
+  
+  free(arg2); 
+}
+
+
+void _wrap_Verushash_verushash_reverse_verushash_b5c2c4e4f55e7268(Verushash *_swig_go_0, _gostring_ _swig_go_1, intgo _swig_go_2, void *_swig_go_3) {
+  Verushash *arg1 = (Verushash *) 0 ;
+  char *arg2 = (char *) 0 ;
+  int arg3 ;
+  void *arg4 = (void *) 0 ;
+  
+  arg1 = *(Verushash **)&_swig_go_0; 
+  
+  arg2 = (char *)malloc(_swig_go_1.n + 1);
+  memcpy(arg2, _swig_go_1.p, _swig_go_1.n);
+  arg2[_swig_go_1.n] = '\0';
+  
+  arg3 = (int)_swig_go_2; 
+  arg4 = *(void **)&_swig_go_3; 
+  
+  (arg1)->verushash_reverse((char const *)arg2,arg3,arg4);
+  
+  free(arg2); 
+}
+
+
+void _wrap_Verushash_verushash_v2_verushash_b5c2c4e4f55e7268(Verushash *_swig_go_0, _gostring_ _swig_go_1, intgo _swig_go_2, void *_swig_go_3) {
+  Verushash *arg1 = (Verushash *) 0 ;
+  char *arg2 = (char *) 0 ;
+  int arg3 ;
+  void *arg4 = (void *) 0 ;
+  
+  arg1 = *(Verushash **)&_swig_go_0; 
+  
+  arg2 = (char *)malloc(_swig_go_1.n + 1);
+  memcpy(arg2, _swig_go_1.p, _swig_go_1.n);
+  arg2[_swig_go_1.n] = '\0';
+  
+  arg3 = (int)_swig_go_2; 
+  arg4 = *(void **)&_swig_go_3; 
+  
+  (arg1)->verushash_v2((char const *)arg2,arg3,arg4);
+  
+  free(arg2); 
+}
+
+
+void _wrap_Verushash_verushash_v2_reverse_verushash_b5c2c4e4f55e7268(Verushash *_swig_go_0, _gostring_ _swig_go_1, intgo _swig_go_2, void *_swig_go_3) {
+  Verushash *arg1 = (Verushash *) 0 ;
+  char *arg2 = (char *) 0 ;
+  int arg3 ;
+  void *arg4 = (void *) 0 ;
+  
+  arg1 = *(Verushash **)&_swig_go_0; 
+  
+  arg2 = (char *)malloc(_swig_go_1.n + 1);
+  memcpy(arg2, _swig_go_1.p, _swig_go_1.n);
+  arg2[_swig_go_1.n] = '\0';
+  
+  arg3 = (int)_swig_go_2; 
+  arg4 = *(void **)&_swig_go_3; 
+  
+  (arg1)->verushash_v2_reverse((char const *)arg2,arg3,arg4);
+  
+  free(arg2); 
+}
+
+
+void _wrap_Verushash_verushash_v2b_verushash_b5c2c4e4f55e7268(Verushash *_swig_go_0, _gostring_ _swig_go_1, intgo _swig_go_2, void *_swig_go_3) {
+  Verushash *arg1 = (Verushash *) 0 ;
+  char *arg2 = (char *) 0 ;
+  int arg3 ;
+  void *arg4 = (void *) 0 ;
+  
+  arg1 = *(Verushash **)&_swig_go_0; 
+  
+  arg2 = (char *)malloc(_swig_go_1.n + 1);
+  memcpy(arg2, _swig_go_1.p, _swig_go_1.n);
+  arg2[_swig_go_1.n] = '\0';
+  
+  arg3 = (int)_swig_go_2; 
+  arg4 = *(void **)&_swig_go_3; 
+  
+  (arg1)->verushash_v2b((char const *)arg2,arg3,arg4);
+  
+  free(arg2); 
+}
+
+
+void _wrap_Verushash_verushash_v2b_reverse_verushash_b5c2c4e4f55e7268(Verushash *_swig_go_0, _gostring_ _swig_go_1, intgo _swig_go_2, void *_swig_go_3) {
+  Verushash *arg1 = (Verushash *) 0 ;
+  char *arg2 = (char *) 0 ;
+  int arg3 ;
+  void *arg4 = (void *) 0 ;
+  
+  arg1 = *(Verushash **)&_swig_go_0; 
+  
+  arg2 = (char *)malloc(_swig_go_1.n + 1);
+  memcpy(arg2, _swig_go_1.p, _swig_go_1.n);
+  arg2[_swig_go_1.n] = '\0';
+  
+  arg3 = (int)_swig_go_2; 
+  arg4 = *(void **)&_swig_go_3; 
+  
+  (arg1)->verushash_v2b_reverse((char const *)arg2,arg3,arg4);
+  
+  free(arg2); 
+}
+
+
+void _wrap_Verushash_verushash_v2b1_verushash_b5c2c4e4f55e7268(Verushash *_swig_go_0, _gostring_ _swig_go_1, intgo _swig_go_2, void *_swig_go_3) {
+  Verushash *arg1 = (Verushash *) 0 ;
+  char *arg2 = (char *) 0 ;
+  int arg3 ;
+  void *arg4 = (void *) 0 ;
+  
+  arg1 = *(Verushash **)&_swig_go_0; 
+  
+  arg2 = (char *)malloc(_swig_go_1.n + 1);
+  memcpy(arg2, _swig_go_1.p, _swig_go_1.n);
+  arg2[_swig_go_1.n] = '\0';
+  
+  arg3 = (int)_swig_go_2; 
+  arg4 = *(void **)&_swig_go_3; 
+  
+  (arg1)->verushash_v2b1((char const *)arg2,arg3,arg4);
+  
+  free(arg2); 
+}
+
+
+void _wrap_Verushash_verushash_v2b1_reverse_verushash_b5c2c4e4f55e7268(Verushash *_swig_go_0, _gostring_ _swig_go_1, intgo _swig_go_2, void *_swig_go_3) {
+  Verushash *arg1 = (Verushash *) 0 ;
+  char *arg2 = (char *) 0 ;
+  int arg3 ;
+  void *arg4 = (void *) 0 ;
+  
+  arg1 = *(Verushash **)&_swig_go_0; 
+  
+  arg2 = (char *)malloc(_swig_go_1.n + 1);
+  memcpy(arg2, _swig_go_1.p, _swig_go_1.n);
+  arg2[_swig_go_1.n] = '\0';
+  
+  arg3 = (int)_swig_go_2; 
+  arg4 = *(void **)&_swig_go_3; 
+  
+  (arg1)->verushash_v2b1_reverse((char const *)arg2,arg3,arg4);
+  
+  free(arg2); 
+}
+
+
+void _wrap_Verushash_reverse_verushash_b5c2c4e4f55e7268(Verushash *_swig_go_0, _gostring_ _swig_go_1) {
+  Verushash *arg1 = (Verushash *) 0 ;
+  char *arg2 = (char *) 0 ;
+  
+  arg1 = *(Verushash **)&_swig_go_0; 
   
   arg2 = (char *)malloc(_swig_go_1.n + 1);
   memcpy(arg2, _swig_go_1.p, _swig_go_1.n);
   arg2[_swig_go_1.n] = '\0';
   
   
-  arg3 = (char *)malloc(_swig_go_2.n + 1);
-  memcpy(arg3, _swig_go_2.p, _swig_go_2.n);
-  arg3[_swig_go_2.n] = '\0';
-  
-  arg4 = (int)_swig_go_3; 
-  
-  (arg1)->verushash(arg2,(char const *)arg3,arg4);
+  (arg1)->reverse(arg2);
   
   free(arg2); 
-  free(arg3); 
 }
 
 
-void _wrap_Hash_verushash_reverse_hash_9b6d006aa466106b(Hash *_swig_go_0, _gostring_ _swig_go_1, _gostring_ _swig_go_2, intgo _swig_go_3) {
-  Hash *arg1 = (Hash *) 0 ;
-  char *arg2 = (char *) 0 ;
-  char *arg3 = (char *) 0 ;
-  int arg4 ;
-  
-  arg1 = *(Hash **)&_swig_go_0; 
-  
-  arg2 = (char *)malloc(_swig_go_1.n + 1);
-  memcpy(arg2, _swig_go_1.p, _swig_go_1.n);
-  arg2[_swig_go_1.n] = '\0';
+Verushash *_wrap_new_Verushash_verushash_b5c2c4e4f55e7268() {
+  Verushash *result = 0 ;
+  Verushash *_swig_go_result;
   
   
-  arg3 = (char *)malloc(_swig_go_2.n + 1);
-  memcpy(arg3, _swig_go_2.p, _swig_go_2.n);
-  arg3[_swig_go_2.n] = '\0';
-  
-  arg4 = (int)_swig_go_3; 
-  
-  (arg1)->verushash_reverse(arg2,(char const *)arg3,arg4);
-  
-  free(arg2); 
-  free(arg3); 
-}
-
-
-void _wrap_Hash_verushash_v2_hash_9b6d006aa466106b(Hash *_swig_go_0, _gostring_ _swig_go_1, _gostring_ _swig_go_2, intgo _swig_go_3) {
-  Hash *arg1 = (Hash *) 0 ;
-  char *arg2 = (char *) 0 ;
-  char *arg3 = (char *) 0 ;
-  int arg4 ;
-  
-  arg1 = *(Hash **)&_swig_go_0; 
-  
-  arg2 = (char *)malloc(_swig_go_1.n + 1);
-  memcpy(arg2, _swig_go_1.p, _swig_go_1.n);
-  arg2[_swig_go_1.n] = '\0';
-  
-  
-  arg3 = (char *)malloc(_swig_go_2.n + 1);
-  memcpy(arg3, _swig_go_2.p, _swig_go_2.n);
-  arg3[_swig_go_2.n] = '\0';
-  
-  arg4 = (int)_swig_go_3; 
-  
-  (arg1)->verushash_v2(arg2,(char const *)arg3,arg4);
-  
-  free(arg2); 
-  free(arg3); 
-}
-
-
-void _wrap_Hash_verushash_v2_reverse_hash_9b6d006aa466106b(Hash *_swig_go_0, _gostring_ _swig_go_1, _gostring_ _swig_go_2, intgo _swig_go_3) {
-  Hash *arg1 = (Hash *) 0 ;
-  char *arg2 = (char *) 0 ;
-  char *arg3 = (char *) 0 ;
-  int arg4 ;
-  
-  arg1 = *(Hash **)&_swig_go_0; 
-  
-  arg2 = (char *)malloc(_swig_go_1.n + 1);
-  memcpy(arg2, _swig_go_1.p, _swig_go_1.n);
-  arg2[_swig_go_1.n] = '\0';
-  
-  
-  arg3 = (char *)malloc(_swig_go_2.n + 1);
-  memcpy(arg3, _swig_go_2.p, _swig_go_2.n);
-  arg3[_swig_go_2.n] = '\0';
-  
-  arg4 = (int)_swig_go_3; 
-  
-  (arg1)->verushash_v2_reverse(arg2,(char const *)arg3,arg4);
-  
-  free(arg2); 
-  free(arg3); 
-}
-
-
-void _wrap_Hash_verushash_v2b_hash_9b6d006aa466106b(Hash *_swig_go_0, _gostring_ _swig_go_1, _gostring_ _swig_go_2, intgo _swig_go_3) {
-  Hash *arg1 = (Hash *) 0 ;
-  char *arg2 = (char *) 0 ;
-  char *arg3 = (char *) 0 ;
-  int arg4 ;
-  
-  arg1 = *(Hash **)&_swig_go_0; 
-  
-  arg2 = (char *)malloc(_swig_go_1.n + 1);
-  memcpy(arg2, _swig_go_1.p, _swig_go_1.n);
-  arg2[_swig_go_1.n] = '\0';
-  
-  
-  arg3 = (char *)malloc(_swig_go_2.n + 1);
-  memcpy(arg3, _swig_go_2.p, _swig_go_2.n);
-  arg3[_swig_go_2.n] = '\0';
-  
-  arg4 = (int)_swig_go_3; 
-  
-  (arg1)->verushash_v2b(arg2,(char const *)arg3,arg4);
-  
-  free(arg2); 
-  free(arg3); 
-}
-
-
-void _wrap_Hash_verushash_v2b_reverse_hash_9b6d006aa466106b(Hash *_swig_go_0, _gostring_ _swig_go_1, _gostring_ _swig_go_2, intgo _swig_go_3) {
-  Hash *arg1 = (Hash *) 0 ;
-  char *arg2 = (char *) 0 ;
-  char *arg3 = (char *) 0 ;
-  int arg4 ;
-  
-  arg1 = *(Hash **)&_swig_go_0; 
-  
-  arg2 = (char *)malloc(_swig_go_1.n + 1);
-  memcpy(arg2, _swig_go_1.p, _swig_go_1.n);
-  arg2[_swig_go_1.n] = '\0';
-  
-  
-  arg3 = (char *)malloc(_swig_go_2.n + 1);
-  memcpy(arg3, _swig_go_2.p, _swig_go_2.n);
-  arg3[_swig_go_2.n] = '\0';
-  
-  arg4 = (int)_swig_go_3; 
-  
-  (arg1)->verushash_v2b_reverse(arg2,(char const *)arg3,arg4);
-  
-  free(arg2); 
-  free(arg3); 
-}
-
-
-void _wrap_Hash_verushash_v2b1_hash_9b6d006aa466106b(Hash *_swig_go_0, _gostring_ _swig_go_1, _gostring_ _swig_go_2, intgo _swig_go_3) {
-  Hash *arg1 = (Hash *) 0 ;
-  char *arg2 = (char *) 0 ;
-  char *arg3 = (char *) 0 ;
-  int arg4 ;
-  
-  arg1 = *(Hash **)&_swig_go_0; 
-  
-  arg2 = (char *)malloc(_swig_go_1.n + 1);
-  memcpy(arg2, _swig_go_1.p, _swig_go_1.n);
-  arg2[_swig_go_1.n] = '\0';
-  
-  
-  arg3 = (char *)malloc(_swig_go_2.n + 1);
-  memcpy(arg3, _swig_go_2.p, _swig_go_2.n);
-  arg3[_swig_go_2.n] = '\0';
-  
-  arg4 = (int)_swig_go_3; 
-  
-  (arg1)->verushash_v2b1(arg2,(char const *)arg3,arg4);
-  
-  free(arg2); 
-  free(arg3); 
-}
-
-
-void _wrap_Hash_verushash_v2b1_reverse_hash_9b6d006aa466106b(Hash *_swig_go_0, _gostring_ _swig_go_1, _gostring_ _swig_go_2, intgo _swig_go_3) {
-  Hash *arg1 = (Hash *) 0 ;
-  char *arg2 = (char *) 0 ;
-  char *arg3 = (char *) 0 ;
-  int arg4 ;
-  
-  arg1 = *(Hash **)&_swig_go_0; 
-  
-  arg2 = (char *)malloc(_swig_go_1.n + 1);
-  memcpy(arg2, _swig_go_1.p, _swig_go_1.n);
-  arg2[_swig_go_1.n] = '\0';
-  
-  
-  arg3 = (char *)malloc(_swig_go_2.n + 1);
-  memcpy(arg3, _swig_go_2.p, _swig_go_2.n);
-  arg3[_swig_go_2.n] = '\0';
-  
-  arg4 = (int)_swig_go_3; 
-  
-  (arg1)->verushash_v2b1_reverse(arg2,(char const *)arg3,arg4);
-  
-  free(arg2); 
-  free(arg3); 
-}
-
-
-Hash *_wrap_new_Hash_hash_9b6d006aa466106b() {
-  Hash *result = 0 ;
-  Hash *_swig_go_result;
-  
-  
-  result = (Hash *)new Hash();
-  *(Hash **)&_swig_go_result = (Hash *)result; 
+  result = (Verushash *)new Verushash();
+  *(Verushash **)&_swig_go_result = (Verushash *)result; 
   return _swig_go_result;
 }
 
 
-void _wrap_delete_Hash_hash_9b6d006aa466106b(Hash *_swig_go_0) {
-  Hash *arg1 = (Hash *) 0 ;
+void _wrap_delete_Verushash_verushash_b5c2c4e4f55e7268(Verushash *_swig_go_0) {
+  Verushash *arg1 = (Verushash *) 0 ;
   
-  arg1 = *(Hash **)&_swig_go_0; 
+  arg1 = *(Verushash **)&_swig_go_0; 
   
   delete arg1;
   

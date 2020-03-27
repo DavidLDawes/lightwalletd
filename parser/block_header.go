@@ -5,19 +5,12 @@ import (
 	"encoding/binary"
 	"log"
 	"math/big"
+	"unsafe"
 
-	"github.com/asherda/lightwalletd/parser/hash"
+	"github.com/asherda/lightwalletd/parser/verushash"
 	"github.com/asherda/lightwalletd/parser/internal/bytestring"
 	"github.com/pkg/errors"
 )
-/*
-#cgo CPPFLAGS: -O2 -march=x86-64 -msse4 -msse2 -msse -msse4.1 -msse4.2 -msse3 -mavx -maes -fomit-frame-pointer -fPIC -Wno-builtin-declaration-mismatch -I/home/virtualsoundnw/lightwalletd/parser/hash -I/usr/include/c++/8-I/usr/include/x86_64-linux-gnu/c++/8  -pthread -w
-#cgo CXXFLAGS: -O2 -march=x86-64 -msse2 -msse -msse4 -msse4.1 -msse4.2 -msse3 -mavx -maes -fomit-frame-pointer -fPIC -Wno-builtin-declaration-mismatch -I/home/virtualsoundnw/lightwalletd/parser/hash -I/usr/include/c++/8 -I/usr/include/x86_64-linux-gnu/c++/8  -pthread -w
-#cgo CFLAGS: -O2 -march=x86-64 -msse2 -msse -msse4 -msse4.1 -msse4.2 -msse3 -mavx -maes -fomit-frame-pointer -fPIC -Wno-builtin-declaration-mismatch -I/home/virtualsoundnw/lightwalletd/parser/hash -I/usr/include/c++/8 -I/usr/include/x86_64-linux-gnu/c++/8  -pthread -w
-#include <stdint.h>
-#include <stdlib.h>
-*/
-import "C"
 
 const (
 	serBlockHeaderMinusEquihashSize = 140  // size of a serialized block header minus the Equihash solution
@@ -207,14 +200,15 @@ func (hdr *BlockHeader) GetDisplayHash() []byte {
 		return nil
 	}
 
-	h := hash.NewHash()
-	h.Initialize()
-	pHash := "12345678901234567890123456789012"
-	// Use the Wrap object
-	h.Verushash_reverse(pHash, string(serializedHeader), len(string(serializedHeader)))
+	hash := make([]byte, 32)
+	ptrHash := uintptr(unsafe.Pointer(&hash[0]))
 
-	hdr.cachedHash = []byte(pHash)
-	hash.DeleteHash(h)
+	h := verushash.NewVerushash()
+	// Use the Wrap object
+	h.Verushash_reverse(string(serializedHeader), len(string(serializedHeader)), ptrHash)
+
+	hdr.cachedHash = hash
+	verushash.DeleteVerushash(h)
 	return hdr.cachedHash
 }
 
@@ -227,13 +221,14 @@ func (hdr *BlockHeader) GetEncodableHash() []byte {
 		return nil
 	}
 
-	h := hash.NewHash()
-	h.Initialize()
-	pHash := "12345678901234567890123456789012"
+	hash := make([]byte, 32)
+	ptrHash := uintptr(unsafe.Pointer(&hash[0]))
+
+	h := verushash.NewVerushash()
 	// Use the Wrap object
-	h.Verushash(pHash, string(serializedHeader), len(string(serializedHeader)))
-    hash.DeleteHash(h)
-    return []byte(pHash)
+	h.Verushash(string(serializedHeader), len(string(serializedHeader)), ptrHash)
+	verushash.DeleteVerushash(h)
+	return hash
 }
 
 func (hdr *BlockHeader) GetDisplayPrevHash() []byte {
