@@ -33,8 +33,64 @@ You can generate the verushash.go and verushash_wrap.cxx files from the verushas
 swig -go  -intgosize 64 -c++ -cgo -gccgo -Wall -v parser/verushash/verushash.i
 ```
 Once that has completed a simple make comand should assemble everything.
+```
+make
+```
 
-Currently works with the addition of the veruslib.so libboost_system.so libraries. See parser/verushash/verushash.i for the cgo defintiions used to set include directories at compile time and lib directories and libs at link time. You mileage may well very so check that if you have lots of unresolved externals.
+lightwalletd requires the veruslib.so and libboost_system.so libraries. See parser/verushash/verushash.i for the cgo defintiions used to set include directories at compile time and lib directories and libs at link time. You mileage may well very so check that if you have lots of unresolved externals.
+## verusd
+lightwalletd uses the rpc interface of verusd, the VerusCoin daemon, to get block information for the ingestor and clients and to take actions based on the frontend API requests.
+
+Load verusd - either using the VerusCli or VerusDesktop depending on your preferences - before starting the lightwalletd service.
+
+Once you've got verusd running, check that it has loaded the Verus chain. The verus program in the VerusCoin cli (or the same program in the VerusCoin desktop) is used to request data and take actions using the VerusCoin RPC. A simple request for the current block count makes a good check on the health and status of verusd:
+```
+./verus getblockcount
+``` 
+If verusd is not ready yet then you will need to wait until it finishes loading the block chain. If it is not running then get it  running, lightwalletd can only run on old cached information if verusd is not available.
+## lightwallet service
+verusd is runnig properly and responding correctly to verus RPC requests, you generated fresh swig code and make worked, time to run the service.
+```
+./server --conf-file ~/.komodo/VRSC/VRSC.conf --log-file /logs/server.log --bind-addr 127.0.0.1:18232
+```
+Production services will need to deal with certs for SSL and DNS and so on.
+## grpcurl
+You can test the compact TX streamer service using gpcurl. gcpurl has nice features like listing available methods. Install it using go:
+```
+go get github.com/fullstorydev/grpcurl
+go install github.com/fullstorydev/grpcurl/cmd/grpcurl
+```
+
+With the service running you can get a list of methods using grpcurl, which shows we provide the compact TX streamer and server reflection:
+```
+grpcurl  -insecure 127.0.0.1:18232  list
+cash.z.wallet.sdk.rpc.CompactTxStreamer
+grpc.reflection.v1alpha.ServerReflection
+```
+Focussing on the TX streamer 
+
+grpcurl  -insecure 127.0.0.1:18232  list cash.z.wallet.sdk.rpc.CompactTxStreamer
+cash.z.wallet.sdk.rpc.CompactTxStreamer.GetAddressTxids
+cash.z.wallet.sdk.rpc.CompactTxStreamer.GetBlock
+cash.z.wallet.sdk.rpc.CompactTxStreamer.GetBlockRange
+cash.z.wallet.sdk.rpc.CompactTxStreamer.GetIdentity
+cash.z.wallet.sdk.rpc.CompactTxStreamer.GetLatestBlock
+cash.z.wallet.sdk.rpc.CompactTxStreamer.GetLightdInfo
+cash.z.wallet.sdk.rpc.CompactTxStreamer.GetTransaction
+cash.z.wallet.sdk.rpc.CompactTxStreamer.RecoverIdentity
+cash.z.wallet.sdk.rpc.CompactTxStreamer.RegisterIdentity
+cash.z.wallet.sdk.rpc.CompactTxStreamer.RegisterNameCommitment
+cash.z.wallet.sdk.rpc.CompactTxStreamer.RevokeIdentity
+cash.z.wallet.sdk.rpc.CompactTxStreamer.SendTransaction
+cash.z.wallet.sdk.rpc.CompactTxStreamer.UpdateIdentity
+cash.z.wallet.sdk.rpc.CompactTxStreamer.VerifyMessage
+
+```
+grpcurl -d '{"height":800199}' -insecure 127.0.0.1:18232  cash.z.wallet.sdk.rpc.CompactTxStreamer/GetBlock
+```
+
+## Validating VerusCoin hashes
+
 
 # Local/Developer docker-compose Usage
 

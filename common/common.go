@@ -149,7 +149,7 @@ func BlockIngestor(c *BlockCache, height int, rep int) {
 		}
 
 		// Check for reorgs once we have inital block hash from startup
-		if c.LatestHash != nil && !bytes.Equal(block.PrevHash, c.LatestHash) && false {
+		if c.LatestHash != nil && !bytes.Equal(block.PrevHash, c.LatestHash) {
 			// This must back up at least 1, but it's arbitrary, any value
 			// will work; this is probably a good balance.
 			height = c.Reorg(height - 2)
