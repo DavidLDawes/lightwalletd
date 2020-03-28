@@ -28,10 +28,42 @@ void Verushash::anyverushash(const char * bytes, int length, void * hashresult) 
     }
 }
 
+void Verushash::anyverushash_height(const char * bytes, int length, void * hashresult, int height) {
+    if (bytes[0] == 4 and bytes[2] >= 1) {
+            if (bytes[2] < 3) {
+                if (height > 800199) {
+                    verushash_v2b1_reverse(bytes, length, hashresult);
+                } else {
+                    verushash_v2b_reverse(bytes, length, hashresult);
+                }
+            } else {
+                verushash_v2b1(bytes, length, hashresult);
+            }
+    } else {
+                verushash(bytes, length, hashresult);
+    }
+}
+
 void Verushash::anyverushash_reverse(const char * bytes, int length, void * hashresult) {
     if (bytes[0] == 4 and bytes[2] >= 1) {
             if (bytes[2] < 3) {
                 verushash_v2b_reverse(bytes, length, hashresult);
+            } else {
+                verushash_v2b1_reverse(bytes, length, hashresult);
+            }
+    } else {
+            verushash_reverse(bytes, length, hashresult);
+    }
+}
+
+void Verushash::anyverushash_reverse_height(const char * bytes, int length, void * hashresult, int height) {
+    if (bytes[0] == 4 and bytes[2] >= 1) {
+            if (bytes[2] < 3) {
+                if (height > 800199) {
+                    verushash_v2b1_reverse(bytes, length, hashresult);
+                } else {
+                    verushash_v2b_reverse(bytes, length, hashresult);
+                }
             } else {
                 verushash_v2b1_reverse(bytes, length, hashresult);
             }

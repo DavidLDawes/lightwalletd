@@ -74,7 +74,7 @@ func TestBlockParser(t *testing.T) {
 				t.Error("Unexpected Saping tx")
 				break
 			}
-			if hex.EncodeToString(tx.GetDisplayHash()) != txhashes[txindex] {
+			if hex.EncodeToString(tx.GetDisplayHash(1)) != txhashes[txindex] {
 				t.Error("incorrect tx hash")
 			}
 			txindex++
@@ -184,7 +184,7 @@ func TestCompactBlocks(t *testing.T) {
 			t.Errorf("incorrect block height in testnet block %d", test.BlockHeight)
 			continue
 		}
-		if hex.EncodeToString(block.GetDisplayHash()) != test.BlockHash {
+		if hex.EncodeToString(block.GetDisplayHash(1)) != test.BlockHash {
 			t.Errorf("incorrect block hash in testnet block %x", test.BlockHash)
 			continue
 		}

@@ -124,9 +124,9 @@ func TestBlockHeader(t *testing.T) {
 			break
 		}
 
-		hash := blockHeader.GetDisplayHash()
+		hash := blockHeader.GetDisplayHash(1)
 		// test caching
-		if !bytes.Equal(hash, blockHeader.GetDisplayHash()) {
+		if !bytes.Equal(hash, blockHeader.GetDisplayHash(1)) {
 			t.Error("caching is broken")
 		}
 

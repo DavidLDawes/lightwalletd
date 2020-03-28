@@ -191,7 +191,7 @@ func parseNBits(b []byte) *big.Int {
 }
 
 // GetDisplayHash returns the bytes of a block hash in big-endian order.
-func (hdr *BlockHeader) GetDisplayHash() []byte {
+func (hdr *BlockHeader) GetDisplayHash(height int) []byte {
 	if hdr.cachedHash != nil {
 		return hdr.cachedHash
 	}
@@ -203,14 +203,14 @@ func (hdr *BlockHeader) GetDisplayHash() []byte {
 	}
 	hash := make([]byte, 32)
 	ptrHash := uintptr(unsafe.Pointer(&hash[0]))
-	Verus_hash.Anyverushash_reverse(string(serializedHeader), len(string(serializedHeader)), ptrHash)
+	Verus_hash.Anyverushash_reverse_height(string(serializedHeader), len(string(serializedHeader)), ptrHash, height)
 
 	hdr.cachedHash = hash
 	return hdr.cachedHash
 }
 
 // GetEncodableHash returns the bytes of a block hash in little-endian wire order.
-func (hdr *BlockHeader) GetEncodableHash() []byte {
+func (hdr *BlockHeader) GetEncodableHash(height int) []byte {
 	serializedHeader, err := hdr.MarshalBinary()
 	if err != nil {
 		log.Fatalf("error marshaling block header: %v", err)
@@ -218,7 +218,7 @@ func (hdr *BlockHeader) GetEncodableHash() []byte {
 	}
 	hash := make([]byte, 32)
 	ptrHash := uintptr(unsafe.Pointer(&hash[0]))
-	Verus_hash.Anyverushash(string(serializedHeader), len(string(serializedHeader)), ptrHash)
+	Verus_hash.Anyverushash_height(string(serializedHeader), len(string(serializedHeader)), ptrHash, height)
 	return hash
 }
 

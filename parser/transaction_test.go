@@ -221,7 +221,7 @@ func TestSproutTransactionParser(t *testing.T) {
 			t.Errorf("Test %d: jsSig mismatch %x %x", i, testJSSig, tx.joinSplitSig)
 			continue
 		}
-		if hex.EncodeToString(tx.GetDisplayHash()) != tt.txid {
+		if hex.EncodeToString(tx.GetDisplayHash(1)) != tt.txid {
 			t.Errorf("Test %d: incorrect txid", i)
 		}
 	}
@@ -765,11 +765,11 @@ func TestSaplingTransactionParser(t *testing.T) {
 			continue
 		}
 
-		if hex.EncodeToString(tx.GetDisplayHash()) != tt.txid {
+		if hex.EncodeToString(tx.GetDisplayHash(1)) != tt.txid {
 			t.Errorf("Test %d: incorrect txid", i)
 		}
 		// test caching
-		if hex.EncodeToString(tx.GetDisplayHash()) != tt.txid {
+		if hex.EncodeToString(tx.GetDisplayHash(1)) != tt.txid {
 			t.Errorf("Test %d: incorrect cached txid", i)
 		}
 	}
