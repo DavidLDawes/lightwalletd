@@ -32,15 +32,15 @@ func (b *Block) Transactions() []*Transaction {
 }
 
 // GetDisplayHash returns the block hash in big-endian display order.
-func (b *Block) GetDisplayHash() []byte {
-	return b.hdr.GetDisplayHash()
+func (b *Block) GetDisplayHash(height int) []byte {
+	return b.hdr.GetDisplayHash(height)
 }
 
 // TODO: encode hash endianness in a type?
 
 // GetEncodableHash returns the block hash in little-endian wire order.
 func (b *Block) GetEncodableHash() []byte {
-	return b.hdr.GetEncodableHash()
+	return b.hdr.GetEncodableHash(b.height)
 }
 
 func (b *Block) GetDisplayPrevHash() []byte {
@@ -104,7 +104,7 @@ func (b *Block) ToCompact() *walletrpc.CompactBlock {
 	saplingTxns := make([]*walletrpc.CompactTx, 0, len(b.vtx))
 	for idx, tx := range b.vtx {
 		if tx.HasSaplingTransactions() {
-			saplingTxns = append(saplingTxns, tx.ToCompact(idx))
+			saplingTxns = append(saplingTxns, tx.ToCompact(idx, b.height))
 		}
 	}
 	compactBlock.Vtx = saplingTxns

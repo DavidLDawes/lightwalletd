@@ -2,7 +2,6 @@ package parser
 
 import (
 	"unsafe"
-	"github.com/asherda/lightwalletd/parser/verushash"
 	"github.com/asherda/lightwalletd/parser/internal/bytestring"
 	"github.com/asherda/lightwalletd/walletrpc"
 	"github.com/pkg/errors"
@@ -270,30 +269,24 @@ type Transaction struct {
 }
 
 // GetDisplayHash returns the transaction hash in big-endian display order.
-func (tx *Transaction) GetDisplayHash() []byte {
+func (tx *Transaction) GetDisplayHash(height int) []byte {
 	if tx.txId != nil {
 		return tx.txId
 	}
-
 	hash := make([]byte, 32)
 	ptrHash := uintptr(unsafe.Pointer(&hash[0]))
-	h := verushash.NewVerushash()
-	// Use the Wrap object
-	h.Verushash_reverse(string(tx.rawBytes), len(tx.rawBytes), ptrHash)
+
+	Verus_hash.Anyverushash_reverse_height(string(tx.rawBytes), len(tx.rawBytes), ptrHash, height)
 	tx.txId = hash
-	verushash.DeleteVerushash(h)
 	return tx.txId
 }
 
 // GetEncodableHash returns the transaction hash in little-endian wire format order.
-func (tx *Transaction) GetEncodableHash() []byte {
+func (tx *Transaction) GetEncodableHash(height int) []byte {
 	hash := make([]byte, 32)
 	ptrHash := uintptr(unsafe.Pointer(&hash[0]))
 
-	h := verushash.NewVerushash()
-	// Use the Wrap object
-	h.Verushash(string(tx.rawBytes), len(tx.rawBytes), ptrHash)
-	verushash.DeleteVerushash(h)
+	Verus_hash.Anyverushash_height(string(tx.rawBytes), len(tx.rawBytes), ptrHash, height)
 	return hash
 }
 
@@ -305,10 +298,10 @@ func (tx *Transaction) HasSaplingTransactions() bool {
 	return tx.version >= 4 && (len(tx.shieldedSpends)+len(tx.shieldedOutputs)) > 0
 }
 
-func (tx *Transaction) ToCompact(index int) *walletrpc.CompactTx {
+func (tx *Transaction) ToCompact(index int, height int) *walletrpc.CompactTx {
 	ctx := &walletrpc.CompactTx{
 		Index: uint64(index), // index is contextual
-		Hash:  tx.GetEncodableHash(),
+		Hash:  tx.GetEncodableHash(height),
 		//Fee:     0, // TODO: calculate fees
 		Spends:  make([]*walletrpc.CompactSpend, len(tx.shieldedSpends)),
 		Outputs: make([]*walletrpc.CompactOutput, len(tx.shieldedOutputs)),
