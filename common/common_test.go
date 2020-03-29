@@ -61,8 +61,14 @@ func TestMain(m *testing.M) {
 		os.Stderr.WriteString(fmt.Sprintf("Cannot open testdata/blocks: %v", err))
 		os.Exit(1)
 	}
+	Log = logger.WithFields(logrus.Fields{
+		"app": "scanning testBlocks",
+	})
 	scan := bufio.NewScanner(testBlocks)
 	for scan.Scan() { // each line (block)
+	Log = logger.WithFields(logrus.Fields{
+		"app": "scan again",
+	})
 		block := scan.Bytes()
 		// Enclose the hex string in quotes (to make it json, to match what's
 		// returned by the RPC)
@@ -146,7 +152,7 @@ func TestGetSaplingInfo(t *testing.T) {
 
 // ------------------------------------------ BlockIngestor()
 
-// There are four test blocks, 0..3
+// Check the first 2 blocks, 0 & 1
 func getblockStub(method string, params []json.RawMessage) (json.RawMessage, error) {
 	var height string
 	err := json.Unmarshal(params[0], &height)
@@ -226,8 +232,8 @@ func TestBlockIngestor(t *testing.T) {
 	RawRequest = getblockStub
 	Sleep = sleepStub
 	testcache := NewBlockCache("unittestcache", 380640)
-	BlockIngestor(testcache, 380640, 7)
-	if step != 7 {
+	BlockIngestor(testcache, 380640, 2)
+	if step != 2 {
 		t.Error("unexpected final step", step)
 	}
 	step = 0

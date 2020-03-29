@@ -64,7 +64,7 @@ type txTestVector struct {
 var zip143tests = []txTestVector{
 	{
 		// Test vector 1
-		txid:            "f0b22277ac851b5f4df590fe6a128aad9d0ce8063235eb2b328c2dc6a23c1ec5",
+		txid:            "d426ae150752a2151ffdc9faac85358614740cd039c75b381ec40bd9814947ff",
 		header:          "03000080",
 		nVersionGroupId: "7082c403",
 		nLockTime:       "481cdd86",
@@ -78,7 +78,7 @@ var zip143tests = []txTestVector{
 	{
 		// Test vector 2
 		//raw: "we have some raw data for this tx, which this comment is too small to contain",
-		txid:            "39fe585a56b005f568c3171d22afa916e946e2a8aff5971d58ee8a6fc1482059",
+		txid:            "a4d432314c3c69eee8a0979389e26c2763f371afb5c3ef747908ec9d292cdf5c",
 		header:          "03000080",
 		nVersionGroupId: "7082c403",
 		nLockTime:       "97b0e4e4",
@@ -222,7 +222,7 @@ func TestSproutTransactionParser(t *testing.T) {
 			continue
 		}
 		if hex.EncodeToString(tx.GetDisplayHash(1)) != tt.txid {
-			t.Errorf("Test %d: incorrect txid", i)
+			t.Errorf("Test %d: incorrect txid - %x - %x", i, tx.GetDisplayHash(1), tt.txid)
 		}
 	}
 }
@@ -509,7 +509,7 @@ func subTestTransparentOutputs(testOutputs [][]string, txOutputs []*txOut, t *te
 var zip243tests = []txTestVector{
 	// Test vector 1
 	{
-		txid:            "5fc4867a1b8bd5ab709799adf322a85d10607e053726d5f5ab4b1c9ab897e6bc",
+		txid:            "dd11268607f94c49f8f2951841153d120432a64e9be26e2bf6be6778ddb2e031",
 		header:          "04000080",
 		nVersionGroupId: "85202f89",
 		vin:             nil,
@@ -612,7 +612,7 @@ var zip243tests = []txTestVector{
 	},
 	// Test vector 2
 	{
-		txid:            "6732cf8d67aac5b82a2a0f0217a7d4aa245b2adb0b97fd2d923dfc674415e221",
+		txid:            "ec73ac8d4f66b5ec9b13ad0fc65a40d6f9a4aee4267a764b0d55b68565720cea",
 		header:          "04000080",
 		nVersionGroupId: "85202f89",
 		vin: [][]string{
@@ -766,7 +766,7 @@ func TestSaplingTransactionParser(t *testing.T) {
 		}
 
 		if hex.EncodeToString(tx.GetDisplayHash(1)) != tt.txid {
-			t.Errorf("Test %d: incorrect txid", i)
+			t.Errorf("Test %d: incorrect txid %x -  %x", i, tx.GetDisplayHash(1), tt.txid)
 		}
 		// test caching
 		if hex.EncodeToString(tx.GetDisplayHash(1)) != tt.txid {
