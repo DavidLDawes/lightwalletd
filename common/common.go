@@ -139,7 +139,7 @@ func BlockIngestor(c *BlockCache, height int, rep int) {
 			// We're up to date in our polling; wait for a new block
 			c.Sync()
 			waiting = true
-			Sleep(10 * time.Second)
+			Sleep(40 * time.Second)
 			continue
 		}
 		retryCount = 0

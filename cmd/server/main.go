@@ -138,7 +138,6 @@ func main() {
 	common.Log.Info("Lightwalletd starting version ", version)
 
 	filesThatShouldExist := []string{
-		// opts.zcashConfPath,
 		opts.verusConfPath,
 	}
 	if opts.tlsCertPath != "" {
@@ -188,12 +187,11 @@ func main() {
 		reflection.Register(server)
 	}
 
-	// Initialize Zcash RPC client. Right now (Jan 2018) this is only for
-	// sending transactions, but in the future it could back a different type
-	// of block streamer.
+	// Initialize VerusCoin RPC client. Right now (March 2020) this is for
+	// sending transactions and dealing with creation, management and use of
+	// identities.
 
-	// TODO: VerusCoin
-	rpcClient, err := frontend.NewZRPCFromConf(opts.verusConfPath)
+	rpcClient, err := frontend.NewVRPCFromConf(opts.verusConfPath)
 	if err != nil {
 		common.Log.WithFields(logrus.Fields{
 			"error": err,

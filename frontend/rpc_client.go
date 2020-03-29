@@ -8,7 +8,7 @@ import (
 	ini "gopkg.in/ini.v1"
 )
 
-func NewZRPCFromConf(confPath interface{}) (*rpcclient.Client, error) {
+func NewVRPCFromConf(confPath interface{}) (*rpcclient.Client, error) {
 	connCfg, err := connFromConf(confPath)
 	if err != nil {
 		return nil, err

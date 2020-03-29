@@ -455,7 +455,7 @@ rpcuser = testlightwduser
 rpcpassword = testlightwdpassword
 `
 
-func TestNewZRPCFromConf(t *testing.T) {
+func TestNewVRPCFromConf(t *testing.T) {
 	connCfg, err := connFromConf([]byte(sampleconf))
 	if err != nil {
 		t.Fatal("connFromConf failed")
@@ -483,11 +483,11 @@ func TestNewZRPCFromConf(t *testing.T) {
 	}
 
 	// Can't verify returned values, but at least run it
-	_, err = NewZRPCFromConf([]byte(sampleconf))
+	_, err = NewVRPCFromConf([]byte(sampleconf))
 	if err != nil {
 		t.Fatal("NewZRPCFromClient failed")
 	}
-	_, err = NewZRPCFromConf(10)
+	_, err = NewVRPCFromConf(10)
 	if err == nil {
 		t.Fatal("NewZRPCFromClient unexpected success")
 	}
