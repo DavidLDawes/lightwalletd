@@ -1,6 +1,6 @@
 # Definitions
 
-A **light wallet** is not a full participant in the network of Zcash peers. It can send and receive payments, but does not store or validate a copy of the blockchain.
+A **light wallet** is not a full participant in the network of VerusCoin peers. It can send and receive payments, but does not store or validate a copy of the blockchain.
 
 A **compact transaction** is a representation of a Zcash Sapling transaction that contains only the information necessary to detect that a given Sapling payment output is for you and to spend a note.
 
@@ -27,9 +27,9 @@ A **compact block** is a collection of compact transactions along with certain m
 
 ## Ingester
 
-The ingester is the component responsible for transforming raw Zcash block data into a compact block.
+The ingester is the component responsible for transforming raw Zcash block data into a compact block. See BlockIngestor in common/common.go, it saves blocks in the file system in the files db-main-blocks and db-main-lengths. It also caches blocks in memory as it sees them, making subsequent accesses faster.
 
-The ingester is a modular component. Anything that can retrieve the necessary data and put it into storage can fulfill this role. Currently, the only ingester available communicated to zcashd through RPCs and parses that raw block data. 
+The ingester is a modular component. Anything that can retrieve the necessary data and put it into storage can fulfill this role. Currently, the only ingester available communicates to verusd through RPCs and parses that raw block data. 
 
 **How do I run it?**
 
@@ -44,10 +44,12 @@ Now clone this repo and start the ingester. The first run will start slow as Go 
 ```
 $ git clone https://github.com/asherda/lightwalletd
 $ cd lightwalletd
-$ go run cmd/ingest/main.go --conf-file <path_to_verus.conf> --db-path <path_to_sqllightdb>
+$ swig -go  -intgosize 64 -c++ -cgo -gccgo -Wall -v parser/verushash/verushash.i
+$ make
+$ ./server --conf-file ~/.komodo/VRSC/VRSC.conf --log-file /logs/server.log --bind-addr 127.0.0.1:18232
 ```
 
-To see the other command line options, run `go run cmd/ingest/main.go --help`.
+To see the other command line options, run `./server --help`.
 
 ## Frontend
 
@@ -55,7 +57,7 @@ The frontend is the component that talks to clients.
 
 It exposes an API that allows a client to query for current blockheight, request ranges of compact block data, request specific transaction details, and send new Zcash transactions.
 
-The API is specified in [Protocol Buffers](https://developers.google.com/protocol-buffers/) and implemented using [gRPC](https://grpc.io). You can find the exact details in [these files](https://github.com/zcash/lightwalletd/tree/master/walletrpc).
+The API is specified in [Protocol Buffers](https://developers.google.com/protocol-buffers/) and implemented using [gRPC](https://grpc.io). You can find the exact details in [these files](https://github.com/davidldawes/lightwalletd/tree/master/walletrpc).
 
 **How do I run it?**
 
@@ -85,15 +87,21 @@ Support for users sending transactions will require the ability to make JSON-RPC
 
 The storage provider is the component that caches compact blocks and their metadata for the frontend to retrieve and serve to clients.
 
-It currently assumes a SQL database. The schema can be found [here](https://github.com/zcash/lightwalletd/blob/d53507cc39e8da52e14d08d9c63fee96d3bd16c3/storage/sqlite3.go#L15), but they're extremely provisional. We expect that anyone deploying lightwalletd at scale will adapt it to their own existing data infrastructure.
+The ingestor uses a couple of db* files and an in memory cache. The first time it is run (with no db* files present yet) it will start from the mid 2000 range and get all of the blocks up to the current top, then loop forever checking for new blocks every 40 seconds. Each time a block is requested it is cached if it wasn't already; if it wasn't cached then the block is requested from verusd directly (and cached).
 
 **How do I run it?**
 
-It's not necessary to explicitly run anything. Both the ingester and the frontend code know how to use a generic SQL database via Go's [database/sql](https://golang.org/pkg/database/sql/) package. It should be possible to swap out for MySQL or Postgres by changing the driver import and connection string.
+Commands above work fine.
+
+If you want to see what it is up to then tail the log file. In the example above it's set to /logs//server.log, so use:
+```
+tal -f /logs/server.log
+```
+If you want to retest the loading, then stop it (hit a <Ctrl>C in it's terminal window, where you ran ./server), delete the db* files in /lightwalletd, and restart server. It will start fetching the blocks from verusd again, logging every 100 to the log file (see the tail command above).
 
 **What should I watch out for?**
 
-sqlite is extremely reliable for what it is, but it isn't good at high concurrency. Because sqlite uses a global write lock, the code limits the number of open database connections to *one* and currently makes no distinction between read-only (frontend) and read/write (ingester) connections. It will probably begin to exhibit lock contention at low user counts, and should be improved or replaced with your own data store in production.
+Startups are slow; provisioning with db* files harvested from up to date servers would speed things up. Actually using shared persistent sotrage - a DB, or redis or memcached, or perhaps eventually when there are huge numbers of chains Cassandra - would provide be better.
 
 ## Production
 

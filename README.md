@@ -128,8 +128,36 @@ grpcurl  -insecure -d '{"height":643508}' 127.0.0.1:18232 cash.z.wallet.sdk.rpc.
 }
 ```
 
+## validating hashes
+In the example just above we fetched block 643508 from lightwalletd's frontend. Note the hash value:
+```
+00uzIAwjtsrkcN3OPDpTE9NojnFtu1EHXlwiovtkdwk=
+```
+This is the base64 encoded version, in little endian (Intel/AMD style) order. You can convert that to a hex encoded version using several web sites, for example https://base64.guru/converter/decode/hex - simply paste the base64 in, hit the button, and copy the hex result back out. Using it for the hash above I get:
+```
+d34bb3200c23b6cae470ddce3c3a5313d3688e716dbb51075e5c22a2fb647709
+```
+Now we can use verus to check that. If using VerusDesktop then under the Debug menu select "show binary folder" and from there launch a shell and get the block info for block 643508:
+```
+./verus getblock 643508
+{
+  "hash": "097764fba2225c5e0751bb6d718e68d313533a3ccedd70e4cab6230c20b34bd3",
+  "confirmations": 303313,
+  "size": 3524,
+  "height": 643508,
+  "version": 65540,
+  "merkleroot": "2d20eeb27922667744961b4406553169205e3900da6bd22dbb20853abee055ef",
+  "segid": -2,
+<snip - it goes on for a bit>
+``` 
+Note the hash, 0977... which does not appear to match. Butif you compare back to front you'll see one is the other in opposite byte (every 2 hex chars) order.
+It's easier to see if you put them next to each other and separate out the bytes:
+```
+d3 4b b3 20 0c 23 b6 ca e4 70 dd ce 3c 3a 53 13 d3 68 8e 71 6d bb 51 07 5e 5c 22 a2 fb 64 77 09
+09 77 64 fb a2 22 5c 5e 07 51 bb 6d 71 8e 68 d3 13 53 3a 3c ce dd 70 e4 ca b6 23 0c 20 b3 4b d3
+```
+As expected, the hashes match, when compared properly.
 # Local/Developer docker-compose Usage
-
 [docs/docker-compose-setup.md](./docs/docker-compose-setup.md)
 
 # Local/Developer Usage
