@@ -2,23 +2,23 @@
  #  File: Dockerfile
  #  Author: mdr0id
  #  Date: 9/3/2019
- #  Description:  Used for devs that have not built zcash or lightwalletd on
+ #  Description:  Used for devs that have not built verusd or lightwalletd on
  #                on existing system
  #  USAGE:
  #
  #  To build image: make docker_img
  #  To run container: make docker_image_run
  #  
- #  This will place you into the container where you can run zcashd, zcash-cli, 
+ #  This will place you into the container where you can run verusd, verus,
  #  lightwalletd server etc..
  #
- #  First you need to get zcashd sync to current height on testnet, from outside container:
- #  make docker_img_run_zcashd
+ #  First you need to get verusd sync to current height on testnet, from outside container (this does not appear to exist):
+ #  make docker_img_run_verusd
  #
- #  Sometimes you need to manually start zcashd for the first time, from insdie the container:
- #  zcashd -printtoconsole   
+ #  Sometimes you need to manually start verusd for the first time, from inside the container:
+ #  ./verusd
  #
- #  Once the block height is atleast 280,000 you can go ahead and start lightwalletd
+ #  tart lightwalletd insecurely:
  #  make docker_img_run_lightwalletd_insecure_server
  #  
  #  If you need a random bash session in the container, use:

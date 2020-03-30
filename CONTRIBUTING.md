@@ -1,5 +1,5 @@
 # Development Workflow
-This document describes the standard workflows and terminology for developers at Zcash. It is intended to provide procedures that will allow users to contribute to the open-source code base. Below are common workflows users will encounter:
+This document describes the standard workflows and terminology for developers at VerusCash. It is intended to provide procedures that will allow users to contribute to the open-source code base. Below are common workflows users will encounter:
 
 1. Fork lightwalletd Repository 
 2. Create Branch
@@ -19,7 +19,7 @@ Note: Please replace `your_username`, with your actual GitHub username
 git clone git@github.com:your_username/lightwalletd.git
 cd lightwalletd
 git remote set-url origin git@github.com:your_username/lightwalletd.git
-git remote add upstream git@github.com:zcash/lightwalletd.git
+git remote add upstream git@github.com:veruscoin/lightwalletd.git
 git remote set-url --push upstream DISABLED
 git fetch upstream
 git branch -u upstream/master master
@@ -39,14 +39,14 @@ After issuing the above commands, your `.git/config` file should look similar to
 	remote = upstream
 	merge = refs/heads/master
 [remote "upstream"]
-	url = git@github.com:zcash/lightalletd.git
+	url = git@github.com:veruscoin/lightalletd.git
 	fetch = +refs/heads/*:refs/remotes/upstream/*
 	pushurl = DISABLED
 ```
 This setup provides a single cloned environment to develop for Lightwalletd. There are alternative methods using multiple clones, but this document does not cover that process.
 
 ## Create Branch
-While working on the Lightwalletd project, you are going to have bugs, features, and ideas to work on. Branching exists to aid these different tasks while you write code. Below are some conventions of branching at Zcash:
+While working on the Lightwalletd project, you are going to have bugs, features, and ideas to work on. Branching exists to aid these different tasks while you write code. Below are some conventions of branching at VersCoin:
 
 1. `master` branch is **ALWAYS** deployable
 2. Branch names **MUST** be descriptive:
@@ -83,7 +83,7 @@ git remote -v
 ```bash
 origin    git@github.com:your_username/lightwalletd.git (fetch)
 origin    git@github.com:your_username/lightwalletd.git (push)
-upstream    git@github.com:zcash/lightwalletd.git (fetch)
+upstream    git@github.com:veruscoin/lightwalletd.git (fetch)
 upstream    DISABLED (push)
 ```
 This output should be consistent with your `.git/config`:
@@ -96,7 +96,7 @@ This output should be consistent with your `.git/config`:
 	url = git@github.com:your_username/lightwalletd.git
 	fetch = +refs/heads/*:refs/remotes/origin/*
 [remote "upstream"]
-	url = git@github.com:zcash/lightwalletd.git
+	url = git@github.com:veruscoin/lightwalletd.git
 	fetch = +refs/heads/*:refs/remotes/upstream/*
 	pushurl = DISABLED
 ```
