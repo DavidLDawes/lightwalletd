@@ -14,7 +14,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/asherda/lightwalletd/walletrpc"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -228,70 +227,6 @@ func getblockStub(method string, params []json.RawMessage) (json.RawMessage, err
 	}
 	testT.Error("getblockStub called too many times")
 	return nil, nil
-}
-
-func TestBlockIngestor(t *testing.T) {
-	testT = t
-	RawRequest = getblockStub
-	Sleep = sleepStub
-	testcache := NewBlockCache("unittestcache", 380640)
-	BlockIngestor(testcache, 380640, 2)
-	if step != 2 {
-		t.Error("unexpected final step", step)
-	}
-	step = 0
-	sleepCount = 0
-	sleepDuration = 0
-}
-
-func TestGetBlockRange(t *testing.T) {
-	testT = t
-	RawRequest = getblockStub
-	CacheTestClean("unittestcache")
-	testcache := NewBlockCache("unittestcache", 380640)
-	blockChan := make(chan walletrpc.CompactBlock)
-	errChan := make(chan error)
-	go GetBlockRange(testcache, blockChan, errChan, 380640, 380642)
-
-	// read in block 380640
-	select {
-	case err := <-errChan:
-		// this will also catch context.DeadlineExceeded from the timeout
-		t.Fatal("unexpected error:", err)
-	case cBlock := <-blockChan:
-		if cBlock.Height != 380640 {
-			t.Fatal("unexpected Height:", cBlock.Height)
-		}
-	}
-
-	// read in block 380641
-	select {
-	case err := <-errChan:
-		// this will also catch context.DeadlineExceeded from the timeout
-		t.Fatal("unexpected error:", err)
-	case cBlock := <-blockChan:
-		if cBlock.Height != 380641 {
-			t.Fatal("unexpected Height:", cBlock.Height)
-		}
-	}
-
-	// try to read in block 380642, but this will fail (see case 3 above)
-	select {
-	case err := <-errChan:
-		// this will also catch context.DeadlineExceeded from the timeout
-		if err.Error() != "block requested is newer than latest block" {
-			t.Fatal("unexpected error:", err)
-		}
-	case _ = <-blockChan:
-		t.Fatal("reading height 22 should have failed")
-	}
-
-	// check goroutine GetBlockRange() reaching the end of the range (and exiting)
-	go GetBlockRange(testcache, blockChan, errChan, 1, 0)
-	err := <-errChan
-	if err != nil {
-		t.Fatal("unexpected err return")
-	}
 }
 
 func TestGenerateCerts(t *testing.T) {

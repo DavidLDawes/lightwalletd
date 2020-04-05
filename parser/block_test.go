@@ -21,12 +21,12 @@ import (
 func TestBlockParser(t *testing.T) {
 	// These (valid on testnet) correspond to the transactions in testdata/blocks
 	var txhashes = []string{
-		"81096ff101a4f01d25ffd34a446bee4368bd46c233a59ac0faf101e1861c6b22",
-		"921dc41bef3a0d887c615abac60a29979efc8b4bbd3d887caeb6bb93501bde8e",
-		"d8e4c336ffa69dacaa4e0b4eaf8e3ae46897f1930a573c10b53837a03318c980",
-		"4d5ccbfc6984680c481ff5ce145b8a93d59dfea90c150dfa45c938ab076ee5b2",
-		"df2b03619d441ce3d347e9278d87618e975079d0e235dfb3b3d8271510f707aa",
-		"8d2593edfc328fa637b4ac91c7d569ee922bb9a6fda7cea230e92deb3ae4b634",
+		"8d8e1184148cae7c87a6cd50cd8fa07caa0811da5013b4652b9b076c84d92f79",
+		"08df1dac9c0710606cfd58446169dab0585ca86dac21f4dccda91573f9630372",
+		"838ce6b30b1d67eccd1d7625f86a033e20dcd744f5cf0312224e14c3197dc938",
+		"542e7788130fac94701ee53c5bed21198018dd8150a08afb77fdcc8cec0d115b",
+		"33b57226b991ed0d30f8d53ada7a1ff6cfb80a9b173f1c198d251932f7363668",
+		"e770275b22e6b906ceb2bec5754032bea0642a58657668d5d128e09706ba39e0",
 	}
 	txindex := 0
 	testBlocks, err := os.Open("../testdata/blocks")
@@ -69,16 +69,16 @@ func TestBlockParser(t *testing.T) {
 			break
 		}
 		if block.HasSaplingTransactions() {
-			t.Error("Unexpected Saping tx")
+			t.Error("Unexpected Sapling tx")
 			break
 		}
 		for _, tx := range block.Transactions() {
 			if tx.HasSaplingTransactions() {
-				t.Error("Unexpected Saping tx")
+				t.Error("Unexpected Sapling tx")
 				break
 			}
 			if hex.EncodeToString(tx.GetDisplayHash(1)) != txhashes[txindex] {
-				t.Error("incorrect tx hash")
+				t.Error("incorrect tx hash. Expected ", hex.EncodeToString(tx.GetDisplayHash(1)))
 			}
 			txindex++
 		}
