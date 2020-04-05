@@ -8,9 +8,12 @@ package common
 
 import (
 	"bytes"
+	"encoding/base64"
+	"strconv"
 	"sync"
 
 	"github.com/asherda/lightwalletd/walletrpc"
+	"github.com/go-redis/redis/v7"
 	"github.com/golang/protobuf/proto"
 )
 
@@ -24,20 +27,29 @@ type BlockCache struct {
 	MaxEntries int
 
 	// m[firstBlock..nextBlock) are valid
-	m          map[int]*blockCacheEntry
-	firstBlock int
-	nextBlock  int
-
-	mutex sync.RWMutex
+	m           map[int]*blockCacheEntry
+	firstBlock  int
+	nextBlock   int
+	redisClient redis.Client
+	mutex       sync.RWMutex
 }
+
+// RedisOnly flag if true indicates we do not use verusd
+var RedisOnly = false
 
 // NewBlockCache returns an instance of a block cache object.
 func NewBlockCache(maxEntries int, startHeight int) *BlockCache {
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     "127.0.0.1:6379",
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
 	return &BlockCache{
-		MaxEntries: maxEntries,
-		m:          make(map[int]*blockCacheEntry),
-		firstBlock: startHeight,
-		nextBlock:  startHeight,
+		MaxEntries:  maxEntries,
+		m:           make(map[int]*blockCacheEntry),
+		firstBlock:  startHeight,
+		nextBlock:   startHeight,
+		redisClient: *redisClient,
 	}
 }
 
@@ -90,6 +102,12 @@ func (c *BlockCache) Add(height int, block *walletrpc.CompactBlock) (bool, error
 	c.nextBlock++
 	// Invariant: m[firstBlock..nextBlock) are valid.
 
+	blockBase64 := base64.StdEncoding.EncodeToString(data)
+	redisErr := c.redisClient.Set(strconv.Itoa(height), blockBase64, 0).Err()
+	if redisErr != nil {
+		println("Error writing to redis")
+	}
+
 	// remove any blocks that are older than the capacity of the cache
 	for c.firstBlock < c.nextBlock-c.MaxEntries {
 		// Invariant: m[firstBlock..nextBlock) are valid.
@@ -104,6 +122,23 @@ func (c *BlockCache) Add(height int, block *walletrpc.CompactBlock) (bool, error
 // Get returns the compact block at the requested height if it is
 // in the cache, else nil.
 func (c *BlockCache) Get(height int) *walletrpc.CompactBlock {
+
+	redisCache, err := c.redisClient.Get(strconv.Itoa(height)).Result()
+	if err == nil {
+		decoded, decodeErr := base64.StdEncoding.DecodeString(redisCache)
+		if decodeErr == nil {
+			serialized := &walletrpc.CompactBlock{}
+			redisUnmarshalErr := proto.Unmarshal(decoded, serialized)
+			if redisUnmarshalErr == nil {
+				return serialized
+			}
+		}
+	}
+	if RedisOnly {
+		println("Error unmarshalling compact block")
+		return nil
+	}
+
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 
@@ -112,8 +147,8 @@ func (c *BlockCache) Get(height int) *walletrpc.CompactBlock {
 	}
 
 	serialized := &walletrpc.CompactBlock{}
-	err := proto.Unmarshal(c.m[height].data, serialized)
-	if err != nil {
+	unmarshalErr := proto.Unmarshal(c.m[height].data, serialized)
+	if unmarshalErr != nil {
 		println("Error unmarshalling compact block")
 		return nil
 	}

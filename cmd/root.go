@@ -25,14 +25,17 @@ import (
 var cfgFile string
 var logger = logrus.New()
 
+// StartOpts contains the command line options set for this run of lightwalletd
+var StartOpts *common.Options
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "lightwalletd",
-	Short: "Lightwalletd is a backend service to the Zcash blockchain",
+	Short: "Lightwalletd is a backend service to the VerusCoin blockchain",
 	Long: `Lightwalletd is a backend service that provides a 
-         bandwidth-efficient interface to the Zcash blockchain`,
+         bandwidth-efficient interface to the VerusCoin blockchain`,
 	Run: func(cmd *cobra.Command, args []string) {
-		opts := &common.Options{
+		StartOpts = &common.Options{
 			BindAddr:          viper.GetString("bind-addr"),
 			TLSCertPath:       viper.GetString("tls-cert"),
 			TLSKeyPath:        viper.GetString("tls-key"),
@@ -41,23 +44,35 @@ var rootCmd = &cobra.Command{
 			VerusConfPath:     viper.GetString("verus-conf-path"),
 			ZcashConfPath:     viper.GetString("zcash-conf-path"),
 			NoTLSVeryInsecure: viper.GetBool("no-tls-very-insecure"),
+			RedisOnly:         viper.GetBool("redis-only"),
 			CacheSize:         viper.GetInt("cache-size"),
 		}
 
-		common.Log.Debugf("Options: %#v\n", opts)
+		common.Log.Debugf("Options: %#v\n", StartOpts)
 
-		filesThatShouldExist := []string{
-			opts.TLSCertPath,
-			opts.TLSKeyPath,
-			opts.LogFile,
-			opts.VerusConfPath,
+		// Dependency loop so common can not include us; so push the
+		// value to common/cache.go
+		common.RedisOnly = StartOpts.RedisOnly
+
+		var filesThatShouldExist []string
+		if StartOpts.RedisOnly {
+			filesThatShouldExist = []string{
+				StartOpts.LogFile,
+			}
+		} else {
+			filesThatShouldExist = []string{
+				StartOpts.TLSCertPath,
+				StartOpts.TLSKeyPath,
+				StartOpts.LogFile,
+				StartOpts.VerusConfPath,
+			}
 		}
 
 		for _, filename := range filesThatShouldExist {
-			if !fileExists(opts.LogFile) {
-				os.OpenFile(opts.LogFile, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
+			if !fileExists(StartOpts.LogFile) {
+				os.OpenFile(StartOpts.LogFile, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
 			}
-			if opts.NoTLSVeryInsecure && (filename == opts.TLSCertPath || filename == opts.TLSKeyPath) {
+			if StartOpts.NoTLSVeryInsecure && (filename == StartOpts.TLSCertPath || filename == StartOpts.TLSKeyPath) {
 				continue
 			}
 			if !fileExists(filename) {
@@ -67,7 +82,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		// Start server and block, or exit
-		if err := startServer(opts); err != nil {
+		if err := startServer(StartOpts); err != nil {
 			common.Log.WithFields(logrus.Fields{
 				"error": err,
 			}).Fatal("couldn't create server")
@@ -83,14 +98,14 @@ func fileExists(filename string) bool {
 	return !info.IsDir()
 }
 
-func startServer(opts *common.Options) error {
-	if opts.LogFile != "" {
+func startServer(startOpts *common.Options) error {
+	if startOpts.LogFile != "" {
 		// instead write parsable logs for logstash/splunk/etc
-		output, err := os.OpenFile(opts.LogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		output, err := os.OpenFile(startOpts.LogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			common.Log.WithFields(logrus.Fields{
 				"error": err,
-				"path":  opts.LogFile,
+				"path":  startOpts.LogFile,
 			}).Fatal("couldn't open log file")
 		}
 		defer output.Close()
@@ -98,20 +113,20 @@ func startServer(opts *common.Options) error {
 		logger.SetFormatter(&logrus.JSONFormatter{})
 	}
 
-	logger.SetLevel(logrus.Level(opts.LogLevel))
+	logger.SetLevel(logrus.Level(startOpts.LogLevel))
 	// gRPC initialization
 	var server *grpc.Server
 
-	if opts.NoTLSVeryInsecure {
+	if startOpts.NoTLSVeryInsecure {
 		common.Log.Warningln("Starting insecure server")
 		fmt.Println("Starting insecure server")
 		server = grpc.NewServer(logging.LoggingInterceptor())
 	} else {
-		transportCreds, err := credentials.NewServerTLSFromFile(opts.TLSCertPath, opts.TLSKeyPath)
+		transportCreds, err := credentials.NewServerTLSFromFile(startOpts.TLSCertPath, startOpts.TLSKeyPath)
 		if err != nil {
 			common.Log.WithFields(logrus.Fields{
-				"cert_file": opts.TLSCertPath,
-				"key_path":  opts.TLSKeyPath,
+				"cert_file": startOpts.TLSCertPath,
+				"key_path":  startOpts.TLSKeyPath,
 				"error":     err,
 			}).Fatal("couldn't load TLS credentials")
 		}
@@ -119,38 +134,44 @@ func startServer(opts *common.Options) error {
 	}
 
 	// Enable reflection for debugging
-	if opts.LogLevel >= uint64(logrus.WarnLevel) {
+	if startOpts.LogLevel >= uint64(logrus.WarnLevel) {
 		reflection.Register(server)
 	}
 
-	// Initialize verusd RPC client. Right now (April 2020) this is only for
-	// sending transactions and handling identity, but in the future it could
-	// back a different type of block streamer.
+	var cache *common.BlockCache
+	var blockHeight int
+	if !startOpts.RedisOnly {
+		// Initialize verusd RPC client. Right now (April 2020) this is only for
+		// sending transactions and handling identity, but in the future it could
+		// back a different type of block streamer.
 
-	rpcClient, err := frontend.NewVRPCFromConf(opts.VerusConfPath)
-	if err != nil {
-		common.Log.WithFields(logrus.Fields{
-			"error": err,
-		}).Fatal("setting up RPC connection to verusd")
+		rpcClient, err := frontend.NewVRPCFromConf(startOpts.VerusConfPath)
+		if err != nil {
+			common.Log.WithFields(logrus.Fields{
+				"error": err,
+			}).Fatal("setting up RPC connection to verusd")
+		}
+		// Indirect function for test mocking (so unit tests can talk to stub functions).
+		common.RawRequest = rpcClient.RawRequest
+
+		// Get the sapling activation height from the RPC
+		// (this first RPC also verifies that we can communicate with verusd)
+		saplingHeight, blockHeight, chainName, branchID := common.GetSaplingInfo()
+		common.Log.Info("Got sapling height ", saplingHeight, " chain ", chainName, " branchID ", branchID)
+
+		cache = common.NewBlockCache(startOpts.CacheSize, blockHeight)
+
+		// Start the block cache importer at cacheSize blocks before current height
+		cacheStart := blockHeight - startOpts.CacheSize
+		if cacheStart < saplingHeight {
+			cacheStart = saplingHeight
+		}
+
+		go common.BlockIngestor(cache, cacheStart, 0 /*loop forever*/)
+
+	} else {
+		cache = common.NewBlockCache(startOpts.CacheSize, blockHeight)
 	}
-	// Indirect function for test mocking (so unit tests can talk to stub functions).
-	common.RawRequest = rpcClient.RawRequest
-
-	// Get the sapling activation height from the RPC
-	// (this first RPC also verifies that we can communicate with verusd)
-	saplingHeight, blockHeight, chainName, branchID := common.GetSaplingInfo()
-	common.Log.Info("Got sapling height ", saplingHeight, " chain ", chainName, " branchID ", branchID)
-
-	// Initialize the cache
-	cache := common.NewBlockCache(opts.CacheSize, blockHeight)
-
-	// Start the block cache importer at cacheSize blocks before current height
-	cacheStart := blockHeight - opts.CacheSize
-	if cacheStart < saplingHeight {
-		cacheStart = saplingHeight
-	}
-
-	go common.BlockIngestor(cache, cacheStart, 0 /*loop forever*/)
 
 	// Compact transaction service initialization
 	service, err := frontend.NewLwdStreamer(cache)
@@ -164,10 +185,10 @@ func startServer(opts *common.Options) error {
 	walletrpc.RegisterCompactTxStreamerServer(server, service)
 
 	// Start listening
-	listener, err := net.Listen("tcp", opts.BindAddr)
+	listener, err := net.Listen("tcp", startOpts.BindAddr)
 	if err != nil {
 		common.Log.WithFields(logrus.Fields{
-			"bind_addr": opts.BindAddr,
+			"bind_addr": startOpts.BindAddr,
 			"error":     err,
 		}).Fatal("couldn't create listener")
 	}
@@ -187,7 +208,7 @@ func startServer(opts *common.Options) error {
 		"gitCommit": common.GitCommit,
 		"buildDate": common.BuildDate,
 		"buildUser": common.BuildUser,
-	}).Infof("Starting gRPC server version %s on %s", common.Version, opts.BindAddr)
+	}).Infof("Starting gRPC server version %s on %s", common.Version, startOpts.BindAddr)
 
 	err = server.Serve(listener)
 	if err != nil {
@@ -219,6 +240,7 @@ func init() {
 	rootCmd.Flags().String("verus-conf-path", "./VRSC.conf", "conf file to pull VerusCoin RPC creds from")
 	rootCmd.Flags().String("zcash-conf-path", "./zcash.conf", "conf file to pull RPC creds from")
 	rootCmd.Flags().Bool("no-tls-very-insecure", false, "run without the required TLS certificate, only for debugging, DO NOT use in production")
+	rootCmd.Flags().Bool("redis-only", false, "run without using verusd, getting data from redis")
 	rootCmd.Flags().Int("cache-size", 80000, "number of blocks to hold in the cache")
 
 	viper.BindPFlag("bind-addr", rootCmd.Flags().Lookup("bind-addr"))
@@ -237,6 +259,8 @@ func init() {
 	viper.SetDefault("zcash-conf-path", "./zcash.conf")
 	viper.BindPFlag("no-tls-very-insecure", rootCmd.Flags().Lookup("no-tls-very-insecure"))
 	viper.SetDefault("no-tls-very-insecure", false)
+	viper.BindPFlag("redis-only", rootCmd.Flags().Lookup("redis-only"))
+	viper.SetDefault("redis-only", false)
 	viper.BindPFlag("cache-size", rootCmd.Flags().Lookup("cache-size"))
 	viper.SetDefault("cache-size", 80000)
 
