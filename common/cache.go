@@ -1,4 +1,7 @@
+// Package common includes logging, certs, caching, and the ingestor (in common.go)
 // Copyright (c) 2019-2020 The Zcash developers
+// Forked and modified for the VerusCoin chain
+// Copyright 2020 the VerusCoin developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or https://www.opensource.org/licenses/mit-license.php .
 package common
@@ -29,10 +32,12 @@ type BlockCache struct {
 }
 
 // NewBlockCache returns an instance of a block cache object.
-func NewBlockCache(maxEntries int) *BlockCache {
+func NewBlockCache(maxEntries int, startHeight int) *BlockCache {
 	return &BlockCache{
 		MaxEntries: maxEntries,
 		m:          make(map[int]*blockCacheEntry),
+		firstBlock: startHeight,
+		nextBlock:  startHeight,
 	}
 }
 

@@ -1,15 +1,19 @@
+// Package parser handles block header and transaction related functions
 // Copyright (c) 2019-2020 The Zcash developers
+// Forked and modified for the VerusCoin chain
+// Copyright 2020 the VerusCoin developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or https://www.opensource.org/licenses/mit-license.php .
 package parser
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"encoding/binary"
 	"math/big"
+	"unsafe"
 
 	"github.com/asherda/lightwalletd/parser/internal/bytestring"
+	"github.com/asherda/lightwalletd/parser/verushash"
 	"github.com/pkg/errors"
 )
 
@@ -58,11 +62,15 @@ type rawBlockHeader struct {
 	Solution []byte
 }
 
+// BlockHeader has a pointer to the raw block header, a cache of the block's hash (which is a hash of the header) and the targetThreshold
 type BlockHeader struct {
 	*rawBlockHeader
 	cachedHash      []byte
 	targetThreshold *big.Int
 }
+
+// VerusHash holds the VerusHash object used for the VerusCoin hashing methods
+var VerusHash = verushash.NewVerushash()
 
 // CompactLengthPrefixedLen calculates the total number of bytes needed to
 // encode 'length' bytes.
@@ -94,15 +102,18 @@ func WriteCompactLengthPrefixedLen(buf *bytes.Buffer, length int) {
 	}
 }
 
+// WriteCompactLengthPrefixed puts the length at the front then adds the little endian hash
 func WriteCompactLengthPrefixed(buf *bytes.Buffer, val []byte) {
 	WriteCompactLengthPrefixedLen(buf, len(val))
 	binary.Write(buf, binary.LittleEndian, val)
 }
 
+// GetSize calculates the block size from the raw block header
 func (hdr *rawBlockHeader) GetSize() int {
 	return serBlockHeaderMinusEquihashSize + CompactLengthPrefixedLen(len(hdr.Solution))
 }
 
+// MarshalBinary builds a binary buffer from a pointer to the raw block header
 func (hdr *rawBlockHeader) MarshalBinary() ([]byte, error) {
 	headerSize := hdr.GetSize()
 	backing := make([]byte, 0, headerSize)
@@ -118,6 +129,7 @@ func (hdr *rawBlockHeader) MarshalBinary() ([]byte, error) {
 	return backing[:headerSize], nil
 }
 
+// NewBlockHeader uses a new raw block header to create and return the BlockHeader
 func NewBlockHeader() *BlockHeader {
 	return &BlockHeader{
 		rawBlockHeader: new(rawBlockHeader),
@@ -190,7 +202,7 @@ func parseNBits(b []byte) *big.Int {
 }
 
 // GetDisplayHash returns the bytes of a block hash in big-endian order.
-func (hdr *BlockHeader) GetDisplayHash() []byte {
+func (hdr *BlockHeader) GetDisplayHash(height int) []byte {
 	if hdr.cachedHash != nil {
 		return hdr.cachedHash
 	}
@@ -200,35 +212,29 @@ func (hdr *BlockHeader) GetDisplayHash() []byte {
 		return nil
 	}
 
-	// SHA256d
-	digest := sha256.Sum256(serializedHeader)
-	digest = sha256.Sum256(digest[:])
+	hash := make([]byte, 32)
+	ptrHash := uintptr(unsafe.Pointer(&hash[0]))
+	VerusHash.Anyverushash_reverse_height(string(serializedHeader), len(string(serializedHeader)), ptrHash, height)
 
-	// Reverse byte order
-	for i := 0; i < len(digest)/2; i++ {
-		j := len(digest) - 1 - i
-		digest[i], digest[j] = digest[j], digest[i]
-	}
-
-	hdr.cachedHash = digest[:]
+	hdr.cachedHash = hash
 	return hdr.cachedHash
 }
 
 // GetEncodableHash returns the bytes of a block hash in little-endian wire order.
-func (hdr *BlockHeader) GetEncodableHash() []byte {
+func (hdr *BlockHeader) GetEncodableHash(height int) []byte {
 	serializedHeader, err := hdr.MarshalBinary()
 
 	if err != nil {
 		return nil
 	}
 
-	// SHA256d
-	digest := sha256.Sum256(serializedHeader)
-	digest = sha256.Sum256(digest[:])
-
-	return digest[:]
+	hash := make([]byte, 32)
+	ptrHash := uintptr(unsafe.Pointer(&hash[0]))
+	VerusHash.Anyverushash_height(string(serializedHeader), len(string(serializedHeader)), ptrHash, height)
+	return hash
 }
 
+// GetDisplayPrevHash takes the previous hash from the current block, reverses it (displays are big endian) and returns it
 func (hdr *BlockHeader) GetDisplayPrevHash() []byte {
 	rhash := make([]byte, len(hdr.HashPrevBlock))
 	copy(rhash, hdr.HashPrevBlock)

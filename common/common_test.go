@@ -1,6 +1,6 @@
-// Copyright (c) 2019-2020 The Zcash developers
-// Distributed under the MIT software license, see the accompanying
-// file COPYING or https://www.opensource.org/licenses/mit-license.php .
+// Package common includes logging, certs, caching, and the ingestor (in common.go)
+// Forked and modified for the VerusCoin chain
+// Copyright 2020 the VerusCoin developers
 package common
 
 import (
@@ -64,8 +64,14 @@ func TestMain(m *testing.M) {
 		os.Stderr.WriteString(fmt.Sprintf("Cannot open testdata/blocks: %v", err))
 		os.Exit(1)
 	}
+	Log = logger.WithFields(logrus.Fields{
+		"app": "scanning testBlocks",
+	})
 	scan := bufio.NewScanner(testBlocks)
 	for scan.Scan() { // each line (block)
+		Log = logger.WithFields(logrus.Fields{
+			"app": "scan again",
+		})
 		block := scan.Bytes()
 		// Enclose the hex string in quotes (to make it json, to match what's
 		// returned by the RPC)
@@ -149,7 +155,7 @@ func TestGetSaplingInfo(t *testing.T) {
 
 // ------------------------------------------ BlockIngestor()
 
-// There are four test blocks, 0..3
+// Check the first 2 blocks, 0 & 1
 func getblockStub(method string, params []json.RawMessage) (json.RawMessage, error) {
 	var height string
 	err := json.Unmarshal(params[0], &height)
@@ -160,20 +166,20 @@ func getblockStub(method string, params []json.RawMessage) (json.RawMessage, err
 	step++
 	switch step {
 	case 1:
-		if height != "20" {
+		if height != "380640" {
 			testT.Error("unexpected height")
 		}
 		// Sunny-day
 		return blocks[0], nil
 	case 2:
-		if height != "21" {
+		if height != "380641" {
 			testT.Error("unexpected height")
 		}
 		// Sunny-day
 		return blocks[1], nil
 	case 3:
-		if height != "22" {
-			testT.Error("unexpected height")
+		if height != "380642" {
+			testT.Error("unexpected height", height)
 		}
 		// This should cause one sleep (then retry)
 		return nil, errors.New("-8: Block height out of range")
@@ -182,27 +188,28 @@ func getblockStub(method string, params []json.RawMessage) (json.RawMessage, err
 			testT.Error("unexpected sleeps", sleepCount, sleepDuration)
 		}
 		// should re-request the same height
-		if height != "22" {
-			testT.Error("unexpected height")
+		if height != "380642" {
+			testT.Error("unexpected height", height)
 		}
 		// Back to sunny-day
 		return blocks[2], nil
 	case 5:
-		if height != "23" {
-			testT.Error("unexpected height")
+		if height != "380643" {
+			testT.Error("unexpected height", height)
 		}
-		// Simulate a reorg (it doesn't matter which block we return here, as
-		// long as its prevhash doesn't match the latest block's hash)
-		return blocks[2], nil
+		// Simulate a reorg by modifying the block's hash temporarily
+		blocks[3][9]++ // first byte of the prevhash
+		return blocks[3], nil
 	case 6:
 		// When a reorg occurs, the ingestor backs up 2 blocks
-		if height != "21" { // 23 - 2
-			testT.Error("unexpected height")
+		blocks[3][9]-- // repair first byte of the prevhash
+		if height != "380641" {
+			testT.Error("unexpected height ", height)
 		}
 		return blocks[1], nil
 	case 7:
-		if height != "22" {
-			testT.Error("unexpected height")
+		if height != "380642" {
+			testT.Error("unexpected height ", height)
 		}
 		// Should fail to Unmarshal the block, sleep, retry
 		return nil, nil
@@ -210,14 +217,14 @@ func getblockStub(method string, params []json.RawMessage) (json.RawMessage, err
 		if sleepCount != 2 || sleepDuration != 20*time.Second {
 			testT.Error("unexpected sleeps", sleepCount, sleepDuration)
 		}
-		if height != "22" {
-			testT.Error("unexpected height")
+		if height != "380642" {
+			testT.Error("unexpected height ", height)
 		}
 		// Back to sunny-day
 		return blocks[2], nil
 	}
-	if height != "23" {
-		testT.Error("unexpected height")
+	if height != "380643" {
+		testT.Error("unexpected height ", height)
 	}
 	testT.Error("getblockStub called too many times")
 	return nil, nil
@@ -227,9 +234,9 @@ func TestBlockIngestor(t *testing.T) {
 	testT = t
 	RawRequest = getblockStub
 	Sleep = sleepStub
-	testcache := NewBlockCache(4)
-	BlockIngestor(testcache, 20, 7)
-	if step != 7 {
+	testcache := NewBlockCache("unittestcache", 380640)
+	BlockIngestor(testcache, 380640, 2)
+	if step != 2 {
 		t.Error("unexpected final step", step)
 	}
 	step = 0
@@ -240,12 +247,13 @@ func TestBlockIngestor(t *testing.T) {
 func TestGetBlockRange(t *testing.T) {
 	testT = t
 	RawRequest = getblockStub
-	testcache := NewBlockCache(4)
+	CacheTestClean("unittestcache")
+	testcache := NewBlockCache("unittestcache", 380640)
 	blockChan := make(chan walletrpc.CompactBlock)
 	errChan := make(chan error)
-	go GetBlockRange(testcache, blockChan, errChan, 20, 22)
+	go GetBlockRange(testcache, blockChan, errChan, 380640, 380642)
 
-	// read in block 20
+	// read in block 380640
 	select {
 	case err := <-errChan:
 		// this will also catch context.DeadlineExceeded from the timeout
@@ -256,7 +264,7 @@ func TestGetBlockRange(t *testing.T) {
 		}
 	}
 
-	// read in block 21
+	// read in block 380641
 	select {
 	case err := <-errChan:
 		// this will also catch context.DeadlineExceeded from the timeout
@@ -267,7 +275,7 @@ func TestGetBlockRange(t *testing.T) {
 		}
 	}
 
-	// try to read in block 22, but this will fail (see case 3 above)
+	// try to read in block 380642, but this will fail (see case 3 above)
 	select {
 	case err := <-errChan:
 		// this will also catch context.DeadlineExceeded from the timeout

@@ -20,14 +20,17 @@ import (
 	"github.com/asherda/lightwalletd/walletrpc"
 )
 
+// ErrUnspecified request for unspecified identifier
 var (
 	ErrUnspecified = errors.New("request for unspecified identifier")
 )
 
+// LwdStreamer light wallet daemon streamer, main thing served by the front end
 type LwdStreamer struct {
 	cache *common.BlockCache
 }
 
+// NewLwdStreamer make a new light wallet daemon streamer, main thing served by the front end
 func NewLwdStreamer(cache *common.BlockCache) (walletrpc.CompactTxStreamerServer, error) {
 	return &LwdStreamer{cache}, nil
 }
@@ -185,7 +188,7 @@ func (s *LwdStreamer) GetTransaction(ctx context.Context, txf *walletrpc.TxFilte
 // GetLightdInfo gets the LightWalletD (this server) info, and includes information
 // it gets from its backend zcashd.
 func (s *LwdStreamer) GetLightdInfo(ctx context.Context, in *walletrpc.Empty) (*walletrpc.LightdInfo, error) {
-	saplingHeight, blockHeight, chainName, consensusBranchId := common.GetSaplingInfo()
+	saplingHeight, blockHeight, chainName, consensusBranchID := common.GetSaplingInfo()
 
 	return &walletrpc.LightdInfo{
 		Version:                 common.Version,
@@ -193,7 +196,7 @@ func (s *LwdStreamer) GetLightdInfo(ctx context.Context, in *walletrpc.Empty) (*
 		TaddrSupport:            true,
 		ChainName:               chainName,
 		SaplingActivationHeight: uint64(saplingHeight),
-		ConsensusBranchId:       consensusBranchId,
+		ConsensusBranchID:       consensusBranchID,
 		BlockHeight:             uint64(blockHeight),
 	}, nil
 }
@@ -248,6 +251,7 @@ func (s *LwdStreamer) SendTransaction(ctx context.Context, rawtx *walletrpc.RawT
 // This rpc is used only for testing.
 var concurrent int64
 
+// Ping utility
 func (s *LwdStreamer) Ping(ctx context.Context, in *walletrpc.Duration) (*walletrpc.PingResponse, error) {
 	var response walletrpc.PingResponse
 	response.Entry = atomic.AddInt64(&concurrent, 1)

@@ -1,4 +1,7 @@
+// Package frontend handles block header and transaction related functions
 // Copyright (c) 2019-2020 The Zcash developers
+// Forked and modified for the VerusCoin chain
+// Copyright 2020 the VerusCoin developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or https://www.opensource.org/licenses/mit-license.php .
 package frontend
@@ -11,7 +14,8 @@ import (
 	ini "gopkg.in/ini.v1"
 )
 
-func NewZRPCFromConf(confPath interface{}) (*rpcclient.Client, error) {
+// NewVRPCFromConf connect to the VerusCoin RPC endpoint
+func NewVRPCFromConf(confPath interface{}) (*rpcclient.Client, error) {
 	connCfg, err := connFromConf(confPath)
 	if err != nil {
 		return nil, err

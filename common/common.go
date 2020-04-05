@@ -1,4 +1,7 @@
+// Package common includes logging, certs, caching, and the ingestor (in common.go)
 // Copyright (c) 2019-2020 The Zcash developers
+// Forked and modified for the VerusCoin chain
+// Copyright 2020 the VerusCoin developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or https://www.opensource.org/licenses/mit-license.php .
 package common
@@ -16,18 +19,26 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// 'make build' will overwrite this string with the output of git-describe (tag)
+// Version 'make build' will overwrite this string with the output of git-describe (tag)
 var Version = "v0.0.0.0-dev"
+
+// GitCommit the commit hash
 var GitCommit = ""
+
+// BuildDate the date f the build
 var BuildDate = ""
+
+// BuildUser the user running the build
 var BuildUser = ""
 
+// Options store the default (or if present, input) command line options
 type Options struct {
 	BindAddr          string `json:"bind_address,omitempty"`
 	TLSCertPath       string `json:"tls_cert_path,omitempty"`
 	TLSKeyPath        string `json:"tls_cert_key,omitempty"`
 	LogLevel          uint64 `json:"log_level,omitempty"`
 	LogFile           string `json:"log_file,omitempty"`
+	VerusConfPath     string `json:"verus_conf,omitempty"`
 	ZcashConfPath     string `json:"zcash_conf,omitempty"`
 	NoTLSVeryInsecure bool   `json:"no_tls_very_insecure,omitempty"`
 	CacheSize         int    `json:"cache_size,omitempty"`

@@ -1,11 +1,13 @@
+// Package walletrpc wraps the verusd RPC endpoint
 // Copyright (c) 2019-2020 The Zcash developers
+// Forked and modified for the VerusCoin chain
+// Copyright 2020 the VerusCoin developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or https://www.opensource.org/licenses/mit-license.php .
 
 syntax = "proto3";
 package cash.z.wallet.sdk.rpc;
 option go_package = "walletrpc";
-option swift_prefix = "";
 import "compact_formats.proto";
 
 // A BlockID message contains identifiers to select a block: a height or a
@@ -60,7 +62,7 @@ message LightdInfo {
     bool   taddrSupport = 3;
     string chainName = 4;
     uint64 saplingActivationHeight = 5;
-    string consensusBranchId = 6;
+    string consensusBranchID = 6;
     uint64 blockHeight = 7;
 }
 
@@ -87,18 +89,26 @@ message PingResponse {
 
 service CompactTxStreamer {
     // Compact Blocks
+    // GetLatestBlock returns the latest block per the input ChainSpec
     rpc GetLatestBlock(ChainSpec) returns (BlockID) {}
+    // GetBlock returns the block for the input BlockID
     rpc GetBlock(BlockID) returns (CompactBlock) {}
+    // GetBlockRange returns the requested range of blocks
     rpc GetBlockRange(BlockRange) returns (stream CompactBlock) {}
 
     // Transactions
+    // GetTransaction based on the input filter
     rpc GetTransaction(TxFilter) returns (RawTransaction) {}
+    // SendTransaction sends a raw transaction
     rpc SendTransaction(RawTransaction) returns (SendResponse) {}
 
     // t-Address support
+    // GetAddressTxids based on the input filer
     rpc GetAddressTxids(TransparentAddressBlockFilter) returns (stream RawTransaction) {}
 
     // Misc
+    // GetLightdInfo returns light wallet daemoninfo
     rpc GetLightdInfo(Empty) returns (LightdInfo) {}
+    // Ping is used against the CompactTxStreamerServer
     rpc Ping(Duration) returns (PingResponse) {}
 }

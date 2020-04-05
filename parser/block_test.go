@@ -77,7 +77,7 @@ func TestBlockParser(t *testing.T) {
 				t.Error("Unexpected Saping tx")
 				break
 			}
-			if hex.EncodeToString(tx.GetDisplayHash()) != txhashes[txindex] {
+			if hex.EncodeToString(tx.GetDisplayHash(1)) != txhashes[txindex] {
 				t.Error("incorrect tx hash")
 			}
 			txindex++

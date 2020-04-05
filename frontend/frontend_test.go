@@ -1,4 +1,7 @@
+// Package frontend provides the streaming compressed block server
 // Copyright (c) 2019-2020 The Zcash developers
+// Forked and modified for the VerusCoin chain
+// Copyright 2020 the VerusCoin developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or https://www.opensource.org/licenses/mit-license.php .
 package frontend
@@ -43,7 +46,7 @@ func TestMain(m *testing.M) {
 		"app": "test",
 	})
 
-	cache = common.NewBlockCache(4)
+	cache = common.NewBlockCache(4, 1)
 	lwd, err = NewLwdStreamer(cache)
 	if err != nil {
 		os.Stderr.WriteString(fmt.Sprint("NewLwdStreamer failed:", err))
@@ -209,9 +212,9 @@ func zcashdrpcStub(method string, params []json.RawMessage) (json.RawMessage, er
 	switch method {
 	case "getaddresstxids":
 		var filter struct {
-			Addresses []string `json: addresses`
-			Start     float64  `json: start`
-			End       float64  `json: end`
+			Addresses []string `json:"addresses"`
+			Start     float64  `json:"start"`
+			End       float64  `json:"end"`
 		}
 		err := json.Unmarshal(params[0], &filter)
 		if err != nil {
@@ -442,7 +445,7 @@ rpcuser = testlightwduser
 rpcpassword = testlightwdpassword
 `
 
-func TestNewZRPCFromConf(t *testing.T) {
+func TestNewVRPCFromConf(t *testing.T) {
 	connCfg, err := connFromConf([]byte(sampleconf))
 	if err != nil {
 		t.Fatal("connFromConf failed")
@@ -470,11 +473,11 @@ func TestNewZRPCFromConf(t *testing.T) {
 	}
 
 	// Can't verify returned values, but at least run it
-	_, err = NewZRPCFromConf([]byte(sampleconf))
+	_, err = NewVRPCFromConf([]byte(sampleconf))
 	if err != nil {
 		t.Fatal("NewZRPCFromClient failed")
 	}
-	_, err = NewZRPCFromConf(10)
+	_, err = NewVRPCFromConf(10)
 	if err == nil {
 		t.Fatal("NewZRPCFromClient unexpected success")
 	}

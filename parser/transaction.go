@@ -1,10 +1,13 @@
+// Package parser handles block header and transaction related functions
 // Copyright (c) 2019-2020 The Zcash developers
+// Forked and modified for the VerusCoin chain
+// Copyright 2020 the VerusCoin developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or https://www.opensource.org/licenses/mit-license.php .
 package parser
 
 import (
-	"crypto/sha256"
+	"unsafe"
 
 	"github.com/asherda/lightwalletd/parser/internal/bytestring"
 	"github.com/asherda/lightwalletd/walletrpc"
@@ -14,7 +17,7 @@ import (
 type rawTransaction struct {
 	fOverwintered      bool
 	version            uint32
-	nVersionGroupId    uint32
+	nVersionGroupID    uint32
 	transparentInputs  []*txIn
 	transparentOutputs []*txOut
 	nLockTime          uint32
@@ -266,51 +269,51 @@ func (p *joinSplit) ParseFromSlice(data []byte) ([]byte, error) {
 	return []byte(s), nil
 }
 
+// Transaction includes a pointer to the raw transaction, a byte array of rawBytes, and a byte array for the TX ID
 type Transaction struct {
 	*rawTransaction
 	rawBytes []byte
-	txId     []byte
+	txID     []byte
 }
 
 // GetDisplayHash returns the transaction hash in big-endian display order.
-func (tx *Transaction) GetDisplayHash() []byte {
-	if tx.txId != nil {
-		return tx.txId
+func (tx *Transaction) GetDisplayHash(height int) []byte {
+	if tx.txID != nil {
+		return tx.txID
 	}
 
-	// SHA256d
-	digest := sha256.Sum256(tx.rawBytes)
-	digest = sha256.Sum256(digest[:])
+	hash := make([]byte, 32)
+	ptrHash := uintptr(unsafe.Pointer(&hash[0]))
 
-	// Reverse byte order
-	for i := 0; i < len(digest)/2; i++ {
-		j := len(digest) - 1 - i
-		digest[i], digest[j] = digest[j], digest[i]
-	}
-
-	tx.txId = digest[:]
-	return tx.txId
+	VerusHash.Anyverushash_reverse_height(string(tx.rawBytes), len(tx.rawBytes), ptrHash, height)
+	tx.txID = hash
+	return tx.txID
 }
 
 // GetEncodableHash returns the transaction hash in little-endian wire format order.
-func (tx *Transaction) GetEncodableHash() []byte {
-	digest := sha256.Sum256(tx.rawBytes)
-	digest = sha256.Sum256(digest[:])
-	return digest[:]
+func (tx *Transaction) GetEncodableHash(height int) []byte {
+	hash := make([]byte, 32)
+	ptrHash := uintptr(unsafe.Pointer(&hash[0]))
+
+	VerusHash.Anyverushash_height(string(tx.rawBytes), len(tx.rawBytes), ptrHash, height)
+	return hash
 }
 
+// Bytes returns the raw transaction bytes
 func (tx *Transaction) Bytes() []byte {
 	return tx.rawBytes
 }
 
+// HasSaplingTransactions returns true if the TX pointer references sapling (shielded) transactions
 func (tx *Transaction) HasSaplingTransactions() bool {
 	return tx.version >= 4 && (len(tx.shieldedSpends)+len(tx.shieldedOutputs)) > 0
 }
 
-func (tx *Transaction) ToCompact(index int) *walletrpc.CompactTx {
+// ToCompact assembles the hash, spends and outputs (minimal requirement for client UTXO info) into our compact form
+func (tx *Transaction) ToCompact(index int, height int) *walletrpc.CompactTx {
 	ctx := &walletrpc.CompactTx{
 		Index: uint64(index), // index is contextual
-		Hash:  tx.GetEncodableHash(),
+		Hash:  tx.GetEncodableHash(height),
 		//Fee:     0, // TODO: calculate fees
 		Spends:  make([]*walletrpc.CompactSpend, len(tx.shieldedSpends)),
 		Outputs: make([]*walletrpc.CompactOutput, len(tx.shieldedOutputs)),
@@ -324,6 +327,7 @@ func (tx *Transaction) ToCompact(index int) *walletrpc.CompactTx {
 	return ctx
 }
 
+// ParseFromSlice takes the raw binary header byte array and teases out all the block and TX details
 func (tx *Transaction) ParseFromSlice(data []byte) ([]byte, error) {
 	s := bytestring.String(data)
 
@@ -339,8 +343,8 @@ func (tx *Transaction) ParseFromSlice(data []byte) ([]byte, error) {
 	tx.version = header & 0x7FFFFFFF
 
 	if tx.version >= 3 {
-		if !s.ReadUint32(&tx.nVersionGroupId) {
-			return nil, errors.New("could not read nVersionGroupId")
+		if !s.ReadUint32(&tx.nVersionGroupID) {
+			return nil, errors.New("could not read nVersionGroupID")
 		}
 	}
 
@@ -472,6 +476,7 @@ func (tx *Transaction) ParseFromSlice(data []byte) ([]byte, error) {
 	return []byte(s), nil
 }
 
+// NewTransaction get a new transaction based on a newRawTransaction
 func NewTransaction() *Transaction {
 	return &Transaction{
 		rawTransaction: new(rawTransaction),

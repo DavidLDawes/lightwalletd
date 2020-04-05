@@ -38,6 +38,7 @@ var rootCmd = &cobra.Command{
 			TLSKeyPath:        viper.GetString("tls-key"),
 			LogLevel:          viper.GetUint64("log-level"),
 			LogFile:           viper.GetString("log-file"),
+			VerusConfPath:     viper.GetString("verus-conf-path"),
 			ZcashConfPath:     viper.GetString("zcash-conf-path"),
 			NoTLSVeryInsecure: viper.GetBool("no-tls-very-insecure"),
 			CacheSize:         viper.GetInt("cache-size"),
@@ -49,7 +50,7 @@ var rootCmd = &cobra.Command{
 			opts.TLSCertPath,
 			opts.TLSKeyPath,
 			opts.LogFile,
-			opts.ZcashConfPath,
+			opts.VerusConfPath,
 		}
 
 		for _, filename := range filesThatShouldExist {
@@ -122,26 +123,26 @@ func startServer(opts *common.Options) error {
 		reflection.Register(server)
 	}
 
-	// Initialize Zcash RPC client. Right now (Jan 2018) this is only for
-	// sending transactions, but in the future it could back a different type
-	// of block streamer.
+	// Initialize verusd RPC client. Right now (April 2020) this is only for
+	// sending transactions and handling identity, but in the future it could
+	// back a different type of block streamer.
 
-	rpcClient, err := frontend.NewZRPCFromConf(opts.ZcashConfPath)
+	rpcClient, err := frontend.NewVRPCFromConf(opts.VerusConfPath)
 	if err != nil {
 		common.Log.WithFields(logrus.Fields{
 			"error": err,
-		}).Fatal("setting up RPC connection to zcashd")
+		}).Fatal("setting up RPC connection to verusd")
 	}
 	// Indirect function for test mocking (so unit tests can talk to stub functions).
 	common.RawRequest = rpcClient.RawRequest
 
 	// Get the sapling activation height from the RPC
-	// (this first RPC also verifies that we can communicate with zcashd)
+	// (this first RPC also verifies that we can communicate with verusd)
 	saplingHeight, blockHeight, chainName, branchID := common.GetSaplingInfo()
 	common.Log.Info("Got sapling height ", saplingHeight, " chain ", chainName, " branchID ", branchID)
 
 	// Initialize the cache
-	cache := common.NewBlockCache(opts.CacheSize)
+	cache := common.NewBlockCache(opts.CacheSize, blockHeight)
 
 	// Start the block cache importer at cacheSize blocks before current height
 	cacheStart := blockHeight - opts.CacheSize
@@ -215,6 +216,7 @@ func init() {
 	rootCmd.Flags().String("tls-key", "./cert.key", "the path to a TLS key file")
 	rootCmd.Flags().Int("log-level", int(logrus.InfoLevel), "log level (logrus 1-7)")
 	rootCmd.Flags().String("log-file", "./server.log", "log file to write to")
+	rootCmd.Flags().String("verus-conf-path", "./VRSC.conf", "conf file to pull VerusCoin RPC creds from")
 	rootCmd.Flags().String("zcash-conf-path", "./zcash.conf", "conf file to pull RPC creds from")
 	rootCmd.Flags().Bool("no-tls-very-insecure", false, "run without the required TLS certificate, only for debugging, DO NOT use in production")
 	rootCmd.Flags().Int("cache-size", 80000, "number of blocks to hold in the cache")
@@ -229,6 +231,8 @@ func init() {
 	viper.SetDefault("log-level", int(logrus.InfoLevel))
 	viper.BindPFlag("log-file", rootCmd.Flags().Lookup("log-file"))
 	viper.SetDefault("log-file", "./server.log")
+	viper.BindPFlag("verus-conf-path", rootCmd.Flags().Lookup("verus-conf-path"))
+	viper.SetDefault("verus-conf-path", "./VRSC.conf")
 	viper.BindPFlag("zcash-conf-path", rootCmd.Flags().Lookup("zcash-conf-path"))
 	viper.SetDefault("zcash-conf-path", "./zcash.conf")
 	viper.BindPFlag("no-tls-very-insecure", rootCmd.Flags().Lookup("no-tls-very-insecure"))
