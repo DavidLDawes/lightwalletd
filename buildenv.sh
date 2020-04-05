@@ -20,9 +20,9 @@ done
 
 if [ "$NETWORK" == "" ]
 then
-  echo ZCASHD_NETWORK=testnet
+  echo VERUSDNETWORK=testnet
 else
-  echo ZCASHD_NETWORK=$NETWORK
+  echo VERUSDNETWORK=$NETWORK
 fi
 
 # sanity check openssl first...

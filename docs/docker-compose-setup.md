@@ -15,15 +15,15 @@ Copy `.env.example` to `.env` and change any required paramaters.
 | Variable        | Usage           | 
 | ------------- |:-------------:|
 |   `GF_SECURITY_ADMIN_USER`   |    Grafana admin user name   |
-|   `ZCASHD_RPCUSER`   |    zcashd rpc user   |
-|   `ZCASHD_RPCPORT`   |    zcashd rpc port   |
-|`ZCASHD_ALLOWIP`| zcashd rpc allowed IPs (don't |change unless you know what you're doing)|
-|`ZCASHD_DATADIR`| local location of zcasd data directory. `uid` 2001 needs write access|
-|`ZCASHD_PARMDIR`| local location of zcasd data directory. `uid` 2001 needs read access|
-|`ZCASHD_NETWORK`| zcashd network to use, `testnet` or `mainnet`|
-|`ZCASHD_GEN`| should zcashd mine? `0` or `1`
+|   `VERUSDRPCUSER`   |    verusd rpc user   |
+|   `VERUSDRPCPORT`   |    verusd rpc port   |
+|`VERUSDALLOWIP`| verusd rpc allowed IPs (don't |change unless you know what you're doing)|
+|`VERUSDDATADIR`| local location of verusd data directory. `uid` 2001 needs write access|
+|`VERUSDPARMDIR`| local location of zcashd params directory. `uid` 2001 needs read access|
+|`VERUSDNETWORK`| verusd network to use, `testnet` or `mainnet`|
+|`VERUSDGEN`| should verusd mine? `0` or `1`
 |`LWD_PORT`| port for lightwalletd to bind to|
-|`ZCASHD_CONF_PATH`| path for lightwalletd to pick up configuration|
+|`VERUSDCONF_PATH`| path for lightwalletd to pick up configuration|
 
 
 ## Populate secret env vars with random values
