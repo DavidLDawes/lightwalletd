@@ -38,14 +38,16 @@ type Options struct {
 	TLSKeyPath        string `json:"tls_cert_key,omitempty"`
 	LogLevel          uint64 `json:"log_level,omitempty"`
 	LogFile           string `json:"log_file,omitempty"`
-	VerusConfPath     string `json:"verus_conf,omitempty"`
-	ZcashConfPath     string `json:"zcash_conf,omitempty"`
 	NoTLSVeryInsecure bool   `json:"no_tls_very_insecure,omitempty"`
-	RedisOnly         bool   `json:"redis_only,omitempty"`
-	RedisURL          string `json:"redis_url,omitempty"`
-	RedisPassword     string `json:"redis_password,omitempty"`
-	RedisDB           int    `json:"redis_db,omitempty"`
-	CacheSize         int    `json:"cache_size,omitempty"`
+	VerusdURL         string `json:"verusd-url,omitempty"`
+	ChainName         string `json:"chain-name,omitempty"`
+	VerusdUser        string `json:"verusd-user,omitempty"`
+	VerusdPassword    string `json:"verusd-password,omitempty"`
+	NoVerusd          bool   `json:"redis_only,omitempty,omitempty"`
+	RedisURL          string `json:"redis_url,omitempty,omitempty"`
+	RedisPassword     string `json:"redis_password,omitempty,omitempty"`
+	RedisDB           int    `json:"redis_db,omitempty,omitempty"`
+	CacheSize         int    `json:"cache_size,omitempty,omitempty"`
 }
 
 // RawRequest points to the function to send a an RPC request to verusd;
@@ -176,6 +178,7 @@ func BlockIngestor(cache *BlockCache, startHeight int, rep int) {
 		if (height % 100) == 0 {
 			Log.Info("Ingestor adding block to cache: ", height)
 		}
+
 		reorg, err := cache.Add(height, block)
 		if err != nil {
 			Log.Fatal("Cache add failed")
@@ -187,7 +190,7 @@ func BlockIngestor(cache *BlockCache, startHeight int, rep int) {
 			// will work; this is probably a good balance.
 			height -= 2
 			reorgCount++
-			if reorgCount > 10 {
+			if reorgCount > 100 {
 				Log.Fatal("Reorg exceeded max of 100 blocks! Help!")
 			}
 			Log.WithFields(logrus.Fields{
@@ -213,12 +216,12 @@ func GetBlock(cache *BlockCache, height int) (*walletrpc.CompactBlock, error) {
 		return block, nil
 	}
 
-	if RedisOnly {
-		// Block height is out of range - no match in Redis & RedisOnly set
+	if NoVerusd {
+		// Block height is out of range - no match in Redis & NoVerusd set
 		if height > 500000 {
-			return nil, errors.New("block requested is past the latest cached block with RedisOnly set")
+			return nil, errors.New("block requested is past the latest cached block with NoVerusd set")
 		} else {
-			return nil, errors.New("block requested is before the first cached block with RedisOnly set")
+			return nil, errors.New("block requested is before the first cached block with NoVerusd set")
 		}
 	} else {
 		// Not in the cache, ask verusd

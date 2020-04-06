@@ -37,7 +37,7 @@ Documentation for lightwalletd clients (the gRPC interface) is in `docs/rtd/inde
 
 ## verusd
 
-You must start a local instance of `verusd`, and its `.komodo/VRSC/VRSC.conf` file must include the following entries:
+You must start a local instance of `verusd`, and record the following values from its `.komodo/VRSC/VRSC.conf` file (these get passed in on the command line to lightwalletd):
 ```
 txindex=1
 ```
@@ -71,8 +71,10 @@ This will build the lightwalletd binary, where you can use the below commands to
 
 Assuming you used `make` to build lightwalletd, and you are testing so we will disable TLS. Disabling TLS should only be done when testing locally, and a lightwalletd endpoint should never be publicly exposed with the --no-tls-very-insecure option. The directories below may need adjustment.
 ```
-./lightwalletd --verus-conf-path ~/.komodo/VRSC/VRSC.conf --log-file /logs/server.log --bind-addr 127.0.0.1:18232 --no-tls-very-insecure 
+./lightwalletd --chain-name VRSC --verusd-url 127.0.0.1:27486 --verusd-user user --verusd-password pass --log-file /logs/server.log --bind-addr 127.0.0.1:18232 --no-tls-very-insecure 
+
 ```
+
 ## Verify lightwalletd Is Ingesting verusd Blocks
 Use tail -f on the log file you set in the lightwalletd command (so it would be `tail -f /logs/server.log` for the example above) and you should see some startup information then a list of ingested blocks; it reports every 100 blocks while initializng and should look like this:
 
@@ -150,8 +152,28 @@ grpcurl -d '{"height":260000}' -plaintext 127.0.0.1:18232 cash.z.wallet.sdk.rpc.
   ]
 }
 ```
-# Production Usage
 
+# Persistence: redis
+Support for g a redis server or cluster to store chain information is enabled by setting the --redis-url to a valid redis host or cluster URL on the command line when running lightwalletd. You should also be setting the --redis-password value; it's optional and can be skipped in testing, but you ought to at least add a good long random password for redis production. The --redis-password and --redis-db values are optional. Leaving the password out disables passowrds (effectively setting the password to "") and leaving --redis-db out defaults it to 0, the normal redis default.
+
+For testing with redis, assuming you are running redis on the same Linux host that you are testing on, the command line will be something like:
+```
+./lightwalletd --chain-name VRSC --log-file /logs/server.log --bind-addr 127.0.0.1:18232 --verusd-url 127.0.0.1:27486 --verusd-user user --verusd-password pass --no-tls-very-insecure --cache-size 1000000 --redis-url 127.0.0.1:6379 --redis-password xJH9Q35NssPl-5hIU --redis-db 0
+```
+
+For production with redis, setup your production redis cluster with a password and set the --redis-* details for lightwalletd appropriately.
+
+You can disable redis by simply leaving the --redis-url out.
+
+## Testing Read Only With redis
+You can disable verusd and enable redis to allow for simpler testing, or at least much faster to load testing once you have a redis cache built. To set up to test without verusd, first run lightwalletd normally (don't disable verusd yet) while verusd is running. Let the ingestor grind through all the blocks out close to 1,000,000 and get them all into the redis cache. Now you can exit from the lightwalletd and rerun it, this time with verus support disabled:
+```
+./lightwalletd --chain-name VRSC --log-file /logs/server.log --bind-addr 127.0.0.1:18232 --no-verusd --no-tls-very-insecure --cache-size 1000000 --redis-url 127.0.0.1:6379 --redis-password xJH9Q35NssPl-5hIU --redis-db 0
+```
+Without verusd support the ingestor does not run (so new blocks will not get added until you run with verusd enabled again) and any active transaction and all identity operations on lightwalletd are unavailable, verusd is required to actually actively do anything other than get block data and block data ranges from lighwalletd.
+
+For some test situation this is useful - keeping a redis cache available and bringing it up for testing allows testing of a mild amount of remote functionality (basically tthe block streaming stuff from the frontend) without requiring the memory, configuration, complexity, and overhead of verusd.
+# Production Usage
 Run a local instance of `verud` (see above).
 Ensure [Go](https://golang.org/dl/#stable) version 1.11 or later is installed.
 
@@ -184,7 +206,7 @@ certbot certonly --standalone --preferred-challenges http -d some.forward.dns.co
 Example using server binary built from Makefile:
 
 ```
-./lightwalletd --tls-cert cert.pem --tls-key key.pem --verus-conf-path ~/.komodo/VRSC/VRSC.conf --log-file /logs/server.log --bind-addr 127.0.0.1:18232
+./lightwalletd --tls-cert cert.pem --tls-key key.pem --chain-name VRSC --verusd-url 10.1.137.14:27486 --verusd-user user --verusd-password pass--log-file /logs/server.log --bind-addr 127.0.0.1:18232
 ```
 
 # Pull Requests

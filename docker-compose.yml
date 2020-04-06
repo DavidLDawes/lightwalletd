@@ -9,12 +9,15 @@ services:
     #entrypoint: ["/bin/bash", "-c", "sleep infinity"]
     command:
       - -bind-addr=0.0.0.0:$LWD_PORT
-      - -cache-size=80000
+      - -cache-size=1000000
       - -conf-file=$VERUSDCONF_PATH
       - -log-file=/dev/stdout
       - -log-level=7
       - -tls-cert=./cert.pem
       - -tls-key=./cert.key
+      - -chain-name=VRSC
+      - -verusd-user=VERUSDRPCUSER
+      - -verusd-password=VERUSDRPCPASSWORD
     ports:
       - "127.0.0.1:$LWD_PORT:$LWD_PORT"
     volumes:

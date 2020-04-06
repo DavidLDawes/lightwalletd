@@ -43,10 +43,12 @@ var rootCmd = &cobra.Command{
 			TLSKeyPath:        viper.GetString("tls-key"),
 			LogLevel:          viper.GetUint64("log-level"),
 			LogFile:           viper.GetString("log-file"),
-			VerusConfPath:     viper.GetString("verus-conf-path"),
-			ZcashConfPath:     viper.GetString("zcash-conf-path"),
 			NoTLSVeryInsecure: viper.GetBool("no-tls-very-insecure"),
-			RedisOnly:         viper.GetBool("redis-only"),
+			VerusdURL:         viper.GetString("verusd-url"),
+			ChainName:         viper.GetString("chain-name"),
+			VerusdUser:        viper.GetString("verusd-user"),
+			VerusdPassword:    viper.GetString("verusd-password"),
+			NoVerusd:          viper.GetBool("no-verusd"),
 			RedisURL:          viper.GetString("redis-url"),
 			RedisPassword:     viper.GetString("redis-password"),
 			RedisDB:           viper.GetInt("redis-db"),
@@ -55,20 +57,20 @@ var rootCmd = &cobra.Command{
 
 		common.Log.Debugf("Options: %#v\n", StartOpts)
 
-		if StartOpts.RedisOnly && len(StartOpts.RedisURL) < 1 {
-			os.Stderr.WriteString(fmt.Sprintf("--redis-only requires setting --redis-url to work"))
+		if StartOpts.NoVerusd && len(StartOpts.RedisURL) < 1 {
+			os.Stderr.WriteString(fmt.Sprintf("--no-verusd requires setting --redis-url to work"))
 			os.Exit(1)
 		}
 
 		// Dependency loop so common can not include us; so push the values to common/cache.go
-		common.RedisOnly = StartOpts.RedisOnly
+		common.NoVerusd = StartOpts.NoVerusd
 		common.RedisURL = StartOpts.RedisURL
 		common.RedisDB = StartOpts.RedisDB
 		common.RedisPassword = StartOpts.RedisPassword
 		common.NoRedis = len(StartOpts.RedisURL) < 1
 
 		var filesThatShouldExist []string
-		if StartOpts.RedisOnly {
+		if StartOpts.NoVerusd {
 			filesThatShouldExist = []string{
 				StartOpts.LogFile,
 			}
@@ -77,7 +79,6 @@ var rootCmd = &cobra.Command{
 				StartOpts.TLSCertPath,
 				StartOpts.TLSKeyPath,
 				StartOpts.LogFile,
-				StartOpts.VerusConfPath,
 			}
 		}
 
@@ -152,12 +153,12 @@ func startServer(startOpts *common.Options) error {
 	}
 
 	var cache *common.BlockCache
-	if !startOpts.RedisOnly {
+	if !startOpts.NoVerusd {
 		// Initialize verusd RPC client. Right now (April 2020) this is only for
 		// sending transactions and handling identity, but in the future it could
 		// back a different type of block streamer.
 
-		rpcClient, err := frontend.NewVRPCFromConf(startOpts.VerusConfPath)
+		rpcClient, err := frontend.NewVRPCFromConf(startOpts.ChainName, startOpts.VerusdURL, startOpts.VerusdUser, startOpts.VerusdPassword)
 		if err != nil {
 			common.Log.WithFields(logrus.Fields{
 				"error": err,
@@ -169,38 +170,35 @@ func startServer(startOpts *common.Options) error {
 		// Get the sapling activation height from the RPC
 		// (this first RPC also verifies that we can communicate with verusd)
 		saplingHeight, blockHeight, chainName, branchID := common.GetSaplingInfo()
-		common.Log.Info("Got sapling height ", saplingHeight, " chain ", chainName, " branchID ", branchID)
+		common.Log.Info("Got sapling height from verusd ", saplingHeight, " chain ", chainName, " branchID ", branchID)
 
 		cache = common.NewBlockCache(startOpts.CacheSize, blockHeight)
 
+		var cachedBlockHeight int
 		if len(StartOpts.RedisURL) > 0 {
-			redisErr := cache.RedisClient.Set("saplingHeight", saplingHeight, 0).Err()
-			if redisErr != nil {
-				println("Error writing saplingHeight to redis")
-			}
-
-			redisErr = cache.RedisClient.Set("blockHeight", blockHeight, 0).Err()
-			if redisErr != nil {
-				println("Error writing blockHeight to redis")
-			}
-
-			redisErr = cache.RedisClient.Set("chainName", chainName, 0).Err()
-			if redisErr != nil {
-				println("Error writing chainName to redis")
-			}
-
-			redisErr = cache.RedisClient.Set("branchID", branchID, 0).Err()
-			if redisErr != nil {
-				println("Error writing branchID to redis")
-			}
+			redisCacheIntSet(cache.RedisClient, "saplingHeight", saplingHeight)
+			redisCacheIntSet(cache.RedisClient, "blockHeight", blockHeight)
+			redisCacheStringSet(cache.RedisClient, "chainName", chainName)
+			redisCacheStringSet(cache.RedisClient, "branchID", branchID)
+			cachedBlockHeight = getRedisCachedBlockHeight(cache.RedisClient)
+		} else {
+			cachedBlockHeight = 0
 		}
 
-		// Start the block cache importer at cacheSize blocks before current height
-		cacheStart := blockHeight - startOpts.CacheSize
-		if cacheStart < saplingHeight {
+		var cacheStart int
+
+		// TODO: start earlier when cachedBlockHeight is set to check for reorgs.
+		// TODO: check reorg logic in general, not tested
+		//
+		// If we have nothing cahced then start from saplingHeight
+		// Otherwise start from where the cache got to
+		if cachedBlockHeight > saplingHeight {
+			cacheStart = cachedBlockHeight
+		} else {
 			cacheStart = saplingHeight
 		}
 
+		// Start the block cache importer (ingestor or BlockIngestor) at the highest cached block
 		go common.BlockIngestor(cache, cacheStart, 0 /*loop forever*/)
 
 	} else {
@@ -286,15 +284,17 @@ func init() {
 	rootCmd.AddCommand(versionCmd)
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is current directory, lightwalletd.yaml)")
-	rootCmd.Flags().String("bind-addr", "127.0.0.1:9077", "the address to listen on")
+	rootCmd.Flags().String("bind-addr", "127.0.0.1:18232", "the address to listen on")
 	rootCmd.Flags().String("tls-cert", "./cert.pem", "the path to a TLS certificate")
 	rootCmd.Flags().String("tls-key", "./cert.key", "the path to a TLS key file")
 	rootCmd.Flags().Int("log-level", int(logrus.InfoLevel), "log level (logrus 1-7)")
 	rootCmd.Flags().String("log-file", "./server.log", "log file to write to")
-	rootCmd.Flags().String("verus-conf-path", "./VRSC.conf", "conf file to pull VerusCoin RPC creds from")
-	rootCmd.Flags().String("zcash-conf-path", "./zcash.conf", "conf file to pull RPC creds from")
 	rootCmd.Flags().Bool("no-tls-very-insecure", false, "run without the required TLS certificate, only for debugging, DO NOT use in production")
-	rootCmd.Flags().Bool("redis-only", false, "run without using verusd, getting data from redis")
+	rootCmd.Flags().Bool("no-verusd", false, "run without using verusd, getting data from redis")
+	rootCmd.Flags().String("verusd-url", "127.0.0.1:2786", "the verusd RPC address and port to connect to")
+	rootCmd.Flags().String("chain-name", "VRSC", "chain name, defaults to VRSC")
+	rootCmd.Flags().String("verusd-user", "VERUSDUSER", "verusd user access credential")
+	rootCmd.Flags().String("verusd-password", "VERUSDPASSWORD", "verusd password access credential")
 	rootCmd.Flags().String("redis-url", "", "URL of redis server including port; leave out or set to \"\" to disable redis")
 	rootCmd.Flags().String("redis-password", "", "password for redis server if needed")
 	rootCmd.Flags().Int("redis-db", 0, "DB number for redis cache")
@@ -316,8 +316,16 @@ func init() {
 	viper.SetDefault("zcash-conf-path", "./zcash.conf")
 	viper.BindPFlag("no-tls-very-insecure", rootCmd.Flags().Lookup("no-tls-very-insecure"))
 	viper.SetDefault("no-tls-very-insecure", false)
-	viper.BindPFlag("redis-only", rootCmd.Flags().Lookup("redis-only"))
-	viper.SetDefault("redis-only", false)
+	viper.BindPFlag("verusd-url", rootCmd.Flags().Lookup("verusd-url"))
+	viper.SetDefault("verusd-url", "127.0.0.1:2786")
+	viper.BindPFlag("chain-name", rootCmd.Flags().Lookup("chain-name"))
+	viper.SetDefault("chain-name", "VRSC")
+	viper.BindPFlag("verusd-user", rootCmd.Flags().Lookup("verusd-user"))
+	viper.SetDefault("verusd-user", "VERUSDUSER")
+	viper.BindPFlag("verusd-password", rootCmd.Flags().Lookup("verusd-password"))
+	viper.SetDefault("verusd-password", "VERUSDPASSWORD")
+	viper.BindPFlag("no-verusd", rootCmd.Flags().Lookup("no-verusd"))
+	viper.SetDefault("no-verusd", false)
 	viper.BindPFlag("redis-url", rootCmd.Flags().Lookup("redis-url"))
 	viper.SetDefault("redis-url", "")
 	viper.BindPFlag("redis-password", rootCmd.Flags().Lookup("redis-password"))
@@ -371,6 +379,22 @@ func initConfig() {
 	}
 }
 
+func getRedisCachedBlockHeight(client redis.Client) int {
+	resultString, err := client.Get("cachedBlockHeight").Result()
+	if err != nil {
+		fmt.Println("Error reading cachedBlockHeight from redis")
+		return 0
+	}
+
+	resultInt, convErr := strconv.Atoi(resultString)
+	if convErr != nil {
+		fmt.Println("Error converting cachedBlockHeight string from redis to int")
+		return 0
+	}
+
+	return resultInt
+}
+
 func checkRedisIntResult(client redis.Client, key string) int {
 	valueString := checkRedisStringResult(client, key)
 	result, err := strconv.Atoi(valueString)
@@ -388,8 +412,30 @@ func checkRedisStringResult(client redis.Client, key string) string {
 	return result
 }
 
+func redisCacheIntSet(cache redis.Client, key string, value int) {
+	redisErr := cache.Set(key, value, 0).Err()
+	if redisErr != nil {
+		fmt.Println("Error writing ", key, " with value ", value, "to redis")
+	}
+}
+
+func redisCacheStringSet(cache redis.Client, key string, value string) {
+	redisErr := cache.Set(key, value, 0).Err()
+	if redisErr != nil {
+		fmt.Println("Error writing ", key, " with value ", value, "to redis")
+	}
+}
+
+func complainInt(key string, value int) {
+	fmt.Println("Error writing ", key, " with value ", value, "to redis")
+}
+
+func complainString(key string, value string) {
+	fmt.Println("Error writing ", key, " with value ", value, "to redis")
+}
+
 func giveUp(key string) {
 	os.Stderr.WriteString(fmt.Sprintf("\n ** redis is enabled but lightwalletd is unable to fetch %s %s", key,
-		" from redis - you must run at least one ingestor (lightwalletd without --only-redis) and get the redis cache setup before running lisghtwalletd --redis-only\n\n"))
+		" from redis - you must run at least one ingestor (lightwalletd without --only-redis) and get the redis cache setup before running lisghtwalletd --no-verusd\n\n"))
 	os.Exit(1)
 }

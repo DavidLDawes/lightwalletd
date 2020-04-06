@@ -36,8 +36,8 @@ type BlockCache struct {
 	mutex       sync.RWMutex
 }
 
-// RedisOnly flag if true indicates we do not use verusd, so only Redis will be queried and it is read only, no transactions
-var RedisOnly = false
+// NoVerusd flag if true indicates we do not use verusd, so only Redis will be queried and it is read only, no transactions
+var NoVerusd = false
 
 // RedisURL string if set this is the URL including the port for redis; if you run redis locally by default it uses 127.0.0.1:6379 so that should work
 var RedisURL = ""
@@ -66,13 +66,19 @@ func NewBlockCache(maxEntries int, startHeight int) *BlockCache {
 			os.Stderr.WriteString(fmt.Sprintf("\n  ** redis is enabled but lightwalletd is unable to connect to the redis host\n\n"))
 			os.Exit(1)
 		}
+		return &BlockCache{
+			MaxEntries:  maxEntries,
+			m:           make(map[int]*blockCacheEntry),
+			firstBlock:  startHeight,
+			nextBlock:   startHeight,
+			RedisClient: *RedisClient,
+		}
 	}
 	return &BlockCache{
-		MaxEntries:  maxEntries,
-		m:           make(map[int]*blockCacheEntry),
-		firstBlock:  startHeight,
-		nextBlock:   startHeight,
-		RedisClient: *RedisClient,
+		MaxEntries: maxEntries,
+		m:          make(map[int]*blockCacheEntry),
+		firstBlock: startHeight,
+		nextBlock:  startHeight,
 	}
 }
 
@@ -107,7 +113,6 @@ func (c *BlockCache) Add(height int, block *walletrpc.CompactBlock) (bool, error
 		c.firstBlock = c.nextBlock
 	}
 	// Invariant: m[firstBlock..nextBlock) are valid.
-
 	// Detect reorg, ingestor needs to handle it
 	if height > c.firstBlock && !bytes.Equal(block.PrevHash, c.m[height-1].hash) {
 		return true, nil
@@ -129,7 +134,10 @@ func (c *BlockCache) Add(height int, block *walletrpc.CompactBlock) (bool, error
 		blockBase64 := base64.StdEncoding.EncodeToString(data)
 		redisErr := c.RedisClient.Set(strconv.Itoa(height), blockBase64, 0).Err()
 		if redisErr != nil {
-			println("Error writing to redis")
+			fmt.Println("Warning: Error writing to redis")
+		} else {
+			updateCache(c.RedisClient, "blockHeight", height)
+			updateCache(c.RedisClient, "cachedBlockHeight", height)
 		}
 	}
 
@@ -160,8 +168,8 @@ func (c *BlockCache) Get(height int) *walletrpc.CompactBlock {
 				}
 			}
 		}
-		if RedisOnly {
-			println("Error unmarshalling compact block")
+		if NoVerusd {
+			fmt.Println("Error unmarshalling compact block")
 			return nil
 		}
 	}
@@ -176,7 +184,7 @@ func (c *BlockCache) Get(height int) *walletrpc.CompactBlock {
 	serialized := &walletrpc.CompactBlock{}
 	unmarshalErr := proto.Unmarshal(c.m[height].data, serialized)
 	if unmarshalErr != nil {
-		println("Error unmarshalling compact block")
+		fmt.Println("Error unmarshalling compact block")
 		return nil
 	}
 
@@ -192,4 +200,23 @@ func (c *BlockCache) GetLatestHeight() int {
 		return -1
 	}
 	return c.nextBlock - 1
+}
+
+func updateCache(redisC redis.Client, key string, value int) {
+	redisCacheValueString, err := redisC.Get(key).Result()
+	if err != nil {
+		fmt.Println("Warning: Unable to read redis ", key, ", creating it with value  ", strconv.Itoa(value), " using \"0\"")
+		redisCacheValueString = "0"
+	}
+	redisCacheValue, err := strconv.Atoi(redisCacheValueString)
+	if err != nil {
+		fmt.Println("Warning: Unable to convert cached redis ", key, " with value \"", redisCacheValueString, "\" from string to int, using 0")
+		redisCacheValue = 0
+	}
+	if value > redisCacheValue {
+		redisErr := redisC.Set(key, strconv.Itoa(value), 0).Err()
+		if redisErr != nil {
+			fmt.Println("Warning: Unable to set redis ", key, " to ", strconv.Itoa(value), " stuck at ", redisCacheValue)
+		}
+	}
 }
