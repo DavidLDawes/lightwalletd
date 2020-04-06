@@ -234,7 +234,7 @@ func TestBlockIngestor(t *testing.T) {
 	testT = t
 	RawRequest = getblockStub
 	Sleep = sleepStub
-	testcache := NewBlockCache("unittestcache", 380640)
+	testcache := NewBlockCache(500000, 380640)
 	BlockIngestor(testcache, 380640, 2)
 	if step != 2 {
 		t.Error("unexpected final step", step)
@@ -246,9 +246,7 @@ func TestBlockIngestor(t *testing.T) {
 
 func TestGetBlockRange(t *testing.T) {
 	testT = t
-	RawRequest = getblockStub
-	CacheTestClean("unittestcache")
-	testcache := NewBlockCache("unittestcache", 380640)
+	testcache := NewBlockCache(500000, 380640)
 	blockChan := make(chan walletrpc.CompactBlock)
 	errChan := make(chan error)
 	go GetBlockRange(testcache, blockChan, errChan, 380640, 380642)

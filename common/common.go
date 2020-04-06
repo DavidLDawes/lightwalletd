@@ -42,6 +42,9 @@ type Options struct {
 	ZcashConfPath     string `json:"zcash_conf,omitempty"`
 	NoTLSVeryInsecure bool   `json:"no_tls_very_insecure,omitempty"`
 	RedisOnly         bool   `json:"redis_only,omitempty"`
+	RedisURL          string `json:"redis_url,omitempty"`
+	RedisPassword     string `json:"redis_password,omitempty"`
+	RedisDB           int    `json:"redis_db,omitempty"`
 	CacheSize         int    `json:"cache_size,omitempty"`
 }
 
@@ -213,7 +216,7 @@ func GetBlock(cache *BlockCache, height int) (*walletrpc.CompactBlock, error) {
 	if RedisOnly {
 		// Block height is out of range - no match in Redis & RedisOnly set
 		if height > 500000 {
-			return nil, errors.New("block requested is newer than latest cached block with RedisOnly set")
+			return nil, errors.New("block requested is past the latest cached block with RedisOnly set")
 		} else {
 			return nil, errors.New("block requested is before the first cached block with RedisOnly set")
 		}

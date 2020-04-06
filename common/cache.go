@@ -9,6 +9,8 @@ package common
 import (
 	"bytes"
 	"encoding/base64"
+	"fmt"
+	"os"
 	"strconv"
 	"sync"
 
@@ -30,26 +32,47 @@ type BlockCache struct {
 	m           map[int]*blockCacheEntry
 	firstBlock  int
 	nextBlock   int
-	redisClient redis.Client
+	RedisClient redis.Client
 	mutex       sync.RWMutex
 }
 
-// RedisOnly flag if true indicates we do not use verusd
+// RedisOnly flag if true indicates we do not use verusd, so only Redis will be queried and it is read only, no transactions
 var RedisOnly = false
+
+// RedisURL string if set this is the URL including the port for redis; if you run redis locally by default it uses 127.0.0.1:6379 so that should work
+var RedisURL = ""
+
+// RedisPassword is the optional password needed to access redis over tcp
+var RedisPassword = ""
+
+// RedisDB int the oprional DB number for redis
+var RedisDB = 0
+
+// NoRedis flag if true indicates we do not use verusd, so only verusd will be used; all features available and in memory cache only so startup is slowish
+var NoRedis = false
 
 // NewBlockCache returns an instance of a block cache object.
 func NewBlockCache(maxEntries int, startHeight int) *BlockCache {
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:     "127.0.0.1:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
+	var RedisClient *redis.Client
+
+	if !NoRedis {
+		RedisClient = redis.NewClient(&redis.Options{
+			Addr:     RedisURL,
+			Password: RedisPassword, // no password set
+			DB:       RedisDB,       // use default DB
+		})
+		_, err := RedisClient.Ping().Result()
+		if err != nil {
+			os.Stderr.WriteString(fmt.Sprintf("\n  ** redis is enabled but lightwalletd is unable to connect to the redis host\n\n"))
+			os.Exit(1)
+		}
+	}
 	return &BlockCache{
 		MaxEntries:  maxEntries,
 		m:           make(map[int]*blockCacheEntry),
 		firstBlock:  startHeight,
 		nextBlock:   startHeight,
-		redisClient: *redisClient,
+		RedisClient: *RedisClient,
 	}
 }
 
@@ -102,10 +125,12 @@ func (c *BlockCache) Add(height int, block *walletrpc.CompactBlock) (bool, error
 	c.nextBlock++
 	// Invariant: m[firstBlock..nextBlock) are valid.
 
-	blockBase64 := base64.StdEncoding.EncodeToString(data)
-	redisErr := c.redisClient.Set(strconv.Itoa(height), blockBase64, 0).Err()
-	if redisErr != nil {
-		println("Error writing to redis")
+	if !NoRedis {
+		blockBase64 := base64.StdEncoding.EncodeToString(data)
+		redisErr := c.RedisClient.Set(strconv.Itoa(height), blockBase64, 0).Err()
+		if redisErr != nil {
+			println("Error writing to redis")
+		}
 	}
 
 	// remove any blocks that are older than the capacity of the cache
@@ -123,20 +148,22 @@ func (c *BlockCache) Add(height int, block *walletrpc.CompactBlock) (bool, error
 // in the cache, else nil.
 func (c *BlockCache) Get(height int) *walletrpc.CompactBlock {
 
-	redisCache, err := c.redisClient.Get(strconv.Itoa(height)).Result()
-	if err == nil {
-		decoded, decodeErr := base64.StdEncoding.DecodeString(redisCache)
-		if decodeErr == nil {
-			serialized := &walletrpc.CompactBlock{}
-			redisUnmarshalErr := proto.Unmarshal(decoded, serialized)
-			if redisUnmarshalErr == nil {
-				return serialized
+	if !NoRedis {
+		redisCache, err := c.RedisClient.Get(strconv.Itoa(height)).Result()
+		if err == nil {
+			decoded, decodeErr := base64.StdEncoding.DecodeString(redisCache)
+			if decodeErr == nil {
+				serialized := &walletrpc.CompactBlock{}
+				redisUnmarshalErr := proto.Unmarshal(decoded, serialized)
+				if redisUnmarshalErr == nil {
+					return serialized
+				}
 			}
 		}
-	}
-	if RedisOnly {
-		println("Error unmarshalling compact block")
-		return nil
+		if RedisOnly {
+			println("Error unmarshalling compact block")
+			return nil
+		}
 	}
 
 	c.mutex.RLock()
