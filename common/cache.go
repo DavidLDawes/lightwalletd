@@ -39,7 +39,10 @@ type BlockCache struct {
 // NoVerusd flag if true indicates we do not use verusd, so only Redis will be queried and it is read only, no transactions
 var NoVerusd = false
 
-// RedisURL string if set this is the URL including the port for redis; if you run redis locally by default it uses 127.0.0.1:6379 so that should work
+// ChainName string the chain name, for VerusCoin it is VRSC
+var ChainName = ""
+
+// RedisURL string if set this is the URL including the port for redis, if empty redis is diasbled; if you run redis locally by default it uses 127.0.0.1:6379 so that should work
 var RedisURL = ""
 
 // RedisPassword is the optional password needed to access redis over tcp
@@ -132,12 +135,12 @@ func (c *BlockCache) Add(height int, block *walletrpc.CompactBlock) (bool, error
 
 	if !NoRedis {
 		blockBase64 := base64.StdEncoding.EncodeToString(data)
-		redisErr := c.RedisClient.Set(strconv.Itoa(height), blockBase64, 0).Err()
+		redisErr := c.RedisClient.Set(ChainName+strconv.Itoa(height), blockBase64, 0).Err()
 		if redisErr != nil {
 			fmt.Println("Warning: Error writing to redis")
 		} else {
-			updateCache(c.RedisClient, "blockHeight", height)
-			updateCache(c.RedisClient, "cachedBlockHeight", height)
+			updateCache(c.RedisClient, ChainName+"blockHeight", height)
+			updateCache(c.RedisClient, ChainName+"cachedBlockHeight", height)
 		}
 	}
 
@@ -157,7 +160,7 @@ func (c *BlockCache) Add(height int, block *walletrpc.CompactBlock) (bool, error
 func (c *BlockCache) Get(height int) *walletrpc.CompactBlock {
 
 	if !NoRedis {
-		redisCache, err := c.RedisClient.Get(strconv.Itoa(height)).Result()
+		redisCache, err := c.RedisClient.Get(ChainName + strconv.Itoa(height)).Result()
 		if err == nil {
 			decoded, decodeErr := base64.StdEncoding.DecodeString(redisCache)
 			if decodeErr == nil {

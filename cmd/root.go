@@ -62,8 +62,16 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		if len(StartOpts.RedisURL) > 0 {
+			if len(StartOpts.ChainName) < 1 {
+				os.Stderr.WriteString(fmt.Sprintf("Enabling redis by setting --RedisUrl requires --chain-name to be set to something like VRSC"))
+				os.Exit(1)
+			}
+		}
+
 		// Dependency loop so common can not include us; so push the values to common/cache.go
 		common.NoVerusd = StartOpts.NoVerusd
+		common.ChainName = StartOpts.ChainName
 		common.RedisURL = StartOpts.RedisURL
 		common.RedisDB = StartOpts.RedisDB
 		common.RedisPassword = StartOpts.RedisPassword
@@ -214,10 +222,10 @@ func startServer(startOpts *common.Options) error {
 				os.Exit(1)
 			}
 
-			saplingHeight := checkRedisIntResult(*RedisClient, "saplingHeight")
-			blockHeight := checkRedisIntResult(*RedisClient, "blockHeight")
-			chainName := checkRedisStringResult(*RedisClient, "chainName")
-			branchID := checkRedisStringResult(*RedisClient, "branchID")
+			saplingHeight := checkRedisIntResult(*RedisClient, startOpts.ChainName+"saplingHeight")
+			blockHeight := checkRedisIntResult(*RedisClient, startOpts.ChainName+"blockHeight")
+			chainName := checkRedisStringResult(*RedisClient, startOpts.ChainName+"chainName")
+			branchID := checkRedisStringResult(*RedisClient, startOpts.ChainName+"branchID")
 
 			common.Log.Info("Got sapling height from redis", saplingHeight, "blockHeight", blockHeight, " chainName ", chainName, " branchID ", branchID)
 			cache = common.NewBlockCache(startOpts.CacheSize, blockHeight)
@@ -380,7 +388,7 @@ func initConfig() {
 }
 
 func getRedisCachedBlockHeight(client redis.Client) int {
-	resultString, err := client.Get("cachedBlockHeight").Result()
+	resultString, err := client.Get(StartOpts.BindAddr.ChainName + "cachedBlockHeight").Result()
 	if err != nil {
 		fmt.Println("Error reading cachedBlockHeight from redis")
 		return 0
