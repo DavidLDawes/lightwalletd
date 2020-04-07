@@ -43,11 +43,15 @@ type Options struct {
 	ChainName         string `json:"chain-name,omitempty"`
 	VerusdUser        string `json:"verusd-user,omitempty"`
 	VerusdPassword    string `json:"verusd-password,omitempty"`
-	NoVerusd          bool   `json:"redis_only,omitempty,omitempty"`
-	RedisURL          string `json:"redis_url,omitempty,omitempty"`
-	RedisPassword     string `json:"redis_password,omitempty,omitempty"`
-	RedisDB           int    `json:"redis_db,omitempty,omitempty"`
-	CacheSize         int    `json:"cache_size,omitempty,omitempty"`
+	NoVerusd          bool   `json:"redis_only,omitempty"`
+	RedisURL          string `json:"redis_url,omitempty"`
+	RedisPassword     string `json:"redis_password,omitempty"`
+	RedisDB           int    `json:"redis_db,omitempty"`
+	SQLDriver         string `json:"sql-driver,omitempty"`
+	SQLURL            string `json:"sql-url,omitempty"`
+	SQLUserName       string `json:"sql_user_name,omitempty"`
+	SQLPassword       string `json:"sql-password,omitempty"`
+	CacheSize         int    `json:"cache_size,omitempty"`
 }
 
 // RawRequest points to the function to send a an RPC request to verusd;

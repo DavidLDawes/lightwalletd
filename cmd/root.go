@@ -52,6 +52,10 @@ var rootCmd = &cobra.Command{
 			RedisURL:          viper.GetString("redis-url"),
 			RedisPassword:     viper.GetString("redis-password"),
 			RedisDB:           viper.GetInt("redis-db"),
+			SQLDriver:         viper.GetString("sql-driver"),
+			SQLURL:            viper.GetString("sql-url"),
+			SQLUserName:       viper.GetString("sql-user-name"),
+			SQLPassword:       viper.GetString("sql-password"),
 			CacheSize:         viper.GetInt("cache-size"),
 		}
 
@@ -174,15 +178,21 @@ func startServer(startOpts *common.Options) error {
 
 		cache = common.NewBlockCache(startOpts.CacheSize, blockHeight)
 
-		var cachedBlockHeight int
+		cachedBlockHeight := -1
 		if len(StartOpts.RedisURL) > 0 {
 			redisCacheIntSet(cache.RedisClient, "saplingHeight", saplingHeight)
 			redisCacheIntSet(cache.RedisClient, "blockHeight", blockHeight)
 			redisCacheStringSet(cache.RedisClient, "chainName", chainName)
 			redisCacheStringSet(cache.RedisClient, "branchID", branchID)
 			cachedBlockHeight = getRedisCachedBlockHeight(cache.RedisClient)
-		} else {
-			cachedBlockHeight = 0
+		}
+
+		if len(StartOpts.SQLDriver) > 0 && len(StartOpts.SQLURL) > 0 {
+			sqlCacheIntSet(cache.SQLClient, "saplingHeight", saplingHeight)
+			sqlCacheIntSet(cache.SQLClient, "blockHeight", blockHeight)
+			sqlCacheStringSet(cache.SQLClient, "chainName", chainName)
+			sqlCacheStringSet(cache.SQLClient, "branchID", branchID)
+			cachedBlockHeight = getSQLCachedBlockHeight(cache.SQLClient)
 		}
 
 		var cacheStart int
@@ -298,7 +308,11 @@ func init() {
 	rootCmd.Flags().String("redis-url", "", "URL of redis server including port; leave out or set to \"\" to disable redis")
 	rootCmd.Flags().String("redis-password", "", "password for redis server if needed")
 	rootCmd.Flags().Int("redis-db", 0, "DB number for redis cache")
-	rootCmd.Flags().Int("cache-size", 80000, "number of blocks to hold in the cache")
+	rootCmd.Flags().String("sql-driver", "", "Driver string used to connect to SQL")
+	rootCmd.Flags().String("sql-url", "", "SQL endpoint URL, usually this includes port :3306")
+	rootCmd.Flags().String("sql-user-name", "", "User name creds used for SQL access")
+	rootCmd.Flags().String("sql-password", "", "Password creds used for SQL access")
+	rootCmd.Flags().Int("cache-size", 1500000, "number of blocks to hold in the cache")
 
 	viper.BindPFlag("bind-addr", rootCmd.Flags().Lookup("bind-addr"))
 	viper.SetDefault("bind-addr", "127.0.0.1:9067")
@@ -332,8 +346,16 @@ func init() {
 	viper.SetDefault("redis-password", "")
 	viper.BindPFlag("redis-db", rootCmd.Flags().Lookup("redis-db"))
 	viper.SetDefault("redis-db", 0)
+	viper.BindPFlag("sql-driver", rootCmd.Flags().Lookup("sql-driver"))
+	viper.SetDefault("sql-driver", "")
+	viper.BindPFlag("sql-url", rootCmd.Flags().Lookup("sql-url"))
+	viper.SetDefault("sql-url", "")
+	viper.BindPFlag("sql-user-name", rootCmd.Flags().Lookup("sql-user-name"))
+	viper.SetDefault("sql-user-name", "")
+	viper.BindPFlag("sql-password", rootCmd.Flags().Lookup("sql-password"))
+	viper.SetDefault("sql-password", "")
 	viper.BindPFlag("cache-size", rootCmd.Flags().Lookup("cache-size"))
-	viper.SetDefault("cache-size", 80000)
+	viper.SetDefault("cache-size", 1500000)
 
 	logger.SetFormatter(&logrus.TextFormatter{
 		//DisableColors:          true,

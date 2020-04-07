@@ -8,6 +8,7 @@ package common
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/base64"
 	"fmt"
 	"os"
@@ -16,6 +17,7 @@ import (
 
 	"github.com/asherda/lightwalletd/walletrpc"
 	"github.com/go-redis/redis/v7"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/golang/protobuf/proto"
 )
 
@@ -33,6 +35,7 @@ type BlockCache struct {
 	firstBlock  int
 	nextBlock   int
 	RedisClient redis.Client
+	SQLClient   sql.Client
 	mutex       sync.RWMutex
 }
 

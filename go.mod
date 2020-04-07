@@ -5,6 +5,7 @@ go 1.12
 require (
 	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/go-redis/redis/v7 v7.2.0
+	github.com/go-sql-driver/mysql v1.5.0 // indirect
 	github.com/golang/protobuf v1.3.5
 	github.com/gopherjs/gopherjs v0.0.0-20191106031601-ce3c9ade29de // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect

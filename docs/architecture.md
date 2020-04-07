@@ -72,9 +72,8 @@ $ git clone https://github.com/asherda/lightwalletd
 $ cd lightwalletd
 $ swig -go  -intgosize 64 -c++ -cgo -gccgo -Wall -v parser/verushash/verushash.i
 $ make
-$ ./lightwalletd --verus-conf-path ~/.komodo/VRSC/VRSC.conf --log-file /logs/server.log --bind-addr 127.0.0.1:18232 --no-tls-very-insecure
+$ ./lightwalletd --chain-name VRSC --verusd-url 127.0.0.1:27486 --verusd-user user --verusd-password pass --log-file /logs/server.log --bind-addr 127.0.0.1:18232 --no-tls-very-insecure 
 ```
-
 To see the other command line options, run `go run main.go --help`.
 
 **What should I watch out for?**

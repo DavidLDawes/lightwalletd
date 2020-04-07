@@ -1,7 +1,11 @@
-bind-addr: 0.0.0.0:9067
-cache-size: 10
+bind-addr: 127.0.0.1:18232
+cache-size: 1500000
+chain-name: VRSC
 log-file: /dev/stdout
 log-level: 10
 tls-cert: /secrets/lightwallted/cert.pem
 tls-key: /secrets/lightwallted/cert.key
-zcash-conf-path: /srv/zcashd/zcash.conf
+verusd-url: 127.0.0.1:27486
+verusd-user: user
+verusd-password: pass
+log-file: /logs/server.log

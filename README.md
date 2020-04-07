@@ -174,7 +174,7 @@ Without verusd support the ingestor does not run (so new blocks will not get add
 
 For some test situation this is useful - keeping a redis cache available and bringing it up for testing allows testing of a mild amount of remote functionality (basically tthe block streaming stuff from the frontend) without requiring the memory, configuration, complexity, and overhead of verusd.
 # Production Usage
-Run a local instance of `verud` (see above).
+Run a local instance of `verusd` (see above).
 Ensure [Go](https://golang.org/dl/#stable) version 1.11 or later is installed.
 
 **x509 Certificates**
