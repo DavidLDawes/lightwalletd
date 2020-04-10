@@ -8,9 +8,7 @@ package common
 
 import (
 	"bytes"
-	"encoding/base64"
 	"fmt"
-	"os"
 	"strconv"
 	"sync"
 
@@ -26,64 +24,38 @@ type blockCacheEntry struct {
 
 // BlockCache contains a set of recent compact blocks in marshalled form.
 type BlockCache struct {
-	MaxEntries int
-
+	chainName  string
+	maxEntries int
 	// m[firstBlock..nextBlock) are valid
 	m           map[int]*blockCacheEntry
 	firstBlock  int
 	nextBlock   int
-	RedisClient redis.Client
+	blockHeight int
+	RedisClient *redis.Client
 	mutex       sync.RWMutex
 }
 
 // NoVerusd flag if true indicates we do not use verusd, so only Redis will be queried and it is read only, no transactions
 var NoVerusd = false
 
-// RedisURL string if set this is the URL including the port for redis; if you run redis locally by default it uses 127.0.0.1:6379 so that should work
-var RedisURL = ""
-
-// RedisPassword is the optional password needed to access redis over tcp
-var RedisPassword = ""
-
-// RedisDB int the oprional DB number for redis
-var RedisDB = 0
-
-// NoRedis flag if true indicates we do not use verusd, so only verusd will be used; all features available and in memory cache only so startup is slowish
-var NoRedis = false
-
 // NewBlockCache returns an instance of a block cache object.
-func NewBlockCache(maxEntries int, startHeight int) *BlockCache {
-	var RedisClient *redis.Client
-
-	if !NoRedis {
-		RedisClient = redis.NewClient(&redis.Options{
-			Addr:     RedisURL,
-			Password: RedisPassword, // no password set
-			DB:       RedisDB,       // use default DB
-		})
-		_, err := RedisClient.Ping().Result()
-		if err != nil {
-			os.Stderr.WriteString(fmt.Sprintf("\n  ** redis is enabled but lightwalletd is unable to connect to the redis host\n\n"))
-			os.Exit(1)
-		}
-		return &BlockCache{
-			MaxEntries:  maxEntries,
-			m:           make(map[int]*blockCacheEntry),
-			firstBlock:  startHeight,
-			nextBlock:   startHeight,
-			RedisClient: *RedisClient,
-		}
+func NewBlockCache(chainName string, maxEntries int, startHeight int, blockHeight int, redisOptions *redis.Options) (*BlockCache, error) {
+	redisClient, err := GetCheckedRedisClient(redisOptions)
+	if err != nil {
+		return nil, err
 	}
 	return &BlockCache{
-		MaxEntries: maxEntries,
-		m:          make(map[int]*blockCacheEntry),
-		firstBlock: startHeight,
-		nextBlock:  startHeight,
-	}
+		chainName:   chainName,
+		maxEntries:  maxEntries,
+		m:           make(map[int]*blockCacheEntry),
+		firstBlock:  startHeight,
+		nextBlock:   startHeight,
+		blockHeight: blockHeight,
+		RedisClient: redisClient,
+	}, nil
 }
 
-// Add adds the given block to the cache at the given height, returning true
-// if a reorg was detected.
+// Add adds the given block to the cache at the given height, returning true if a reorg was detected.
 func (c *BlockCache) Add(height int, block *walletrpc.CompactBlock) (bool, error) {
 	// Invariant: m[firstBlock..nextBlock) are valid.
 	c.mutex.Lock()
@@ -100,6 +72,7 @@ func (c *BlockCache) Add(height int, block *walletrpc.CompactBlock) (bool, error
 	// Invariant: m[firstBlock..nextBlock) are valid.
 
 	// If we already have this block, a reorg must have occurred;
+	// TODO: check for identical blocks. We want to allow redundant ingestors, so it may already exist & that's OK, not an auto reorg.
 	// this block (and all higher) must be re-added.
 	h := height
 	if h < c.firstBlock {
@@ -130,19 +103,10 @@ func (c *BlockCache) Add(height int, block *walletrpc.CompactBlock) (bool, error
 	c.nextBlock++
 	// Invariant: m[firstBlock..nextBlock) are valid.
 
-	if !NoRedis {
-		blockBase64 := base64.StdEncoding.EncodeToString(data)
-		redisErr := c.RedisClient.Set(strconv.Itoa(height), blockBase64, 0).Err()
-		if redisErr != nil {
-			fmt.Println("Warning: Error writing to redis")
-		} else {
-			updateCache(c.RedisClient, "blockHeight", height)
-			updateCache(c.RedisClient, "cachedBlockHeight", height)
-		}
-	}
+	UpdateRedisBlockAndDetails(c.RedisClient, height, data)
 
 	// remove any blocks that are older than the capacity of the cache
-	for c.firstBlock < c.nextBlock-c.MaxEntries {
+	for c.firstBlock < c.nextBlock-c.maxEntries {
 		// Invariant: m[firstBlock..nextBlock) are valid.
 		delete(c.m, c.firstBlock)
 		c.firstBlock++
@@ -156,30 +120,10 @@ func (c *BlockCache) Add(height int, block *walletrpc.CompactBlock) (bool, error
 // in the cache, else nil.
 func (c *BlockCache) Get(height int) *walletrpc.CompactBlock {
 
-	if !NoRedis {
-		redisCache, err := c.RedisClient.Get(strconv.Itoa(height)).Result()
-		if err == nil {
-			decoded, decodeErr := base64.StdEncoding.DecodeString(redisCache)
-			if decodeErr == nil {
-				serialized := &walletrpc.CompactBlock{}
-				redisUnmarshalErr := proto.Unmarshal(decoded, serialized)
-				if redisUnmarshalErr == nil {
-					return serialized
-				}
-			}
-		}
-		if NoVerusd {
-			fmt.Println("Error unmarshalling compact block")
-			return nil
-		}
-	}
-
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 
-	if height < c.firstBlock || height >= c.nextBlock {
-		return nil
-	}
+	// TODO: only go to redis if in last 20 blocks or after memory cache miss
 
 	serialized := &walletrpc.CompactBlock{}
 	unmarshalErr := proto.Unmarshal(c.m[height].data, serialized)
@@ -189,6 +133,29 @@ func (c *BlockCache) Get(height int) *walletrpc.CompactBlock {
 	}
 
 	return serialized
+
+	compactBlockPtr := GetCompressedBlockFromRedis(c.RedisClient, height)
+	if compactBlockPtr != nil {
+		return compactBlockPtr
+	}
+	if NoVerusd {
+		fmt.Println("Error getting compact block from redis at height ", strconv.Itoa(height), " with --no-verusd; unable to get a result, returning nil")
+		return nil
+	}
+
+	if height < c.firstBlock || height >= c.nextBlock {
+		// Not in redis and past the end of cache, so return nil
+		return nil
+	}
+
+	serialized = &walletrpc.CompactBlock{}
+	unmarshalErr = proto.Unmarshal(c.m[height].data, serialized)
+	if unmarshalErr != nil {
+		fmt.Println("Error unmarshalling compact block")
+		return nil
+	}
+
+	return compactBlockPtr
 }
 
 // GetLatestHeight returns the block with the greatest height, or nil
@@ -200,23 +167,4 @@ func (c *BlockCache) GetLatestHeight() int {
 		return -1
 	}
 	return c.nextBlock - 1
-}
-
-func updateCache(redisC redis.Client, key string, value int) {
-	redisCacheValueString, err := redisC.Get(key).Result()
-	if err != nil {
-		fmt.Println("Warning: Unable to read redis ", key, ", creating it with value  ", strconv.Itoa(value), " using \"0\"")
-		redisCacheValueString = "0"
-	}
-	redisCacheValue, err := strconv.Atoi(redisCacheValueString)
-	if err != nil {
-		fmt.Println("Warning: Unable to convert cached redis ", key, " with value \"", redisCacheValueString, "\" from string to int, using 0")
-		redisCacheValue = 0
-	}
-	if value > redisCacheValue {
-		redisErr := redisC.Set(key, strconv.Itoa(value), 0).Err()
-		if redisErr != nil {
-			fmt.Println("Warning: Unable to set redis ", key, " to ", strconv.Itoa(value), " stuck at ", redisCacheValue)
-		}
-	}
 }

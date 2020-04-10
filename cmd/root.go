@@ -5,7 +5,6 @@ import (
 	"net"
 	"os"
 	"os/signal"
-	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -64,10 +63,6 @@ var rootCmd = &cobra.Command{
 
 		// Dependency loop so common can not include us; so push the values to common/cache.go
 		common.NoVerusd = StartOpts.NoVerusd
-		common.RedisURL = StartOpts.RedisURL
-		common.RedisDB = StartOpts.RedisDB
-		common.RedisPassword = StartOpts.RedisPassword
-		common.NoRedis = len(StartOpts.RedisURL) < 1
 
 		var filesThatShouldExist []string
 		if StartOpts.NoVerusd {
@@ -153,6 +148,13 @@ func startServer(startOpts *common.Options) error {
 	}
 
 	var cache *common.BlockCache
+
+	redisOpts := &redis.Options{
+		Addr:     startOpts.RedisURL,
+		Password: startOpts.RedisPassword,
+		DB:       startOpts.RedisDB,
+	}
+
 	if !startOpts.NoVerusd {
 		// Initialize verusd RPC client. Right now (April 2020) this is only for
 		// sending transactions and handling identity, but in the future it could
@@ -172,23 +174,11 @@ func startServer(startOpts *common.Options) error {
 		saplingHeight, blockHeight, chainName, branchID := common.GetSaplingInfo()
 		common.Log.Info("Got sapling height from verusd ", saplingHeight, " chain ", chainName, " branchID ", branchID)
 
-		cache = common.NewBlockCache(startOpts.CacheSize, blockHeight)
-
-		var cachedBlockHeight int
-		if len(StartOpts.RedisURL) > 0 {
-			redisCacheIntSet(cache.RedisClient, "saplingHeight", saplingHeight)
-			redisCacheIntSet(cache.RedisClient, "blockHeight", blockHeight)
-			redisCacheStringSet(cache.RedisClient, "chainName", chainName)
-			redisCacheStringSet(cache.RedisClient, "branchID", branchID)
-			cachedBlockHeight = getRedisCachedBlockHeight(cache.RedisClient)
-		} else {
-			cachedBlockHeight = 0
-		}
-
+		cache, err := common.NewBlockCache(startOpts.ChainName, startOpts.CacheSize, saplingHeight, blockHeight, redisOpts)
+		cachedBlockHeight := common.UpdateRedisValues(cache.RedisClient, saplingHeight, blockHeight, chainName, branchID)
 		var cacheStart int
 
-		// TODO: start earlier when cachedBlockHeight is set to check for reorgs.
-		// TODO: check reorg logic in general, not tested
+		// TODO: start earlier when cachedBlockHeight is set (for ingesting) to check for reorgs.
 		//
 		// If we have nothing cahced then start from saplingHeight
 		// Otherwise start from where the cache got to
@@ -203,26 +193,25 @@ func startServer(startOpts *common.Options) error {
 
 	} else {
 		if len(StartOpts.RedisURL) > 0 {
-			RedisClient := redis.NewClient(&redis.Options{
-				Addr:     startOpts.RedisURL,
-				Password: startOpts.RedisPassword,
-				DB:       startOpts.RedisDB, // use default DB
-			})
-			_, err := RedisClient.Ping().Result()
+			redisClient := redis.NewClient(redisOpts)
+			_, err := redisClient.Ping().Result()
 			if err != nil {
 				os.Stderr.WriteString(fmt.Sprintf("\n  ** redis is enabled but lightwalletd is unable to connect to the redis host\n\n"))
 				os.Exit(1)
 			}
 
-			saplingHeight := checkRedisIntResult(*RedisClient, "saplingHeight")
-			blockHeight := checkRedisIntResult(*RedisClient, "blockHeight")
-			chainName := checkRedisStringResult(*RedisClient, "chainName")
-			branchID := checkRedisStringResult(*RedisClient, "branchID")
+			saplingHeight := common.CheckRedisIntResult(redisClient, "saplingHeight")
+			blockHeight := common.CheckRedisIntResult(redisClient, "blockHeight")
+			chainName := common.CheckRedisStringResult(redisClient, "chainName")
+			branchID := common.CheckRedisStringResult(redisClient, "branchID")
 
 			common.Log.Info("Got sapling height from redis", saplingHeight, "blockHeight", blockHeight, " chainName ", chainName, " branchID ", branchID)
-			cache = common.NewBlockCache(startOpts.CacheSize, blockHeight)
+			cache, err = common.NewBlockCache(startOpts.ChainName, startOpts.CacheSize, saplingHeight, blockHeight, redisOpts)
+			if err != nil {
+				os.Stderr.WriteString(fmt.Sprintf("\n  ** unable to create cache for " + chainName + "\n\n"))
+				os.Exit(1)
+			}
 		}
-
 	}
 
 	// Compact transaction service initialization
@@ -298,7 +287,7 @@ func init() {
 	rootCmd.Flags().String("redis-url", "", "URL of redis server including port; leave out or set to \"\" to disable redis")
 	rootCmd.Flags().String("redis-password", "", "password for redis server if needed")
 	rootCmd.Flags().Int("redis-db", 0, "DB number for redis cache")
-	rootCmd.Flags().Int("cache-size", 80000, "number of blocks to hold in the cache")
+	rootCmd.Flags().Int("cache-size", 15000000, "number of blocks to hold in the cache")
 
 	viper.BindPFlag("bind-addr", rootCmd.Flags().Lookup("bind-addr"))
 	viper.SetDefault("bind-addr", "127.0.0.1:9067")
@@ -333,7 +322,7 @@ func init() {
 	viper.BindPFlag("redis-db", rootCmd.Flags().Lookup("redis-db"))
 	viper.SetDefault("redis-db", 0)
 	viper.BindPFlag("cache-size", rootCmd.Flags().Lookup("cache-size"))
-	viper.SetDefault("cache-size", 80000)
+	viper.SetDefault("cache-size", 15000000)
 
 	logger.SetFormatter(&logrus.TextFormatter{
 		//DisableColors:          true,
@@ -377,65 +366,4 @@ func initConfig() {
 	if err = viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	}
-}
-
-func getRedisCachedBlockHeight(client redis.Client) int {
-	resultString, err := client.Get("cachedBlockHeight").Result()
-	if err != nil {
-		fmt.Println("Error reading cachedBlockHeight from redis")
-		return 0
-	}
-
-	resultInt, convErr := strconv.Atoi(resultString)
-	if convErr != nil {
-		fmt.Println("Error converting cachedBlockHeight string from redis to int")
-		return 0
-	}
-
-	return resultInt
-}
-
-func checkRedisIntResult(client redis.Client, key string) int {
-	valueString := checkRedisStringResult(client, key)
-	result, err := strconv.Atoi(valueString)
-	if err != nil {
-		giveUp(key)
-	}
-	return result
-}
-
-func checkRedisStringResult(client redis.Client, key string) string {
-	result, err := client.Get(key).Result()
-	if err != nil {
-		giveUp(key)
-	}
-	return result
-}
-
-func redisCacheIntSet(cache redis.Client, key string, value int) {
-	redisErr := cache.Set(key, value, 0).Err()
-	if redisErr != nil {
-		fmt.Println("Error writing ", key, " with value ", value, "to redis")
-	}
-}
-
-func redisCacheStringSet(cache redis.Client, key string, value string) {
-	redisErr := cache.Set(key, value, 0).Err()
-	if redisErr != nil {
-		fmt.Println("Error writing ", key, " with value ", value, "to redis")
-	}
-}
-
-func complainInt(key string, value int) {
-	fmt.Println("Error writing ", key, " with value ", value, "to redis")
-}
-
-func complainString(key string, value string) {
-	fmt.Println("Error writing ", key, " with value ", value, "to redis")
-}
-
-func giveUp(key string) {
-	os.Stderr.WriteString(fmt.Sprintf("\n ** redis is enabled but lightwalletd is unable to fetch %s %s", key,
-		" from redis - you must run at least one ingestor (lightwalletd without --only-redis) and get the redis cache setup before running lisghtwalletd --no-verusd\n\n"))
-	os.Exit(1)
 }
