@@ -48,7 +48,6 @@ var rootCmd = &cobra.Command{
 			ChainName:         viper.GetString("chain-name"),
 			VerusdUser:        viper.GetString("verusd-user"),
 			VerusdPassword:    viper.GetString("verusd-password"),
-			NoVerusd:          viper.GetBool("no-verusd"),
 			RedisURL:          viper.GetString("redis-url"),
 			RedisPassword:     viper.GetString("redis-password"),
 			RedisDB:           viper.GetInt("redis-db"),
@@ -56,9 +55,8 @@ var rootCmd = &cobra.Command{
 		}
 
 		common.Log.Debugf("Options: %#v\n", StartOpts)
-
-		if StartOpts.NoVerusd && len(StartOpts.RedisURL) < 1 {
-			os.Stderr.WriteString(fmt.Sprintf("--no-verusd requires setting --redis-url to work"))
+		if len(StartOpts.VerusdURL) < 1 && len(StartOpts.RedisURL) < 1 {
+			os.Stderr.WriteString(fmt.Sprintf("Configuration failure: At least one of --verusd-url or --redis-url command line options must be specified. Both can be specified, but not neither."))
 			os.Exit(1)
 		}
 
@@ -165,13 +163,11 @@ func startServer(startOpts *common.Options) error {
 				"error": err,
 			}).Fatal("setting up RPC connection to verusd")
 		}
-		// Indirect function for test mocking (so unit tests can talk to stub functions).
-		common.RawRequest = rpcClient.RawRequest
 
 		// Get the sapling activation height from the RPC
 		// (this first RPC also verifies that we can communicate with verusd)
-		saplingHeight, blockHeight, subChainName, branchID := common.GetSaplingInfo()
-		common.Log.Info("Got sapling height from verusd ", saplingHeight, ", chainName \"", startOpts.ChainName, "\", subchain ", subChainName, " branchID ", branchID)
+		saplingHeight, blockHeight, subChainName, branchID := common.GetSaplingInfo(rpcClient)
+		common.Log.Info("Got sapling height from verusd ", saplingHeight, ", chainName ", startOpts.ChainName, ", subchain ", subChainName, " branchID ", branchID)
 
 		cache, err := common.NewBlockCache(startOpts.ChainName, startOpts.CacheSize, saplingHeight, blockHeight, rpcClient, redisOpts)
 		cachedBlockHeight := common.UpdateRedisValues(cache.RedisClient, saplingHeight, blockHeight, startOpts.ChainName, subChainName, branchID)

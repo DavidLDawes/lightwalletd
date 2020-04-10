@@ -32,9 +32,8 @@ type BlockCache struct {
 	firstBlock  int
 	nextBlock   int
 	blockHeight int
-	rpcClient   *rpcclient.Client
+	RpcClient   *rpcclient.Client
 	RedisClient *redis.Client
-	noVerusd    bool
 	mutex       sync.RWMutex
 }
 
@@ -51,7 +50,8 @@ func NewBlockCache(chainName string, maxEntries int, startHeight int, blockHeigh
 		firstBlock:  startHeight,
 		nextBlock:   startHeight,
 		blockHeight: blockHeight,
-		rpcClient:   rpcClient,
+		RpcClient:   rpcClient,
+
 		RedisClient: redisClient,
 	}, nil
 }
@@ -137,8 +137,8 @@ func (c *BlockCache) Get(height int) *walletrpc.CompactBlock {
 			}
 			return compactBlockPtr
 		}
-		if c.noVerusd {
-			fmt.Println("Error getting compact block from redis at height ", strconv.Itoa(height), " with --no-verusd; unable to get a result, returning nil")
+		if c.RpcClient == nil {
+			fmt.Println("Error getting compact block from redis at height ", strconv.Itoa(height), " with no verusd rpc client; unable to get a result, returning nil")
 			return nil
 		}
 	}

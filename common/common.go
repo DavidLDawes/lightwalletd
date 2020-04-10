@@ -15,6 +15,7 @@ import (
 
 	"github.com/asherda/lightwalletd/parser"
 	"github.com/asherda/lightwalletd/walletrpc"
+	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -50,11 +51,6 @@ type Options struct {
 	CacheSize         int    `json:"cache_size,omitempty,omitempty"`
 }
 
-// RawRequest points to the function to send a an RPC request to verusd;
-// in production, it points to btcsuite/btcd/rpcclient/rawrequest.go:RawRequest();
-// in unit tests it points to a function to mock RPCs to verusd.
-var RawRequest func(method string, params []json.RawMessage) (json.RawMessage, error)
-
 // Sleep allows a request to time.Sleep() to be mocked for testing;
 // in production, it points to the standard library time.Sleep();
 // in unit tests it points to a mock function.
@@ -64,12 +60,12 @@ var Sleep func(d time.Duration)
 var Log *logrus.Entry
 
 // GetSaplingInfo returns the result of the getblockchaininfo RPC to verusd
-func GetSaplingInfo() (int, int, string, string) {
+func GetSaplingInfo(rpcClient *rpcclient.Client) (int, int, string, string) {
 	// This request must succeed or we can't go on; give verusd time to start up
 	var f interface{}
 	retryCount := 0
 	for {
-		result, rpcErr := RawRequest("getblockchaininfo", []json.RawMessage{})
+		result, rpcErr := rpcClient.RawRequest("getblockchaininfo", []json.RawMessage{})
 		if rpcErr == nil {
 			if retryCount > 0 {
 				Log.Warn("getblockchaininfo RPC successful")
@@ -108,11 +104,11 @@ func GetSaplingInfo() (int, int, string, string) {
 	return int(saplingHeight), int(blockHeight), chainName, branchID
 }
 
-func getBlockFromRPC(height int) (*walletrpc.CompactBlock, error) {
+func getBlockFromRPC(cache *BlockCache, height int) (*walletrpc.CompactBlock, error) {
 	params := make([]json.RawMessage, 2)
 	params[0] = json.RawMessage("\"" + strconv.Itoa(height) + "\"")
 	params[1] = json.RawMessage("0") // non-verbose (raw hex)
-	result, rpcErr := RawRequest("getblock", params)
+	result, rpcErr := cache.RpcClient.RawRequest("getblock", params)
 
 	// For some reason, the error responses are not JSON
 	if rpcErr != nil {
@@ -155,7 +151,7 @@ func BlockIngestor(cache *BlockCache, startHeight int, rep int) {
 	// Start listening for new blocks
 	retryCount := 0
 	for i := 0; rep == 0 || i < rep; i++ {
-		block, err := getBlockFromRPC(height)
+		block, err := getBlockFromRPC(cache, height)
 		if block == nil || err != nil {
 			if err != nil {
 				Log.WithFields(logrus.Fields{
@@ -215,13 +211,12 @@ func GetBlock(cache *BlockCache, height int) (*walletrpc.CompactBlock, error) {
 	if block != nil {
 		return block, nil
 	}
-
-	if cache.noVerusd {
-		// Block height is out of range - no match in Redis & NoVerusd set
-		return nil, errors.New("block requested not found in redis and --no-verusd set")
+	if cache.RpcClient == nil {
+		return nil, errors.New("Block not in cache and no rpc URL specified, failed to retrieve block")
 	}
+
 	// Not in the cache, ask verusd
-	block, err := getBlockFromRPC(height)
+	block, err := getBlockFromRPC(cache, height)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"height": height,
