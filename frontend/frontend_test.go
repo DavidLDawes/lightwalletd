@@ -21,7 +21,7 @@ import (
 
 	"github.com/asherda/lightwalletd/common"
 	"github.com/asherda/lightwalletd/walletrpc"
-	"github.com/go-redis/redis"
+	"github.com/go-redis/redis/v7"
 	"github.com/sirupsen/logrus"
 )
 
@@ -48,13 +48,14 @@ func TestMain(m *testing.M) {
 	})
 
 	// No redis URL: disable redis
-	redisOpts := *redis.Options{
+	redisOpts := &redis.Options{
 		Addr:     "",
 		Password: "",
 		DB:       0,
 	}
 
-	cache, err := common.NewBlockCache("VRSC", 4, 1, 3, redisOpts)
+	rpcClient, err := NewVRPCFromConf("VRSC", "", "", "")
+	cache, err := common.NewBlockCache("VRSC", 4, 1, 3, rpcClient, redisOpts)
 	if err != nil {
 		os.Stderr.WriteString(fmt.Sprint("NewLwdStreamer failed:", err))
 		os.Exit(1)
@@ -447,50 +448,4 @@ func TestSendTransaction(t *testing.T) {
 		t.Fatal("SendTransaction unexpected ErrorMessage return")
 	}
 	step = 0
-}
-
-var sampleconf = `
-testnet = 1
-rpcport = 18232
-rpcbind = 127.0.0.1
-rpcuser = testlightwduser
-rpcpassword = testlightwdpassword
-`
-
-func TestNewVRPCFromConf(t *testing.T) {
-	connCfg, err := connFromConf([]byte(sampleconf))
-	if err != nil {
-		t.Fatal("connFromConf failed")
-	}
-	if connCfg.Host != "127.0.0.1:18232" {
-		t.Fatal("connFromConf returned unexpected Host")
-	}
-	if connCfg.User != "testlightwduser" {
-		t.Fatal("connFromConf returned unexpected User")
-	}
-	if connCfg.Pass != "testlightwdpassword" {
-		t.Fatal("connFromConf returned unexpected User")
-	}
-	if !connCfg.HTTPPostMode {
-		t.Fatal("connFromConf returned unexpected HTTPPostMode")
-	}
-	if !connCfg.DisableTLS {
-		t.Fatal("connFromConf returned unexpected DisableTLS")
-	}
-
-	// can't pass an integer
-	connCfg, err = connFromConf(10)
-	if err == nil {
-		t.Fatal("connFromConf unexpected success")
-	}
-
-	// Can't verify returned values, but at least run it
-	_, err = NewVRPCFromConf([]byte(sampleconf))
-	if err != nil {
-		t.Fatal("NewZRPCFromClient failed")
-	}
-	_, err = NewVRPCFromConf(10)
-	if err == nil {
-		t.Fatal("NewZRPCFromClient unexpected success")
-	}
 }

@@ -13,6 +13,7 @@ import (
 	"sync"
 
 	"github.com/asherda/lightwalletd/walletrpc"
+	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/go-redis/redis/v7"
 	"github.com/golang/protobuf/proto"
 )
@@ -31,13 +32,14 @@ type BlockCache struct {
 	firstBlock  int
 	nextBlock   int
 	blockHeight int
+	rpcClient   *rpcclient.Client
 	RedisClient *redis.Client
 	noVerusd    bool
 	mutex       sync.RWMutex
 }
 
 // NewBlockCache returns an instance of a block cache object.
-func NewBlockCache(chainName string, maxEntries int, startHeight int, blockHeight int, redisOptions *redis.Options) (*BlockCache, error) {
+func NewBlockCache(chainName string, maxEntries int, startHeight int, blockHeight int, rpcClient *rpcclient.Client, redisOptions *redis.Options) (*BlockCache, error) {
 	redisClient, err := GetCheckedRedisClient(redisOptions)
 	if err != nil {
 		return nil, err
@@ -49,6 +51,7 @@ func NewBlockCache(chainName string, maxEntries int, startHeight int, blockHeigh
 		firstBlock:  startHeight,
 		nextBlock:   startHeight,
 		blockHeight: blockHeight,
+		rpcClient:   rpcClient,
 		RedisClient: redisClient,
 	}, nil
 }

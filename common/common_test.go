@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/asherda/lightwalletd/frontend"
 	"github.com/asherda/lightwalletd/walletrpc"
 	"github.com/go-redis/redis/v7"
 	"github.com/pkg/errors"
@@ -242,7 +243,8 @@ func TestBlockIngestor(t *testing.T) {
 		Password: "",
 		DB:       0,
 	}
-	testcache, err := NewBlockCache("VRSC", 4, 1, 3, redisOpts)
+	rpcClient, err := frontend.NewVRPCFromConf("VRSC", "", "", "")
+	testcache, err := NewBlockCache("VRSC", 4, 1, 3, rpcClient, redisOpts)
 	if err != nil {
 		t.Error("failed to create new block cache")
 	} else {
@@ -266,7 +268,8 @@ func TestGetBlockRange(t *testing.T) {
 		DB:       0,
 	}
 
-	testcache, err := NewBlockCache("VRSC", 4, 1, 3, redisOpts)
+	rpcClient, err := frontend.NewVRPCFromConf("VRSC", "", "", "")
+	testcache, err := NewBlockCache("VRSC", 4, 1, 3, rpcClient, redisOpts)
 
 	blockChan := make(chan walletrpc.CompactBlock)
 	errChan := make(chan error)

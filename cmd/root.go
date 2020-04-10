@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/go-redis/redis/v7"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -152,12 +153,13 @@ func startServer(startOpts *common.Options) error {
 		DB:       startOpts.RedisDB,
 	}
 
+	var rpcClient *rpcclient.Client
 	if !startOpts.NoVerusd {
 		// Initialize verusd RPC client. Right now (April 2020) this is only for
 		// sending transactions and handling identity, but in the future it could
 		// back a different type of block streamer.
-
-		rpcClient, err := frontend.NewVRPCFromConf(startOpts.ChainName, startOpts.VerusdURL, startOpts.VerusdUser, startOpts.VerusdPassword)
+		var err error
+		rpcClient, err = frontend.NewVRPCFromConf(startOpts.ChainName, startOpts.VerusdURL, startOpts.VerusdUser, startOpts.VerusdPassword)
 		if err != nil {
 			common.Log.WithFields(logrus.Fields{
 				"error": err,
@@ -171,7 +173,7 @@ func startServer(startOpts *common.Options) error {
 		saplingHeight, blockHeight, subChainName, branchID := common.GetSaplingInfo()
 		common.Log.Info("Got sapling height from verusd ", saplingHeight, ", chainName \"", startOpts.ChainName, "\", subchain ", subChainName, " branchID ", branchID)
 
-		cache, err := common.NewBlockCache(startOpts.ChainName, startOpts.CacheSize, saplingHeight, blockHeight, redisOpts)
+		cache, err := common.NewBlockCache(startOpts.ChainName, startOpts.CacheSize, saplingHeight, blockHeight, rpcClient, redisOpts)
 		cachedBlockHeight := common.UpdateRedisValues(cache.RedisClient, saplingHeight, blockHeight, startOpts.ChainName, subChainName, branchID)
 		var cacheStart int
 
@@ -201,7 +203,7 @@ func startServer(startOpts *common.Options) error {
 			subChainName := common.CheckRedisStringResult(redisClient, StartOpts.ChainName+"-branchID")
 
 			common.Log.Info("Got sapling height from redis ", saplingHeight, ", blockHeight ", blockHeight, ", chainName \"", startOpts.ChainName, "\", subChain ", subChainName, "branchID ", branchID)
-			cache, err = common.NewBlockCache(startOpts.ChainName, startOpts.CacheSize, saplingHeight, blockHeight, redisOpts)
+			cache, err = common.NewBlockCache(startOpts.ChainName, startOpts.CacheSize, saplingHeight, blockHeight, rpcClient, redisOpts)
 			if err != nil {
 				os.Stderr.WriteString(fmt.Sprintf("\n  ** unable to create cache for " + startOpts.ChainName + "\n\n"))
 				os.Exit(1)
