@@ -32,11 +32,9 @@ type BlockCache struct {
 	nextBlock   int
 	blockHeight int
 	RedisClient *redis.Client
+	noVerusd    bool
 	mutex       sync.RWMutex
 }
-
-// NoVerusd flag if true indicates we do not use verusd, so only Redis will be queried and it is read only, no transactions
-var NoVerusd = false
 
 // NewBlockCache returns an instance of a block cache object.
 func NewBlockCache(chainName string, maxEntries int, startHeight int, blockHeight int, redisOptions *redis.Options) (*BlockCache, error) {
@@ -103,7 +101,7 @@ func (c *BlockCache) Add(height int, block *walletrpc.CompactBlock) (bool, error
 	c.nextBlock++
 	// Invariant: m[firstBlock..nextBlock) are valid.
 
-	UpdateRedisBlockAndDetails(c.RedisClient, height, data)
+	UpdateRedisBlockAndDetails(c.RedisClient, c.chainName, height, data)
 
 	// remove any blocks that are older than the capacity of the cache
 	for c.firstBlock < c.nextBlock-c.maxEntries {
@@ -123,39 +121,37 @@ func (c *BlockCache) Get(height int) *walletrpc.CompactBlock {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 
-	// TODO: only go to redis if in last 20 blocks or after memory cache miss
+	triedRedis := false
+
+	// only start with redis if in last 20-ish blocks to catch reorgs
+	if height > c.blockHeight-19 {
+		triedRedis = true
+		compactBlockPtr := GetCompressedBlockFromRedis(c.RedisClient, c.chainName, height)
+		if compactBlockPtr != nil {
+			updatedHeight := getRedisCachedBlockHeight(c.RedisClient)
+			if updatedHeight > c.blockHeight {
+				c.blockHeight = updatedHeight
+			}
+			return compactBlockPtr
+		}
+		if c.noVerusd {
+			fmt.Println("Error getting compact block from redis at height ", strconv.Itoa(height), " with --no-verusd; unable to get a result, returning nil")
+			return nil
+		}
+	}
 
 	serialized := &walletrpc.CompactBlock{}
 	unmarshalErr := proto.Unmarshal(c.m[height].data, serialized)
-	if unmarshalErr != nil {
+	if unmarshalErr == nil {
+		return serialized
+	} else {
 		fmt.Println("Error unmarshalling compact block")
-		return nil
 	}
 
-	return serialized
-
-	compactBlockPtr := GetCompressedBlockFromRedis(c.RedisClient, height)
-	if compactBlockPtr != nil {
-		return compactBlockPtr
+	if !triedRedis {
+		return GetCompressedBlockFromRedis(c.RedisClient, c.chainName, height)
 	}
-	if NoVerusd {
-		fmt.Println("Error getting compact block from redis at height ", strconv.Itoa(height), " with --no-verusd; unable to get a result, returning nil")
-		return nil
-	}
-
-	if height < c.firstBlock || height >= c.nextBlock {
-		// Not in redis and past the end of cache, so return nil
-		return nil
-	}
-
-	serialized = &walletrpc.CompactBlock{}
-	unmarshalErr = proto.Unmarshal(c.m[height].data, serialized)
-	if unmarshalErr != nil {
-		fmt.Println("Error unmarshalling compact block")
-		return nil
-	}
-
-	return compactBlockPtr
+	return nil
 }
 
 // GetLatestHeight returns the block with the greatest height, or nil

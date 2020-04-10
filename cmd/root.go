@@ -61,9 +61,6 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		// Dependency loop so common can not include us; so push the values to common/cache.go
-		common.NoVerusd = StartOpts.NoVerusd
-
 		var filesThatShouldExist []string
 		if StartOpts.NoVerusd {
 			filesThatShouldExist = []string{
@@ -200,10 +197,10 @@ func startServer(startOpts *common.Options) error {
 				os.Exit(1)
 			}
 
-			saplingHeight := common.CheckRedisIntResult(redisClient, "saplingHeight")
-			blockHeight := common.CheckRedisIntResult(redisClient, "blockHeight")
-			chainName := common.CheckRedisStringResult(redisClient, "chainName")
-			branchID := common.CheckRedisStringResult(redisClient, "branchID")
+			saplingHeight := common.CheckRedisIntResult(redisClient, StartOpts.ChainName+"-saplingHeight")
+			blockHeight := common.CheckRedisIntResult(redisClient, StartOpts.ChainName+"-blockHeight")
+			chainName := common.CheckRedisStringResult(redisClient, StartOpts.ChainName+"-chainName")
+			branchID := common.CheckRedisStringResult(redisClient, StartOpts.ChainName+"-branchID")
 
 			common.Log.Info("Got sapling height from redis", saplingHeight, "blockHeight", blockHeight, " chainName ", chainName, " branchID ", branchID)
 			cache, err = common.NewBlockCache(startOpts.ChainName, startOpts.CacheSize, saplingHeight, blockHeight, redisOpts)

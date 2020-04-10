@@ -32,22 +32,22 @@ func GetCheckedRedisClient(redisOpts *redis.Options) (*redis.Client, error) {
 }
 
 // UpdateRedisBlockAndDetails updates redis for the new block, updates redis chain settings (if redis is enabled)
-func UpdateRedisBlockAndDetails(redisClient *redis.Client, height int, data []byte) {
+func UpdateRedisBlockAndDetails(redisClient *redis.Client, chainName string, height int, data []byte) {
 	if redisClient != nil {
 		blockBase64 := base64.StdEncoding.EncodeToString(data)
-		redisErr := redisClient.Set(strconv.Itoa(height), blockBase64, 0).Err()
+		redisErr := redisClient.Set(chainName+"-"+strconv.Itoa(height), blockBase64, 0).Err()
 		if redisErr != nil {
 			fmt.Println("Warning: Error writing to redis")
 		} else {
-			updateRedisCache(*redisClient, "blockHeight", height)
-			updateRedisCache(*redisClient, "cachedBlockHeight", height)
+			updateRedisCache(*redisClient, chainName+"-blockHeight", height)
+			updateRedisCache(*redisClient, chainName+"-cachedBlockHeight", height)
 		}
 	}
 }
 
 // GetCompressedBlockFromRedis pulls the requested block from redis, if it is available
-func GetCompressedBlockFromRedis(redisClient *redis.Client, height int) *walletrpc.CompactBlock {
-	redisCache, err := redisClient.Get(strconv.Itoa(height)).Result()
+func GetCompressedBlockFromRedis(redisClient *redis.Client, chainName string, height int) *walletrpc.CompactBlock {
+	redisCache, err := redisClient.Get(chainName + "-" + strconv.Itoa(height)).Result()
 	if err == nil {
 		decoded, decodeErr := base64.StdEncoding.DecodeString(redisCache)
 		if decodeErr == nil {
@@ -83,10 +83,9 @@ func updateRedisCache(redisC redis.Client, key string, value int) {
 // UpdateRedisValues sets the values on the redis cache for the chain that are not per block: saplingHeight, blockHeight, chainName and branchID
 func UpdateRedisValues(redisClient *redis.Client, saplingHeight int, blockHeight int, chainName string, branchID string) int {
 	if redisClient != nil {
-		redisCacheIntSet(redisClient, "saplingHeight", saplingHeight)
-		redisCacheIntSet(redisClient, "blockHeight", blockHeight)
-		redisCacheStringSet(redisClient, "chainName", chainName)
-		redisCacheStringSet(redisClient, "branchID", branchID)
+		redisCacheIntSet(redisClient, chainName+"-saplingHeight", saplingHeight)
+		redisCacheIntSet(redisClient, chainName+"-blockHeight", blockHeight)
+		redisCacheStringSet(redisClient, chainName+"-branchID", branchID)
 		return getRedisCachedBlockHeight(redisClient)
 	}
 	return 0
@@ -98,13 +97,11 @@ func getRedisCachedBlockHeight(redisClient *redis.Client) int {
 		fmt.Println("Error reading cachedBlockHeight from redis")
 		return 0
 	}
-
 	resultInt, convErr := strconv.Atoi(resultString)
 	if convErr != nil {
 		fmt.Println("Error converting cachedBlockHeight string from redis to int")
 		return 0
 	}
-
 	return resultInt
 }
 

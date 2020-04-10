@@ -216,7 +216,7 @@ func GetBlock(cache *BlockCache, height int) (*walletrpc.CompactBlock, error) {
 		return block, nil
 	}
 
-	if NoVerusd {
+	if cache.noVerusd {
 		// Block height is out of range - no match in Redis & NoVerusd set
 		if height > 500000 {
 			return nil, errors.New("block requested is past the latest cached block with NoVerusd set")
