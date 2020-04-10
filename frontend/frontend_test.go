@@ -21,6 +21,7 @@ import (
 
 	"github.com/asherda/lightwalletd/common"
 	"github.com/asherda/lightwalletd/walletrpc"
+	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
 )
 
@@ -46,7 +47,18 @@ func TestMain(m *testing.M) {
 		"app": "test",
 	})
 
-	cache = common.NewBlockCache(4, 1)
+	// No redis URL: disable redis
+	redisOpts := *redis.Options{
+		Addr:     "",
+		Password: "",
+		DB:       0,
+	}
+
+	cache, err := common.NewBlockCache("VRSC", 4, 1, 3, redisOpts)
+	if err != nil {
+		os.Stderr.WriteString(fmt.Sprint("NewLwdStreamer failed:", err))
+		os.Exit(1)
+	}
 	lwd, err = NewLwdStreamer(cache)
 	if err != nil {
 		os.Stderr.WriteString(fmt.Sprint("NewLwdStreamer failed:", err))

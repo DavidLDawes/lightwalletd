@@ -14,6 +14,7 @@ import (
 
 	"github.com/asherda/lightwalletd/parser"
 	"github.com/asherda/lightwalletd/walletrpc"
+	"github.com/go-redis/redis/v7"
 )
 
 func TestCache(t *testing.T) {
@@ -36,8 +37,15 @@ func TestCache(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cache := NewBlockCache(4, 1)
 
+	// No redis URL: disable redis
+	redisOpts := &redis.Options{
+		Addr:     "",
+		Password: "",
+		DB:       0,
+	}
+
+	cache, err := NewBlockCache("VRSC", 4, 1, 3, redisOpts)
 	// derive compact blocks from file data (setup, not part of the test)
 	for _, test := range compactTests {
 		blockData, _ := hex.DecodeString(test.Full)

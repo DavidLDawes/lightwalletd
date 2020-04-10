@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/asherda/lightwalletd/walletrpc"
+	"github.com/go-redis/redis/v7"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -234,10 +235,21 @@ func TestBlockIngestor(t *testing.T) {
 	testT = t
 	RawRequest = getblockStub
 	Sleep = sleepStub
-	testcache := NewBlockCache(500000, 380640)
-	BlockIngestor(testcache, 380640, 2)
-	if step != 2 {
-		t.Error("unexpected final step", step)
+
+	// No redis URL: disable redis
+	redisOpts := &redis.Options{
+		Addr:     "",
+		Password: "",
+		DB:       0,
+	}
+	testcache, err := NewBlockCache("VRSC", 4, 1, 3, redisOpts)
+	if err != nil {
+		t.Error("failed to create new block cache")
+	} else {
+		BlockIngestor(testcache, 380640, 2)
+		if step != 2 {
+			t.Error("unexpected final step", step)
+		}
 	}
 	step = 0
 	sleepCount = 0
@@ -246,7 +258,16 @@ func TestBlockIngestor(t *testing.T) {
 
 func TestGetBlockRange(t *testing.T) {
 	testT = t
-	testcache := NewBlockCache(500000, 380640)
+
+	// No redis URL: disable redis
+	redisOpts := &redis.Options{
+		Addr:     "",
+		Password: "",
+		DB:       0,
+	}
+
+	testcache, err := NewBlockCache("VRSC", 4, 1, 3, redisOpts)
+
 	blockChan := make(chan walletrpc.CompactBlock)
 	errChan := make(chan error)
 	go GetBlockRange(testcache, blockChan, errChan, 380640, 380642)
@@ -286,7 +307,7 @@ func TestGetBlockRange(t *testing.T) {
 
 	// check goroutine GetBlockRange() reaching the end of the range (and exiting)
 	go GetBlockRange(testcache, blockChan, errChan, 1, 0)
-	err := <-errChan
+	err = <-errChan
 	if err != nil {
 		t.Fatal("unexpected err return")
 	}
