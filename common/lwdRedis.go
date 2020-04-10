@@ -81,18 +81,19 @@ func updateRedisCache(redisC redis.Client, key string, value int) {
 }
 
 // UpdateRedisValues sets the values on the redis cache for the chain that are not per block: saplingHeight, blockHeight, chainName and branchID
-func UpdateRedisValues(redisClient *redis.Client, saplingHeight int, blockHeight int, chainName string, branchID string) int {
+func UpdateRedisValues(redisClient *redis.Client, saplingHeight int, blockHeight int, chainName string, subChainName string, branchID string) int {
 	if redisClient != nil {
 		redisCacheIntSet(redisClient, chainName+"-saplingHeight", saplingHeight)
 		redisCacheIntSet(redisClient, chainName+"-blockHeight", blockHeight)
 		redisCacheStringSet(redisClient, chainName+"-branchID", branchID)
-		return getRedisCachedBlockHeight(redisClient)
+		redisCacheStringSet(redisClient, chainName+"-subChain", subChainName)
+		return getRedisCachedBlockHeight(redisClient, chainName)
 	}
 	return 0
 }
 
-func getRedisCachedBlockHeight(redisClient *redis.Client) int {
-	resultString, err := redisClient.Get("cachedBlockHeight").Result()
+func getRedisCachedBlockHeight(redisClient *redis.Client, chainName string) int {
+	resultString, err := redisClient.Get(chainName + "-cachedBlockHeight").Result()
 	if err != nil {
 		fmt.Println("Error reading cachedBlockHeight from redis")
 		return 0

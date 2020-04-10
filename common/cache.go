@@ -128,7 +128,7 @@ func (c *BlockCache) Get(height int) *walletrpc.CompactBlock {
 		triedRedis = true
 		compactBlockPtr := GetCompressedBlockFromRedis(c.RedisClient, c.chainName, height)
 		if compactBlockPtr != nil {
-			updatedHeight := getRedisCachedBlockHeight(c.RedisClient)
+			updatedHeight := getRedisCachedBlockHeight(c.RedisClient, c.chainName)
 			if updatedHeight > c.blockHeight {
 				c.blockHeight = updatedHeight
 			}
@@ -144,9 +144,8 @@ func (c *BlockCache) Get(height int) *walletrpc.CompactBlock {
 	unmarshalErr := proto.Unmarshal(c.m[height].data, serialized)
 	if unmarshalErr == nil {
 		return serialized
-	} else {
-		fmt.Println("Error unmarshalling compact block")
 	}
+	fmt.Println("Error unmarshalling compact block")
 
 	if !triedRedis {
 		return GetCompressedBlockFromRedis(c.RedisClient, c.chainName, height)

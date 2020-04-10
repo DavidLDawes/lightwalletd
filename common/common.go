@@ -218,23 +218,18 @@ func GetBlock(cache *BlockCache, height int) (*walletrpc.CompactBlock, error) {
 
 	if cache.noVerusd {
 		// Block height is out of range - no match in Redis & NoVerusd set
-		if height > 500000 {
-			return nil, errors.New("block requested is past the latest cached block with NoVerusd set")
-		} else {
-			return nil, errors.New("block requested is before the first cached block with NoVerusd set")
-		}
-	} else {
-		// Not in the cache, ask verusd
-		block, err := getBlockFromRPC(height)
-		if err != nil {
-			return nil, err
-		}
-		if block == nil {
-			// Block height is too large
-			return nil, errors.New("block requested is newer than latest block available from verusd")
-		}
-		return block, nil
+		return nil, errors.New("block requested not found in redis and --no-verusd set")
 	}
+	// Not in the cache, ask verusd
+	block, err := getBlockFromRPC(height)
+	if err != nil {
+		Log.WithFields(logrus.Fields{
+			"height": height,
+			"error":  err,
+		}).Warn("error with getblock rpc")
+		return nil, errors.New("error with getblock rpc, block requested may be newer than latest block available from verusd")
+	}
+	return block, nil
 }
 
 // GetBlockRange returns a sequence of consecutive blocks in the given range.

@@ -168,11 +168,11 @@ func startServer(startOpts *common.Options) error {
 
 		// Get the sapling activation height from the RPC
 		// (this first RPC also verifies that we can communicate with verusd)
-		saplingHeight, blockHeight, chainName, branchID := common.GetSaplingInfo()
-		common.Log.Info("Got sapling height from verusd ", saplingHeight, " chain ", chainName, " branchID ", branchID)
+		saplingHeight, blockHeight, subChainName, branchID := common.GetSaplingInfo()
+		common.Log.Info("Got sapling height from verusd ", saplingHeight, ", chainName \"", startOpts.ChainName, "\", subchain ", subChainName, " branchID ", branchID)
 
 		cache, err := common.NewBlockCache(startOpts.ChainName, startOpts.CacheSize, saplingHeight, blockHeight, redisOpts)
-		cachedBlockHeight := common.UpdateRedisValues(cache.RedisClient, saplingHeight, blockHeight, chainName, branchID)
+		cachedBlockHeight := common.UpdateRedisValues(cache.RedisClient, saplingHeight, blockHeight, startOpts.ChainName, subChainName, branchID)
 		var cacheStart int
 
 		// TODO: start earlier when cachedBlockHeight is set (for ingesting) to check for reorgs.
@@ -187,11 +187,9 @@ func startServer(startOpts *common.Options) error {
 
 		// Start the block cache importer (ingestor or BlockIngestor) at the highest cached block
 		go common.BlockIngestor(cache, cacheStart, 0 /*loop forever*/)
-
 	} else {
 		if len(StartOpts.RedisURL) > 0 {
-			redisClient := redis.NewClient(redisOpts)
-			_, err := redisClient.Ping().Result()
+			redisClient, err := common.GetCheckedRedisClient(redisOpts)
 			if err != nil {
 				os.Stderr.WriteString(fmt.Sprintf("\n  ** redis is enabled but lightwalletd is unable to connect to the redis host\n\n"))
 				os.Exit(1)
@@ -199,13 +197,13 @@ func startServer(startOpts *common.Options) error {
 
 			saplingHeight := common.CheckRedisIntResult(redisClient, StartOpts.ChainName+"-saplingHeight")
 			blockHeight := common.CheckRedisIntResult(redisClient, StartOpts.ChainName+"-blockHeight")
-			chainName := common.CheckRedisStringResult(redisClient, StartOpts.ChainName+"-chainName")
 			branchID := common.CheckRedisStringResult(redisClient, StartOpts.ChainName+"-branchID")
+			subChainName := common.CheckRedisStringResult(redisClient, StartOpts.ChainName+"-branchID")
 
-			common.Log.Info("Got sapling height from redis", saplingHeight, "blockHeight", blockHeight, " chainName ", chainName, " branchID ", branchID)
+			common.Log.Info("Got sapling height from redis ", saplingHeight, ", blockHeight ", blockHeight, ", chainName \"", startOpts.ChainName, "\", subChain ", subChainName, "branchID ", branchID)
 			cache, err = common.NewBlockCache(startOpts.ChainName, startOpts.CacheSize, saplingHeight, blockHeight, redisOpts)
 			if err != nil {
-				os.Stderr.WriteString(fmt.Sprintf("\n  ** unable to create cache for " + chainName + "\n\n"))
+				os.Stderr.WriteString(fmt.Sprintf("\n  ** unable to create cache for " + startOpts.ChainName + "\n\n"))
 				os.Exit(1)
 			}
 		}
