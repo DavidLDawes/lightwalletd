@@ -18,7 +18,7 @@ The Lightwalletd Server is experimental and a work in progress. Use it at your o
 
 # Overview
 
-[lightwalletd](https://github.com/asherda/lightwalletd) is a backend service that provides a bandwidth-efficient interface to the VerusCoin blockchain. Currently, lightwalletd supports the Sapling protocol version and the VerusCoin ifdentity methds wil be added shortly. The intended purpose of lightwalletd is to support the development of mobile-friendly shielded light wallets.
+[lightwalletd](https://github.com/asherda/lightwalletd) is a backend service that provides a bandwidth-efficient interface to the VerusCoin blockchain. Currently, lightwalletd supports all of the hashses and protocols needed for the VerusCoin's VRSC chain. The VerusCoin ifdentity methods wil be added shortly. The primary purpose of lightwalletd is to support the development of mobile-friendly shielded light wallets.
 
 Zcash has a wallet reference here [Zecwallet](https://github.com/adityapk00/zecwallet-lite-lib).
 
@@ -51,6 +51,7 @@ Lightwalletd uses the following `verusd` RPCs:
 - `getaddresstxids`
 - `sendrawtransaction`
 
+Additional RPC methods will be used shortly as we add identity support.
 ## Lightwalletd
 
 First, install [Go](https://golang.org/dl/#stable) version 1.11 or later. You can see your current version by running `go version`.
@@ -66,7 +67,16 @@ This generates the wrappers in the parser/verushash directory
 To build the lightwalletd server, run `make`.
 
 This will build the lightwalletd binary, where you can use the below commands to configure how it runs.
+## VerusHash Library Needed
+Swig/golang is used to generate go wrappers for our C++ code that calculates the VRSC compatible hash for blocks and accomodates the different hashing algorithms that have been supported.
 
+The C++ code from VerusCoin is on [github](https://github.com/VerusCoin/VerusCoin) in the src/crypto directory. Details needed for getting it built and packaged properly to allow the C++ code to link into the go code properly.
+## Run lightwalletd Tests
+You can run the tests using
+```
+make test
+```
+The tests have been cleaned up a little but still fail. A mild bit has been tossed, more work is needed on what exists, and mroe complete tests would be a good idea. Until then the tests do not provide a huge amount of value, but are very eas to run.
 ## Run lightwalletd
 
 Assuming you used `make` to build lightwalletd, and you are testing so we will disable TLS. Disabling TLS should only be done when testing locally, and a lightwalletd endpoint should never be publicly exposed with the --no-tls-very-insecure option. The directories below may need adjustment.
