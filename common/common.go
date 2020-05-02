@@ -49,6 +49,7 @@ type Options struct {
 	RedisPassword     string `json:"redis_password,omitempty,omitempty"`
 	RedisDB           int    `json:"redis_db,omitempty,omitempty"`
 	CacheSize         int    `json:"cache_size,omitempty,omitempty"`
+	VerusConfPath     string `json:"verus-conf-path,omitempty,omitempty"`
 }
 
 // Sleep allows a request to time.Sleep() to be mocked for testing;
@@ -150,7 +151,7 @@ func BlockIngestor(cache *BlockCache, startHeight int, rep int) {
 
 	// Start listening for new blocks
 	retryCount := 0
-	for i := 0; rep == 0 || i < rep; i++ {
+	for i := 1; rep == 0 || i-1 < rep; i++ {
 		block, err := getBlockFromRPC(cache, height)
 		if block == nil || err != nil {
 			if err != nil {
@@ -181,7 +182,7 @@ func BlockIngestor(cache *BlockCache, startHeight int, rep int) {
 		}
 
 		// Check for reorgs once we have inital block hash from startup
-		if reorg {
+		if height > 2 && reorg {
 			// This must back up at least 1, but it's arbitrary, any value
 			// will work; this is probably a good balance.
 			height -= 2

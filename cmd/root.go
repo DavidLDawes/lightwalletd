@@ -52,6 +52,7 @@ var rootCmd = &cobra.Command{
 			RedisPassword:     viper.GetString("redis-password"),
 			RedisDB:           viper.GetInt("redis-db"),
 			CacheSize:         viper.GetInt("cache-size"),
+			VerusConfPath:     viper.GetString("verus-conf-path"),
 		}
 
 		common.Log.Debugf("Options: %#v\n", StartOpts)
@@ -177,12 +178,11 @@ func startServer(startOpts *common.Options) error {
 		//
 		// If we have nothing cahced then start from saplingHeight
 		// Otherwise start from where the cache got to
-		if cachedBlockHeight > saplingHeight {
+		if cachedBlockHeight > 1 {
 			cacheStart = cachedBlockHeight
 		} else {
-			cacheStart = saplingHeight
+			cacheStart = 1
 		}
-
 		// Start the block cache importer (ingestor or BlockIngestor) at the highest cached block
 		go common.BlockIngestor(cache, cacheStart, 0 /*loop forever*/)
 	} else {
@@ -273,6 +273,7 @@ func init() {
 	rootCmd.Flags().String("log-file", "./server.log", "log file to write to")
 	rootCmd.Flags().Bool("no-tls-very-insecure", false, "run without the required TLS certificate, only for debugging, DO NOT use in production")
 	rootCmd.Flags().Bool("no-verusd", false, "run without using verusd, getting data from redis")
+	rootCmd.Flags().String("verus-conf-path", "~/.komodo/VRSC/VRSC.conf", "path + file name for VRSC.conf file")
 	rootCmd.Flags().String("verusd-url", "127.0.0.1:2786", "the verusd RPC address and port to connect to")
 	rootCmd.Flags().String("chain-name", "VRSC", "chain name, defaults to VRSC")
 	rootCmd.Flags().String("verusd-user", "VERUSDUSER", "verusd user access credential")
