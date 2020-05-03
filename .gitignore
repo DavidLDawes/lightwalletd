@@ -6,4 +6,10 @@ lwd-api.html
 db-*-blocks
 db-*-lengths
 .idea
+Makefile
 
+*.cmake
+*.log
+*.a
+parser/verushash/CMakeFiles
+CMakeCache.txt

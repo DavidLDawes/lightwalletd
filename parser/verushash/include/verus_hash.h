@@ -15,12 +15,12 @@ This provides the PoW hash function for Verus, enabling CPU mining.
 #include <vector>
 
 #include "uint256.h"
-#include "crypto/verus_clhash.h"
+#include "verus_clhash.h"
 
 extern "C" 
 {
-#include "crypto/haraka.h"
-#include "crypto/haraka_portable.h"
+#include "haraka.h"
+#include "haraka_portable.h"
 }
 
 class CVerusHash
@@ -84,7 +84,7 @@ class CVerusHashV2
 
         verusclhasher vclh;
 
-        CVerusHashV2(int solutionVersion=SOLUTION_VERUSHHASH_V2) : vclh(VERUSKEYSIZE, solutionVersion) {
+        CVerusHashV2(int solutionVerusion=SOLUTION_VERUSHHASH_V2) : vclh(VERUSKEYSIZE, solutionVerusion) {
             // we must have allocated key space, or can't run
             if (!verusclhasher_key.get())
             {
@@ -121,7 +121,7 @@ class CVerusHashV2
             int left = 32 - pos;
             do
             {
-                int len = left > sizeof(T) ? sizeof(T) : left;
+                int len = left > (int)sizeof(T) ? sizeof(T) : left;
                 std::memcpy(curBuf + 32 + pos, data, len);
                 pos += len;
                 left -= len;
@@ -227,9 +227,12 @@ class CVerusHashV2
 
     private:
         // only buf1, the first source, needs to be zero initialized
+        #ifndef SWIG
         alignas(32) unsigned char buf1[64] = {0}, buf2[64];
+        #endif
         unsigned char *curBuf = buf1, *result = buf2;
         size_t curPos = 0;
+
 };
 
 extern void verus_hash(void *result, const void *data, size_t len);

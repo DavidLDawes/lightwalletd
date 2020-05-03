@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <vector>
 
-#include "crypto/verus_hash.h"
+#include "include/verus_hash.h"
 
 void Verushash::initialize() {
     if (!initialized)
