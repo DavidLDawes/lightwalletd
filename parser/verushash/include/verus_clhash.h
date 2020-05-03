@@ -1,11 +1,11 @@
 /*
  * This uses variations of the clhash algorithm for Verus Coin, licensed
  * with the Apache-2.0 open source license.
- *
+ * 
  * Copyright (c) 2018 Michael Toutonghi
  * Distributed under the Apache 2.0 software license, available in the original form for clhash
  * here: https://github.com/lemire/clhash/commit/934da700a2a54d8202929a826e2763831bd43cf7#diff-9879d6db96fd29134fc802214163b95a
- *
+ * 
  * CLHash is a very fast hashing function that uses the
  * carry-less multiplication and SSE instructions.
  *
@@ -20,32 +20,17 @@
 #ifndef INCLUDE_VERUS_CLHASH_H
 #define INCLUDE_VERUS_CLHASH_H
 
-
+#ifndef _WIN32
+#include <cpuid.h>
+#include <x86intrin.h>
+#else
+#include <intrin.h>
+#endif // !WIN32
 
 #include <stdlib.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <assert.h>
-
-#ifdef _WIN32
-#undef __cpuid
-#include <intrin.h>
-#endif
-
-#if defined(__arm__)  || defined(__aarch64__)
-#include "crypto/SSE2NEON.h"
-#include <sys/auxv.h>
-#include <asm/hwcap.h>
-#else
-#include <cpuid.h>
-#include <x86intrin.h>
-#endif // !WIN32
-
-#include <boost/thread.hpp>
-#include "tinyformat.h"
-#ifdef __APPLE__
-void __tls_init();
-#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -55,8 +40,6 @@ extern "C" {
 #define posix_memalign(p, a, s) (((*(p)) = _aligned_malloc((s), (a))), *(p) ?0 :errno)
 typedef unsigned char u_char;
 #endif
-
-typedef long long __m128i __attribute__ ((__vector_size__ (16), __may_alias__));
 
 enum {
     // Verus Key size must include the equivalent size of a Haraka key
@@ -116,7 +99,7 @@ inline bool IsCPUVerusOptimized()
         __cpuverusoptimized = true;
     else
         __cpuverusoptimized = false;
-
+        
     #else
     if (__cpuverusoptimized & 0x80)
     {
@@ -150,32 +133,6 @@ void *alloc_aligned_buffer(uint64_t bufSize);
 #endif
 
 #ifdef __cplusplus
-
-#include <vector>
-#include <string>
-#include <iostream>
-
-template <typename T>
-inline std::string LEToHex(const T &pt)
-{
-    std::stringstream ss;
-    for (int l = sizeof(T) - 1; l >= 0; l--)
-    {
-        ss << strprintf("%02x", *((unsigned char *)&pt + l));
-    }
-    return ss.str();
-}
-
-inline std::string HexBytes(const unsigned char *buf, int size)
-{
-    std::stringstream ss;
-    for (int l = 0; l < size; l++)
-    {
-        ss << strprintf("%02x", *(buf + l));
-    }
-    return ss.str();
-}
-
 // special high speed hasher for VerusHash 2.0
 struct verusclhasher {
     uint64_t keySizeInBytes;

@@ -17,7 +17,7 @@ PWD := $(shell pwd)
 
 .PHONY: all dep build clean test coverage coverhtml lint doc simpledoc
 
-all: build
+all: build-dep build
 
 # Lint golang files
 lint:
@@ -46,7 +46,7 @@ coverage:
 
 # Generate code coverage report
 coverage_report: coverage
-	go tool cover -func=coverage.out 
+	go tool cover -func=coverage.out
 
 # Generate code coverage report in HTML
 coverage_html: coverage
@@ -96,9 +96,15 @@ docker_remove_all:
 dep:
 	@go get -v -d ./...
 
+# Build Swig module
+build-dep:
+	cd parser/verushash && \
+	cmake . && \
+	make && \
+	swig -go -cgo -c++ -intgosize 64 verushash.i
 # Build binary
 build:
-	GO111MODULE=on CGO_ENABLED=1 go build -i -v ./cmd/server
+	GO111MODULE=on CGO_ENABLED=1 go build  -i -v ./cmd/server
 
 build_rel:
 	GO111MODULE=on CGO_ENABLED=1 GOOS=linux go build -ldflags="-s -w" -i -v ./cmd/server

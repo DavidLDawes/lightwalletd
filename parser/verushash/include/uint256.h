@@ -25,7 +25,10 @@ class base_blob
 {
 protected:
     enum { WIDTH=BITS/8 };
+            #ifndef SWIG
+
     uint8_t _ALIGN(4) data[WIDTH];
+    #endif
 public:
     base_blob()
     {
@@ -50,8 +53,6 @@ public:
     friend inline bool operator==(const base_blob& a, const base_blob& b) { return memcmp(a.data, b.data, sizeof(a.data)) == 0; }
     friend inline bool operator!=(const base_blob& a, const base_blob& b) { return memcmp(a.data, b.data, sizeof(a.data)) != 0; }
     friend inline bool operator<(const base_blob& a, const base_blob& b) { return memcmp(a.data, b.data, sizeof(a.data)) < 0; }
-
-    inline int Compare(const base_blob& other) const { return memcmp(data, other.data, sizeof(data)); }
 
     std::string GetHex() const;
     void SetHex(const char* psz);
