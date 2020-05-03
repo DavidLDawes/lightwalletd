@@ -27,21 +27,32 @@ Code coverage not implemented yet
 Documentation for lightwalletd clients (the gRPC interface) is in `docs/rtd/index.html`. The current version of this file corresponds to the two `.proto` files; if you change these files, please regenerate the documentation by running `make doc`, which requires docker to be installed.
 # VerusCoin
 This fork of lightwalletd uses the VerusCoin block chain. 
-## Building
-lightwalletd uses swig to access the C++ VerusCoin hash implementations.
+## swig
+lightwalletd uses swig to access the C++ VerusCoin hash implementations. Simply running make takes care of the swig generation step.
 
-You can generate the verushash.go and verushash_wrap.cxx files from the verushash/verushash.i and verushash/verushash.cxx via this swig command: 
+If you want to run the step manually, you can generate the verushash.go and verushash_wrap.cxx files from the verushash/verushash.i and verushash/verushash.cxx via this swig command: 
 ```
 swig -go  -intgosize 64 -c++ -cgo -gccgo -Wall -v parser/verushash/verushash.i
 ```
-Once that has completed a simple make comand should assemble everything.
+## protoc
+lightwalletd uses make to handle the protoc step that turns .proto files into .pb.go files for compilation by go. If you want to run the commands manually, change to the walletrpc directory and run them:
 ```
+cd walletrpc/
+protoc service.proto --go_out=plugins=grpc:.
+protoc compact_formats.proto --go_out=plugins=grpc:.
+```
+# Building
+Simply run make in the lightwalletd directory after cloning it from github
+```
+git clone git@github.com:Asherda/lightwalletd.git
+cd lightwalletd
 make
 ```
+AFter generating C++ code using swig and .pb.go code using the protobuf protoc command the C++ and go modules are compiled and linked into the lightwalletd executable in the lightwalletd directory.
 ## Libraries
-lightwalletd requires the veruslib.so and libboost_system.so libraries. See parser/verushash/verushash.i for the cgo defintiions used to set include directories at compile time and lib directories and libs at link time. You mileage may well very so check that if you have lots of unresolved externals.
+THis version of lightwalletd includes the VerusHash C++ source modules in the github archive and compiles and links those in along with any other dependencies as static code, so the result is a single lightwalletd executable that does not require any separate dynamic libraries.
 ## verusd
-lightwalletd uses the rpc interface of verusd, the VerusCoin daemon, to get block information for the ingestor and clients and to take actions based on the frontend API requests.
+lightwalletd uses the rpc interface of verusd, the VerusCoin daemon, to get block information for the ingestor and clients and to take actions based on the frontend API requests. lightwalletd also passes raw transactions from grpcurl clients back to verusd using the rpc interface.
 
 Load verusd - either using the VerusCli or VerusDesktop depending on your preferences - before starting the lightwalletd service.
 
@@ -49,16 +60,16 @@ Once you've got verusd running, check that it has loaded the Verus chain. The ve
 ```
 ./verus getblockcount
 ``` 
-If verusd is not ready yet then you will need to wait until it finishes loading the block chain. If it is not running then get it  running, lightwalletd can only run on old cached information if verusd is not available.
+If verusd is not ready yet then you will need to wait until it finishes loading the block chain. If it is not running then get it  running, lightwalletd can only run on old cached information if verusd is not available and doing so requires twqeaking command line options (note needed).
 
 ## lightwalletd
-verusd is runnig properly and responding correctly to verus RPC requests, you generated fresh swig code and make worked, time to run the service.
+Once verusd is runnig properly and responding correctly to verus RPC requests, make worked so you have a new lightwalletd, time to run the it.
 ```
-./server --conf-file ~/.komodo/VRSC/VRSC.conf --log-file /logs/server.log --bind-addr 127.0.0.1:18232
+./lightwalletd --conf-file ~/.komodo/VRSC/VRSC.conf --log-file /logs/server.log --bind-addr 127.0.0.1:18232
 ```
 Production services will need to deal with certs for SSL and DNS and so on.
 
-If you tail -f /logs/server.log you can watch as lightwalletd runs through the backlog of blocks in the VerusCoin chain.
+If you tail -f /logs/server.log you can watch as lightwalletd runs through the backlog of blocks in the VerusCoin chain. This takes 20 or 30 minutes or so.
 
 Assuming it doesn't panic or throw an exception and continues running, your lightwalletd service is serving information over GRPC and requesting information from the verusd RPC.
 ## Insecurity
@@ -168,12 +179,12 @@ To build the server, run `make`.
 
 This will build the server binary, where you can use the below commands to configure how it runs.
 
-## To run SERVER
+## To run lightwalletd
 
-Assuming you used `make` to build SERVER:
+Assuming you used `make` to build lightwalletd:
 
 ```
-./server --no-tls-very-insecure=true --conf-file /home/.komodo/VRSC/VRSC.conf --zconf-file /home/zcash/.zcash/zcash.conf --log-file /logs/server.log --bind-addr 127.0.0.1:18232
+./lightwalletd --no-tls-very-insecure=true --conf-file /home/.komodo/VRSC/VRSC.conf --zconf-file /home/zcash/.zcash/zcash.conf --log-file /logs/server.log --bind-addr 127.0.0.1:18232
 ```
 
 # Production Usage
@@ -209,7 +220,7 @@ certbot certonly --standalone --preferred-challenges http -d some.forward.dns.co
 Example using server binary built from Makefile:
 
 ```
-./server --tls-cert cert.pem --tls-key key.pem --conf-file /home/.komodo/VRSC/VRSC.conf --zconf-file /home/zcash/.zcash/zcash.conf --log-file /logs/server.log --bind-addr 127.0.0.1:18232
+./lightwalletd --tls-cert cert.pem --tls-key key.pem --conf-file /home/.komodo/VRSC/VRSC.conf --zconf-file /home/zcash/.zcash/zcash.conf --log-file /logs/server.log --bind-addr 127.0.0.1:18232
 ```
 
 # Pull Requests
