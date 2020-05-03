@@ -6,6 +6,7 @@ lwd-api.html
 db-*-blocks
 db-*-lengths
 .idea
+.vscode/
 Makefile
 
 *.cmake

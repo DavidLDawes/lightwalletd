@@ -43,8 +43,7 @@ func init() {
 	logrus.RegisterExitHandler(onexit)
 }
 
-// TODO stream logging
-
+// LoggingInterceptor still has a TODO: stream logging
 func LoggingInterceptor() grpc.ServerOption {
 	return grpc.UnaryInterceptor(logInterceptor)
 }
@@ -78,14 +77,15 @@ func loggerFromContext(ctx context.Context) *logrus.Entry {
 	return common.Log.WithFields(logrus.Fields{"peer_addr": "unknown"})
 }
 
+// Options defines the command line options supported
 type Options struct {
 	bindAddr      string `json:"bind_address,omitempty"`
 	tlsCertPath   string `json:"tls_cert_path,omitempty"`
 	tlsKeyPath    string `json:"tls_cert_key,omitempty"`
 	logLevel      uint64 `json:"log_level,omitempty"`
 	logPath       string `json:"log_file,omitempty"`
-	zcashConfPath string `json:"zcash_conf,omitempty"`
-	verusConfPath string `json:"verus_conf,omitempty"`
+	zcashConfPath string `json:"zcash_conf_file,omitempty"`
+	verusConfPath string `json:"verus_conf_file,omitempty"`
 
 	veryInsecure bool `json:"very_insecure,omitempty"`
 	wantVersion  bool
@@ -107,8 +107,8 @@ func main() {
 	flag.StringVar(&opts.tlsKeyPath, "tls-key", "", "the path to a TLS key file")
 	flag.Uint64Var(&opts.logLevel, "log-level", uint64(logrus.InfoLevel), "log level (logrus 1-7)")
 	flag.StringVar(&opts.logPath, "log-file", "./server.log", "log file to write to")
-	flag.StringVar(&opts.zcashConfPath, "zconf-file", "./zcash.conf", "conf file to pull zcash RPC creds from")
-	flag.StringVar(&opts.verusConfPath, "conf-file", "./VRSC.conf", "conf file to pull Verus RPC creds from")
+	flag.StringVar(&opts.zcashConfPath, "zcash-conf-file", "./zcash.conf", "conf file to pull zcash RPC creds from")
+	flag.StringVar(&opts.verusConfPath, "verus-conf-file", "./VRSC.conf", "conf file to pull Verus RPC creds from")
 	flag.BoolVar(&opts.veryInsecure, "no-tls-very-insecure", false, "run without the required TLS certificate, only for debugging, DO NOT use in production")
 	flag.BoolVar(&opts.wantVersion, "version", false, "version (major.minor.patch)")
 	flag.BoolVar(&opts.noGRPC, "no-grpc", false, "run without the frontend GRPC functions")
@@ -158,37 +158,37 @@ func main() {
 		}
 	}
 
-    var server *grpc.Server
-    var err error
-    if !opts.noGRPC {
-        // gRPC initialization
+	var server *grpc.Server
+	var err error
+	if !opts.noGRPC {
+		// gRPC initialization
 
-        if opts.veryInsecure {
-            server = grpc.NewServer(LoggingInterceptor())
-        } else {
-            var transportCreds credentials.TransportCredentials
-            if (opts.tlsCertPath == "") && (opts.tlsKeyPath == "") {
-                common.Log.Warning("Certificate and key not provided, generating self signed values")
-                tlsCert := common.GenerateCerts()
-                transportCreds = credentials.NewServerTLSFromCert(tlsCert)
-            } else {
-                transportCreds, err = credentials.NewServerTLSFromFile(opts.tlsCertPath, opts.tlsKeyPath)
-                if err != nil {
-                    common.Log.WithFields(logrus.Fields{
-                        "cert_file": opts.tlsCertPath,
-                        "key_path":  opts.tlsKeyPath,
-                        "error":     err,
-                    }).Fatal("couldn't load TLS credentials")
-                }
-            }
-            server = grpc.NewServer(grpc.Creds(transportCreds), LoggingInterceptor())
-        }
+		if opts.veryInsecure {
+			server = grpc.NewServer(LoggingInterceptor())
+		} else {
+			var transportCreds credentials.TransportCredentials
+			if (opts.tlsCertPath == "") && (opts.tlsKeyPath == "") {
+				common.Log.Warning("Certificate and key not provided, generating self signed values")
+				tlsCert := common.GenerateCerts()
+				transportCreds = credentials.NewServerTLSFromCert(tlsCert)
+			} else {
+				transportCreds, err = credentials.NewServerTLSFromFile(opts.tlsCertPath, opts.tlsKeyPath)
+				if err != nil {
+					common.Log.WithFields(logrus.Fields{
+						"cert_file": opts.tlsCertPath,
+						"key_path":  opts.tlsKeyPath,
+						"error":     err,
+					}).Fatal("couldn't load TLS credentials")
+				}
+			}
+			server = grpc.NewServer(grpc.Creds(transportCreds), LoggingInterceptor())
+		}
 
-        // Enable reflection for debugging
-        if opts.logLevel >= uint64(logrus.WarnLevel) {
-            reflection.Register(server)
-        }
-    }
+		// Enable reflection for debugging
+		if opts.logLevel >= uint64(logrus.WarnLevel) {
+			reflection.Register(server)
+		}
+	}
 
 	// Initialize VerusCoin RPC client. Right now (March 2020) this is for
 	// sending transactions and dealing with creation, management and use of
@@ -217,26 +217,26 @@ func main() {
 
 	var listener net.Listener
 	if !opts.noGRPC {
-        // Compact transaction service initialization
-        service, err := frontend.NewLwdStreamer(cache)
-        if err != nil {
-            common.Log.WithFields(logrus.Fields{
-                "error": err,
-            }).Fatal("couldn't create backend")
-        }
+		// Compact transaction service initialization
+		service, err := frontend.NewLwdStreamer(cache)
+		if err != nil {
+			common.Log.WithFields(logrus.Fields{
+				"error": err,
+			}).Fatal("couldn't create backend")
+		}
 
-        // Register service
-        walletrpc.RegisterCompactTxStreamerServer(server, service)
+		// Register service
+		walletrpc.RegisterCompactTxStreamerServer(server, service)
 
-        // Start listening
-        listener, err = net.Listen("tcp", opts.bindAddr)
-        if err != nil {
-            common.Log.WithFields(logrus.Fields{
-                "bind_addr": opts.bindAddr,
-                "error":     err,
-            }).Fatal("couldn't create listener")
-        }
-    }
+		// Start listening
+		listener, err = net.Listen("tcp", opts.bindAddr)
+		if err != nil {
+			common.Log.WithFields(logrus.Fields{
+				"bind_addr": opts.bindAddr,
+				"error":     err,
+			}).Fatal("couldn't create listener")
+		}
+	}
 
 	// Signal handler for graceful stops
 	signals := make(chan os.Signal, 1)
@@ -252,19 +252,19 @@ func main() {
 		os.Exit(1)
 	}()
 
-    if !opts.noGRPC {
-    	common.Log.Infof("Starting gRPC server on %s", opts.bindAddr)
+	if !opts.noGRPC {
+		common.Log.Infof("Starting gRPC server on %s", opts.bindAddr)
 
-        err = server.Serve(listener)
-        if err != nil {
-            common.Log.WithFields(logrus.Fields{
-                "error": err,
-            }).Fatal("gRPC server exited")
-        }
-    } else { // noGRPC is true
-        // no GRPC serving to wait on, so hang around for the BlockIngestor.
-         for {
-                time.Sleep(10 * time.Second)
-            }
-    }
+		err = server.Serve(listener)
+		if err != nil {
+			common.Log.WithFields(logrus.Fields{
+				"error": err,
+			}).Fatal("gRPC server exited")
+		}
+	} else { // noGRPC is true
+		// no GRPC serving to wait on, so hang around for the BlockIngestor.
+		for {
+			time.Sleep(25 * time.Second)
+		}
+	}
 }
