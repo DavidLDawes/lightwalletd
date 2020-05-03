@@ -86,7 +86,7 @@ docker_img_stop_zcashd:
 
 # Start the lightwalletd server in the zcashdlwd container
 docker_img_run_lightwalletd_insecure_server:
-	docker exec -i zcashdlwd server --no-tls-very-insecure=true --conf-file /home/zcash/.zcash/zcash.conf --log-file /logs/server.log --bind-addr 127.0.0.1:18232
+	docker exec -i zcashdlwd lightwalletd --no-tls-very-insecure=true --conf-file /home/zcash/.zcash/zcash.conf --log-file /logs/server.log --bind-addr 127.0.0.1:18232
 
 # Remove and delete ALL images and containers in Docker; assumes containers are stopped
 docker_remove_all:
@@ -104,10 +104,10 @@ build-dep:
 	swig -go -cgo -c++ -intgosize 64 verushash.i
 # Build binary
 build:
-	GO111MODULE=on CGO_ENABLED=1 go build  -i -v ./cmd/server
+	GO111MODULE=on CGO_ENABLED=1 go build -o lightwalletd -i -v ./cmd/server
 
 build_rel:
-	GO111MODULE=on CGO_ENABLED=1 GOOS=linux go build -ldflags="-s -w" -i -v ./cmd/server
+	GO111MODULE=on CGO_ENABLED=1 GOOS=linux go build -o lightwalletd -ldflags="-s -w" -i -v ./cmd/server
 
 # Install binaries into Go path
 install:
