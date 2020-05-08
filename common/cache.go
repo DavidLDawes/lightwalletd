@@ -194,7 +194,7 @@ func (c *BlockCache) setLatestHash() {
 // (No locking here, we assume this is single-threaded.)
 func NewBlockCache(rawRequest func(method string, params []json.RawMessage) (json.RawMessage, error), dbPath string, chainName string, startHeight int, redownload bool) *BlockCache {
 	c := &BlockCache{}
-	c.rawRequest = rawRequest
+	c.RawRequest = rawRequest
 	c.firstBlock = startHeight
 	c.nextBlock = startHeight
 	c.lengthsName, c.blocksName = dbFileNames(dbPath, chainName)

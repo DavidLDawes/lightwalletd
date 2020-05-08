@@ -1,4 +1,6 @@
+// Package frontend - rpc_client wraps the verusd client
 // Copyright (c) 2019-2020 The Zcash developers
+// Copyright (c) 2020 The VerusCoin developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or https://www.opensource.org/licenses/mit-license.php .
 package frontend
@@ -11,6 +13,7 @@ import (
 	ini "gopkg.in/ini.v1"
 )
 
+// NewVRPCFromConf - get a new verusd RPCClient based on the config file
 func NewVRPCFromConf(confPath interface{}) (*rpcclient.Client, error) {
 	connCfg, err := connFromConf(confPath)
 	if err != nil {

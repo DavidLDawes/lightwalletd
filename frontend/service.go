@@ -20,22 +20,27 @@ import (
 	"github.com/asherda/lightwalletd/walletrpc"
 )
 
+// ErrUnspecified error: request for unspecified identifier
 var (
 	ErrUnspecified = errors.New("request for unspecified identifier")
 )
 
+// LwdStreamer - wrapper for the BlockCache
 type LwdStreamer struct {
 	cache *common.BlockCache
 }
 
+// NewLwdStreamer - create a new Lightwalletd compactTxServer
 func NewLwdStreamer(cache *common.BlockCache) (walletrpc.CompactTxStreamerServer, error) {
 	return &LwdStreamer{cache}, nil
 }
 
+// DarksideStreamer - same as LwdStreamer, a wrapper for the BlockCache
 type DarksideStreamer struct {
 	cache *common.BlockCache
 }
 
+// NewDarksideStreamer - create a new DarksideStreamer
 func NewDarksideStreamer(cache *common.BlockCache) (walletrpc.DarksideStreamerServer, error) {
 	return &DarksideStreamer{cache}, nil
 }
@@ -193,7 +198,7 @@ func (s *LwdStreamer) GetTransaction(ctx context.Context, txf *walletrpc.TxFilte
 // GetLightdInfo gets the LightWalletD (this server) info, and includes information
 // it gets from its backend zcashd.
 func (s *LwdStreamer) GetLightdInfo(ctx context.Context, in *walletrpc.Empty) (*walletrpc.LightdInfo, error) {
-	saplingHeight, blockHeight, chainName, consensusBranchID := common.GetSaplingInfo()
+	saplingHeight, blockHeight, chainName, consensusBranchID := common.GetSaplingInfo(s.cache.RawRequest)
 
 	return &walletrpc.LightdInfo{
 		Version:                 common.Version,
@@ -225,7 +230,7 @@ func (s *LwdStreamer) SendTransaction(ctx context.Context, rawtx *walletrpc.RawT
 	params := make([]json.RawMessage, 1)
 	txHexString := hex.EncodeToString(rawtx.Data)
 	params[0] = json.RawMessage("\"" + txHexString + "\"")
-	result, rpcErr := common.RawRequest("sendrawtransaction", params)
+	result, rpcErr := s.cache.RawRequest("sendrawtransaction", params)
 
 	var err error
 	var errCode int64
@@ -256,6 +261,7 @@ func (s *LwdStreamer) SendTransaction(ctx context.Context, rawtx *walletrpc.RawT
 // This rpc is used only for testing.
 var concurrent int64
 
+// Ping simple functionality check, expect a response of pong
 func (s *LwdStreamer) Ping(ctx context.Context, in *walletrpc.Duration) (*walletrpc.PingResponse, error) {
 	var response walletrpc.PingResponse
 	response.Entry = atomic.AddInt64(&concurrent, 1)
@@ -264,27 +270,26 @@ func (s *LwdStreamer) Ping(ctx context.Context, in *walletrpc.Duration) (*wallet
 	return &response, nil
 }
 
-// Darkside
+// DarksideGetIncomingTransactions Get all of the new incoming transactions evil verusd has accepted.
 func (s *DarksideStreamer) DarksideGetIncomingTransactions(in *walletrpc.Empty, resp walletrpc.DarksideStreamer_DarksideGetIncomingTransactionsServer) error {
-	// Get all of the new incoming transactions evil zcashd has accepted.
-	result, rpcErr := common.RawRequest("x_getincomingtransactions", nil)
+	result, rpcErr := s.cache.RawRequest("x_getincomingtransactions", nil)
 
-	var new_txs []string
+	var newtxs []string
 	if rpcErr != nil {
 		return rpcErr
 	}
-	err := json.Unmarshal(result, &new_txs)
+	err := json.Unmarshal(result, &newtxs)
 
 	if err != nil {
 		return err
 	}
 
-	for _, tx_str := range new_txs {
-		tx_bytes, err := hex.DecodeString(tx_str)
+	for _, txStr := range newtxs {
+		txBytes, err := hex.DecodeString(txStr)
 		if err != nil {
 			return err
 		}
-		err = resp.Send(&walletrpc.RawTransaction{Data: tx_bytes, Height: 0})
+		err = resp.Send(&walletrpc.RawTransaction{Data: txBytes, Height: 0})
 		if err != nil {
 			return err
 		}
@@ -293,6 +298,7 @@ func (s *DarksideStreamer) DarksideGetIncomingTransactions(in *walletrpc.Empty, 
 	return nil
 }
 
+// DarksideSetState perform an x_setstate RawRequest
 func (s *DarksideStreamer) DarksideSetState(ctx context.Context, state *walletrpc.DarksideLightwalletdState) (*walletrpc.Empty, error) {
 	match, err := regexp.Match("\\A[a-zA-Z0-9]+\\z", []byte(state.BranchID))
 	if err != nil || !match {
@@ -323,7 +329,7 @@ func (s *DarksideStreamer) DarksideSetState(ctx context.Context, state *walletrp
 	params := make([]json.RawMessage, 1)
 	params[0] = json.RawMessage(st)
 
-	_, rpcErr := common.RawRequest("x_setstate", params)
+	_, rpcErr := s.cache.RawRequest("x_setstate", params)
 
 	return &walletrpc.Empty{}, rpcErr
 }

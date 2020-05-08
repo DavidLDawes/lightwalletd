@@ -107,7 +107,7 @@ func getBlockFromRPC(height int, cache *BlockCache) (*walletrpc.CompactBlock, er
 	params := make([]json.RawMessage, 2)
 	params[0] = json.RawMessage("\"" + strconv.Itoa(height) + "\"")
 	params[1] = json.RawMessage("0") // non-verbose (raw hex)
-	result, rpcErr := cache.rawRequest("getblock", params)
+	result, rpcErr := cache.RawRequest("getblock", params)
 
 	// For some reason, the error responses are not JSON
 	if rpcErr != nil {

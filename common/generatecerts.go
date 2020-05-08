@@ -1,4 +1,7 @@
+// Package common generatecerts - methods to generate certs used to secure the
+// service endpoint
 // Copyright (c) 2019-2020 The Zcash developers
+// Copyright (c) 2020 The VerusCoin developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or https://www.opensource.org/licenses/mit-license.php .
 package common
