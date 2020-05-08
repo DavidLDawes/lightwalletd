@@ -59,7 +59,7 @@ message LightdInfo {
     bool   taddrSupport = 3;            // true
     string chainName = 4;               // either "main" or "test"
     uint64 saplingActivationHeight = 5; // depends on mainnet or testnet
-    string consensusBranchId = 6;       // protocol identifier, see consensus/upgrades.cpp
+    string consensusBranchID = 6;       // protocol identifier, see consensus/upgrades.cpp
     uint64 blockHeight = 7;             // latest block on the best chain
 }
 

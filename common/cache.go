@@ -1,3 +1,4 @@
+// Package common common blockCache related structures and methods
 // Copyright (c) 2019-2020 The Zcash developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or https://www.opensource.org/licenses/mit-license.php .
@@ -6,6 +7,7 @@ package common
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"hash/fnv"
 	"io"
 	"io/ioutil"
@@ -23,29 +25,42 @@ type blockCacheEntry struct {
 
 // BlockCache contains a consecutive set of recent compact blocks in marshalled form.
 type BlockCache struct {
+	// DB file variables
 	lengthsName, blocksName string // pathnames
 	lengthsFile, blocksFile *os.File
 	starts                  []int64 // Starting offset of each block within blocksFile
-	firstBlock              int     // height of the first block in the cache (usually Sapling activation)
-	nextBlock               int     // height of the first block not in the cache
-	latestHash              []byte  // hash of the most recent (highest height) block, for detecting reorgs.
-	mutex                   sync.RWMutex
+
+	// verusd variables
+	// rpcClient is baked into the rawRequest, so keep rawRequest f/this client here.
+	// RawRequest points to the function to send a an RPC request to verusd;
+	// in production, it points to btcsuite/btcd/rpcclient/rawrequest.go:RawRequest();
+	// in unit tests it points to a function to mock RPCs to verusd. Not sure if that
+	// works on the VerusCoin fork yet though.
+	RawRequest func(method string, params []json.RawMessage) (json.RawMessage, error)
+
+	// Cache variables
+	firstBlock int    // height of the first block in the cache (usually Sapling activation)
+	nextBlock  int    // height of the first block not in the cache
+	latestHash []byte // hash of the most recent (highest height) block, for detecting reorgs.
+	mutex      sync.RWMutex
 }
 
+// GetNextHeight pulls the nextBlock value from the blockCache (threadsafe)
 func (c *BlockCache) GetNextHeight() int {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 	return c.nextBlock
 }
 
+// GetLatestHash pulls the latestHash value from the blockCache (threadsafe)
 func (c *BlockCache) GetLatestHash() []byte {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 	return c.latestHash
 }
 
-//  HashMismatch indicates if the given prev-hash doesn't match the most recent block's hash
-// so reorgs can be detected.
+// HashMismatch indicates if the given prev-hash doesn't match the most
+// recent block's hash so reorgs can be detected (threadsafe)
 func (c *BlockCache) HashMismatch(prevhash []byte) bool {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
@@ -177,8 +192,9 @@ func (c *BlockCache) setLatestHash() {
 
 // NewBlockCache returns an instance of a block cache object.
 // (No locking here, we assume this is single-threaded.)
-func NewBlockCache(dbPath string, chainName string, startHeight int, redownload bool) *BlockCache {
+func NewBlockCache(rawRequest func(method string, params []json.RawMessage) (json.RawMessage, error), dbPath string, chainName string, startHeight int, redownload bool) *BlockCache {
 	c := &BlockCache{}
+	c.rawRequest = rawRequest
 	c.firstBlock = startHeight
 	c.nextBlock = startHeight
 	c.lengthsName, c.blocksName = dbFileNames(dbPath, chainName)
@@ -365,12 +381,13 @@ func (c *BlockCache) GetLatestHeight() int {
 	return c.nextBlock - 1
 }
 
+// Sync syncs both the lengthsFile and blocksFile handles
 func (c *BlockCache) Sync() {
 	c.lengthsFile.Sync()
 	c.blocksFile.Sync()
 }
 
-// Currently used only for testing.
+// Close is currently used only for testing.
 func (c *BlockCache) Close() {
 	// Some operating system require you to close files before you can remove them.
 	if c.lengthsFile != nil {

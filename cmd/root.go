@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -29,13 +30,14 @@ import (
 
 var cfgFile string
 var logger = logrus.New()
+var rawRequest func(method string, params []json.RawMessage) (json.RawMessage, error)
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "lightwalletd",
 	Short: "Lightwalletd is a backend service to the Zcash blockchain",
 	Long: `Lightwalletd is a backend service that provides a 
-         bandwidth-efficient interface to the Zcash blockchain`,
+         bandwidth-efficient interface to the VerusCoin VRSC blockchain`,
 	Run: func(cmd *cobra.Command, args []string) {
 		opts := &common.Options{
 			GRPCBindAddr:      viper.GetString("grpc-bind-addr"),
@@ -159,12 +161,13 @@ func startServer(opts *common.Options) error {
 		reflection.Register(server)
 	}
 
-	// Initialize Zcash RPC client. Right now (Jan 2018) this is only for
-	// sending transactions, but in the future it could back a different type
-	// of block streamer.
+	// Initialize VerusCoin verusd RPC client. Right now (May 2020) this is
+	// only for sending transactions, but in the future it could back a
+	// different type of block streamer (i.e. tokens, not to mention identity
+	// and subchain functions).
 
 	if opts.Darkside {
-		common.RawRequest = common.DarkSideRawRequest
+		rawRequest = common.DarkSideRawRequest
 	} else {
 		rpcClient, err := frontend.NewVRPCFromConf(opts.VerusdConfPath)
 		if err != nil {
@@ -173,12 +176,12 @@ func startServer(opts *common.Options) error {
 			}).Fatal("setting up RPC connection to verusd")
 		}
 		// Indirect function for test mocking (so unit tests can talk to stub functions).
-		common.RawRequest = rpcClient.RawRequest
+		rawRequest = rpcClient.RawRequest
 	}
 
 	// Get the sapling activation height from the RPC
 	// (this first RPC also verifies that we can communicate with zcashd)
-	saplingHeight, blockHeight, chainName, branchID := common.GetSaplingInfo()
+	saplingHeight, blockHeight, chainName, branchID := common.GetSaplingInfo(rawRequest)
 	common.Log.Info("Got sapling height ", saplingHeight, " block height ", blockHeight, " chain ", chainName, " branchID ", branchID)
 
 	dbPath := filepath.Join(opts.DataDir, "db")
@@ -194,7 +197,7 @@ func startServer(opts *common.Options) error {
 		os.Stderr.WriteString(fmt.Sprintf("\n  ** Can't create db directory: %s\n\n", dbPath))
 		os.Exit(1)
 	}
-	cache := common.NewBlockCache(dbPath, chainName, 1, opts.Redownload)
+	cache := common.NewBlockCache(rawRequest, dbPath, chainName, 1, opts.Redownload)
 	go common.BlockIngestor(cache, 0 /*loop forever*/)
 
 	// Compact transaction service initialization

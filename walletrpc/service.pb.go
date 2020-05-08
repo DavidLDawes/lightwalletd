@@ -6,11 +6,12 @@ package walletrpc
 import (
 	context "context"
 	fmt "fmt"
+	math "math"
+
 	proto "github.com/golang/protobuf/proto"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -351,7 +352,7 @@ type LightdInfo struct {
 	TaddrSupport            bool     `protobuf:"varint,3,opt,name=taddrSupport,proto3" json:"taddrSupport,omitempty"`
 	ChainName               string   `protobuf:"bytes,4,opt,name=chainName,proto3" json:"chainName,omitempty"`
 	SaplingActivationHeight uint64   `protobuf:"varint,5,opt,name=saplingActivationHeight,proto3" json:"saplingActivationHeight,omitempty"`
-	ConsensusBranchId       string   `protobuf:"bytes,6,opt,name=consensusBranchId,proto3" json:"consensusBranchId,omitempty"`
+	ConsensusBranchId       string   `protobuf:"bytes,6,opt,name=consensusBranchID,proto3" json:"consensusBranchID,omitempty"`
 	BlockHeight             uint64   `protobuf:"varint,7,opt,name=blockHeight,proto3" json:"blockHeight,omitempty"`
 	XXX_NoUnkeyedLiteral    struct{} `json:"-"`
 	XXX_unrecognized        []byte   `json:"-"`

@@ -69,7 +69,7 @@ func (s *LwdStreamer) GetAddressTxids(addressBlockFilter *walletrpc.TransparentA
 
 	params[0] = json.RawMessage(st)
 
-	result, rpcErr := common.RawRequest("getaddresstxids", params)
+	result, rpcErr := s.cache.RawRequest("getaddresstxids", params)
 
 	// For some reason, the error responses are not JSON
 	if rpcErr != nil {
@@ -165,7 +165,7 @@ func (s *LwdStreamer) GetTransaction(ctx context.Context, txf *walletrpc.TxFilte
 			json.RawMessage("1"),
 		}
 
-		result, rpcErr := common.RawRequest("getrawtransaction", params)
+		result, rpcErr := s.cache.RawRequest("getrawtransaction", params)
 
 		// For some reason, the error responses are not JSON
 		if rpcErr != nil {
@@ -193,7 +193,7 @@ func (s *LwdStreamer) GetTransaction(ctx context.Context, txf *walletrpc.TxFilte
 // GetLightdInfo gets the LightWalletD (this server) info, and includes information
 // it gets from its backend zcashd.
 func (s *LwdStreamer) GetLightdInfo(ctx context.Context, in *walletrpc.Empty) (*walletrpc.LightdInfo, error) {
-	saplingHeight, blockHeight, chainName, consensusBranchId := common.GetSaplingInfo()
+	saplingHeight, blockHeight, chainName, consensusBranchID := common.GetSaplingInfo()
 
 	return &walletrpc.LightdInfo{
 		Version:                 common.Version,
@@ -201,7 +201,7 @@ func (s *LwdStreamer) GetLightdInfo(ctx context.Context, in *walletrpc.Empty) (*
 		TaddrSupport:            true,
 		ChainName:               chainName,
 		SaplingActivationHeight: uint64(saplingHeight),
-		ConsensusBranchId:       consensusBranchId,
+		ConsensusBranchId:       consensusBranchID,
 		BlockHeight:             uint64(blockHeight),
 	}, nil
 }

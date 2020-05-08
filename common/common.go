@@ -1,4 +1,6 @@
+// Package common Assorted blockCache related structures and methods
 // Copyright (c) 2019-2020 The Zcash developers
+// Copyright 2020 The VerusCoin Developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or https://www.opensource.org/licenses/mit-license.php .
 package common
@@ -16,12 +18,19 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// 'make build' will overwrite this string with the output of git-describe (tag)
+// Version 'make build' will overwrite this string with the output of git-describe (tag)
 var Version = "v0.0.0.0-dev"
+
+// GitCommit 'make build' will overwrite this string with the build git commit
 var GitCommit = ""
+
+// BuildDate the date this build was created, filled in by make build I hope
 var BuildDate = ""
+
+// BuildUser the git user who created this build, filled in by make build I hope
 var BuildUser = ""
 
+// Options Assorted command line option variables
 type Options struct {
 	GRPCBindAddr      string `json:"grpc_bind_address,omitempty"`
 	HTTPBindAddr      string `json:"http_bind_address,omitempty"`
@@ -37,11 +46,6 @@ type Options struct {
 	Darkside          bool   `json:"darkside"`
 }
 
-// RawRequest points to the function to send a an RPC request to zcashd;
-// in production, it points to btcsuite/btcd/rpcclient/rawrequest.go:RawRequest();
-// in unit tests it points to a function to mock RPCs to zcashd.
-var RawRequest func(method string, params []json.RawMessage) (json.RawMessage, error)
-
 // Sleep allows a request to time.Sleep() to be mocked for testing;
 // in production, it points to the standard library time.Sleep();
 // in unit tests it points to a mock function.
@@ -51,12 +55,12 @@ var Sleep func(d time.Duration)
 var Log *logrus.Entry
 
 // GetSaplingInfo returns the result of the getblockchaininfo RPC to zcashd
-func GetSaplingInfo() (int, int, string, string) {
+func GetSaplingInfo(rawRequest func(method string, params []json.RawMessage) (json.RawMessage, error)) (int, int, string, string) {
 	// This request must succeed or we can't go on; give zcashd time to start up
 	var f interface{}
 	retryCount := 0
 	for {
-		result, rpcErr := RawRequest("getblockchaininfo", []json.RawMessage{})
+		result, rpcErr := rawRequest("getblockchaininfo", []json.RawMessage{})
 		if rpcErr == nil {
 			if retryCount > 0 {
 				Log.Warn("getblockchaininfo RPC successful")
@@ -99,11 +103,11 @@ func GetSaplingInfo() (int, int, string, string) {
 	return int(saplingHeight), int(blockHeight), chainName, branchID
 }
 
-func getBlockFromRPC(height int) (*walletrpc.CompactBlock, error) {
+func getBlockFromRPC(height int, cache *BlockCache) (*walletrpc.CompactBlock, error) {
 	params := make([]json.RawMessage, 2)
 	params[0] = json.RawMessage("\"" + strconv.Itoa(height) + "\"")
 	params[1] = json.RawMessage("0") // non-verbose (raw hex)
-	result, rpcErr := RawRequest("getblock", params)
+	result, rpcErr := cache.rawRequest("getblock", params)
 
 	// For some reason, the error responses are not JSON
 	if rpcErr != nil {
@@ -154,7 +158,7 @@ func BlockIngestor(c *BlockCache, rep int) {
 	// Start listening for new blocks
 	for i := 0; rep == 0 || i < rep; i++ {
 		height := c.GetNextHeight()
-		block, err := getBlockFromRPC(height)
+		block, err := getBlockFromRPC(height, c)
 		if err != nil {
 			Log.WithFields(logrus.Fields{
 				"height": height,
@@ -191,7 +195,7 @@ func BlockIngestor(c *BlockCache, rep int) {
 			// and there's no new block yet, but we want to back up
 			// so we detect a reorg in which the new chain is the
 			// same length or shorter.
-			reorgCount += 1
+			reorgCount++
 			if reorgCount > 100 {
 				Log.Fatal("Reorg exceeded max of 100 blocks! Help!")
 			}
@@ -241,8 +245,8 @@ func GetBlock(cache *BlockCache, height int) (*walletrpc.CompactBlock, error) {
 		return block, nil
 	}
 
-	// Not in the cache, ask zcashd
-	block, err := getBlockFromRPC(height)
+	// Not in the cache, ask verusd
+	block, err := getBlockFromRPC(height, cache)
 	if err != nil {
 		return nil, err
 	}
