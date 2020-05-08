@@ -8,8 +8,8 @@ This is an alpha build and is currently under active development. Please be advi
 - This code currently is not audited by an external security auditor, use it at your own risk
 - The code **has not been subjected to thorough review** by engineers at the Electric Coin Company
 - We **are actively changing** the codebase and adding features where/when needed
-
-The current version always reloads the data each time it starts. Data is loaded starting with block 1. until the most recent block is reached. After that new blocks are added as we get them, until the next restart, then it reloads etc.
+- Porting to VerusCoin's VRSC chain is a work in progress. It loads blocks from verusd starting at 1 and can process around 1 million blocks in 30 minutes, give or take, so it takes about 30 minutes to come up the first time in May 2020 as we just broke 1M blocks. Chain contents are stored in DB files and a memory cache in this version, and when the lightwalletd is reloaded it gets the existing contents from the files into the memory cache in a matter of seconds, then catches up pretty quickly if we have fallen behind much, so short outages will only take seconds to restart.
+- Changes made for VerusCoin VRSC compatibility have broken assorted tests due to changes in how the cahce is allocated. Fixing tests is still a TODO item.
 🔒 Security Warnings
 
 The Lightwalletd Server is experimental and a work in progress. Use it at your own risk.
