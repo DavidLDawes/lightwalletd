@@ -206,7 +206,7 @@ func (s *LwdStreamer) GetLightdInfo(ctx context.Context, in *walletrpc.Empty) (*
 		TaddrSupport:            true,
 		ChainName:               chainName,
 		SaplingActivationHeight: uint64(saplingHeight),
-		ConsensusBranchId:       consensusBranchID,
+		ConsensusBranchID:       consensusBranchID,
 		BlockHeight:             uint64(blockHeight),
 	}, nil
 }
