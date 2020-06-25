@@ -1,10 +1,13 @@
 /* File : verushash.cxx */
 
 #include "verushash.h"
-
+#include "solutiondata.h"
+#include <sstream>
 #include <stdint.h>
 #include <vector>
+#include <iostream>
 
+#include "include/sodium/core.h"
 #include "include/verus_hash.h"
 
 void Verushash::initialize() {
@@ -12,11 +15,14 @@ void Verushash::initialize() {
     {
         CVerusHash::init();
         CVerusHashV2::init();
+
+        int si = sodium_init();
     }
     initialized = true;
 }
 
 void Verushash::anyverushash(const char * bytes, int length, void * hashresult) {
+    std::cout << "anyverushash";
     if (bytes[0] == 4 and bytes[2] >= 1) {
             if (bytes[2] < 3) {
                 verushash_v2b(bytes, length, hashresult);
@@ -29,6 +35,10 @@ void Verushash::anyverushash(const char * bytes, int length, void * hashresult) 
 }
 
 void Verushash::anyverushash_height(const char * bytes, int length, void * hashresult, int height) {
+    std::cout << "anyverushash_height:" << height;
+    if (height > 105359) {
+        verushash_v2b2(bytes, length, hashresult);
+    }
     if (bytes[0] == 4 and bytes[2] >= 1) {
             if (bytes[2] < 3) {
                 if (height > 800199) {
@@ -45,6 +55,7 @@ void Verushash::anyverushash_height(const char * bytes, int length, void * hashr
 }
 
 void Verushash::anyverushash_reverse(const char * bytes, int length, void * hashresult) {
+    std::cout << "anyverushash_reverse";
     if (bytes[0] == 4 and bytes[2] >= 1) {
             if (bytes[2] < 3) {
                 verushash_v2b_reverse(bytes, length, hashresult);
@@ -57,6 +68,10 @@ void Verushash::anyverushash_reverse(const char * bytes, int length, void * hash
 }
 
 void Verushash::anyverushash_reverse_height(const char * bytes, int length, void * hashresult, int height) {
+    std::cout << "anyverushash_reverse_height:" << height;
+    if (height > 105359) {
+        verushash_v2b2_reverse(bytes, length, hashresult);
+    }
     if (bytes[0] == 4 and bytes[2] >= 1) {
             if (bytes[2] < 3) {
                 if (height > 800199) {
@@ -123,16 +138,34 @@ void Verushash::verushash_v2b1_reverse(const char * bytes, int length, void * ha
 }
 
 void Verushash::verushash_v2b2(const char * bytes, int length, void * hashresult) {
-    //std::cout << ":verushash_v2b2\n";
+    uint256 result;
+
+    std::cout << ":verushash_v2b2\n";
     initialize();
-    CVerusHashV2 vh2b2(SOLUTION_VERUSHHASH_V2_2);
-    vh2b2.Reset();
-    vh2b2.Write((const unsigned char*) bytes, length);
-    vh2b2.Finalize2b((unsigned char*) hashresult);
+    CVerusHashV2 vh2b1(SOLUTION_VERUSHHASH_V2_1);
+    vh2b1.Reset();
+    vh2b1.Write((const unsigned char*) bytes, length);
+    vh2b1.Finalize2b((unsigned char*) hashresult);
+/*    
+    CBlockHeader bh;
+    CDataStream s(bytes, bytes + length, SER_GETHASH, 0);
+
+    try
+    {
+        s >> bh;
+        result = bh.GetVerusV2Hash();
+        memcpy(hashresult, (void *) &result, 32);
+    }
+    catch(const std::exception& e)
+    {
+        std::cout << ":verushash_v2b2 got an exception\n";
+    }
+*/
+
 }
 
 void Verushash::verushash_v2b2_reverse(const char * bytes, int length, void * hashresult) {
-    //std::cout << ":verushash_v2b2_reverse\n";
+    std::cout << ":verushash_v2b2_reverse\n";
     verushash_v2b2(bytes, length, hashresult);
     reverse((char *) hashresult);
 }

@@ -24,6 +24,7 @@ import (
 	"github.com/asherda/lightwalletd/common"
 	"github.com/asherda/lightwalletd/common/logging"
 	"github.com/asherda/lightwalletd/frontend"
+	"github.com/asherda/lightwalletd/parser"
 	"github.com/asherda/lightwalletd/walletrpc"
 )
 
@@ -311,6 +312,8 @@ func init() {
 	common.Log = logger.WithFields(logrus.Fields{
 		"app": "lightwalletd",
 	})
+
+	parser.ParserLog = common.Log
 
 	logrus.RegisterExitHandler(onexit)
 

@@ -191,7 +191,7 @@ func BlockIngestor(c *BlockCache, rep int) {
 			// and there's no new block yet, but we want to back up
 			// so we detect a reorg in which the new chain is the
 			// same length or shorter.
-			reorgCount += 1
+			reorgCount++
 			if reorgCount > 100 {
 				Log.Fatal("Reorg exceeded max of 100 blocks! Help!")
 			}
@@ -199,10 +199,11 @@ func BlockIngestor(c *BlockCache, rep int) {
 			// as 'phash', not the prevhash of the block we just received.
 			if block != nil {
 				Log.WithFields(logrus.Fields{
-					"height": height,
-					"hash":   displayHash(block.Hash),
-					"phash":  displayHash(c.GetLatestHash()),
-					"reorg":  reorgCount,
+					"height":       height,
+					"hash":         displayHash(block.Hash),
+					"phash":        displayHash(c.GetLatestHash()),
+					"expectedhash": displayHash(block.PrevHash),
+					"reorg":        reorgCount,
 				}).Warn("REORG")
 			} else if reorgCount > 1 {
 				Log.WithFields(logrus.Fields{

@@ -12,6 +12,7 @@ import (
 	"github.com/asherda/lightwalletd/parser/internal/bytestring"
 	"github.com/asherda/lightwalletd/parser/verushash"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -58,6 +59,9 @@ type rawBlockHeader struct {
 	// CompactSize-prefixed value.
 	Solution []byte
 }
+
+// ParserLog - stash the Log pointer here so we can log while debugging
+var ParserLog *logrus.Entry
 
 type BlockHeader struct {
 	*rawBlockHeader
@@ -222,6 +226,7 @@ func (hdr *BlockHeader) GetDisplayHash(height int) []byte {
 	// VerusHash
 	hash := make([]byte, 32)
 	ptrHash := uintptr(unsafe.Pointer(&hash[0]))
+	ParserLog.Warn("block_header.GetDisplayHash() calling Anyverushash_reverse_height()", height)
 	VerusHash.Anyverushash_reverse_height(string(serializedHeader), len(string(serializedHeader)), ptrHash, height)
 
 	hdr.cachedHash = hash
@@ -238,8 +243,9 @@ func (hdr *BlockHeader) GetEncodableHash(height int) []byte {
 
 	hash := make([]byte, 32)
 	ptrHash := uintptr(unsafe.Pointer(&hash[0]))
+	ParserLog.Warn("block_header.GetEncodableHash() calling Anyverushash_height()", height)
 	VerusHash.Anyverushash_height(string(serializedHeader), len(string(serializedHeader)), ptrHash, height)
-
+	ParserLog.Warn("block_header.GetEncodableHash() called Anyverushash_height() which returned ", hash)
 	return hash
 }
 
