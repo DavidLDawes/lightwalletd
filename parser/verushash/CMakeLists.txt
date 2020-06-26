@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 project(verushash)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11") # -Wall
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/compat)
 add_library(verushash STATIC
         src/haraka.c
         src/haraka_portable.c
@@ -13,12 +13,12 @@ add_library(verushash STATIC
         src/verus_clhash_portable.cpp
         src/ripemd160.cpp
         src/sha256.cpp
+        blockhash.cpp
         compat/glibc_compat.cpp
         compat/glibc_sanity.cpp
         compat/glibcxx_sanity.cpp
         compat/strnlen.cpp
         support/cleanse.cpp
-        blockhash.cpp
         )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=x86-64")

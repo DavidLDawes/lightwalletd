@@ -243,7 +243,7 @@ func (hdr *BlockHeader) GetEncodableHash(height int) []byte {
 
 	hash := make([]byte, 32)
 	ptrHash := uintptr(unsafe.Pointer(&hash[0]))
-	ParserLog.Warn("block_header.GetEncodableHash() calling Anyverushash_height()", height)
+	ParserLog.Warn("block_header.GetEncodableHash()  at height ", height)
 	VerusHash.Anyverushash_height(string(serializedHeader), len(string(serializedHeader)), ptrHash, height)
 	ParserLog.Warn("block_header.GetEncodableHash() called Anyverushash_height() which returned ", hash)
 	return hash

@@ -142,11 +142,14 @@ void Verushash::verushash_v2b2(const char * bytes, int length, void * hashresult
 
     std::cout << ":verushash_v2b2\n";
     initialize();
-    CVerusHashV2 vh2b1(SOLUTION_VERUSHHASH_V2_1);
+    CVerusHashV2 vh2b1(SOLUTION_VERUSHHASH_V2_2);
     vh2b1.Reset();
+
+/*
     vh2b1.Write((const unsigned char*) bytes, length);
     vh2b1.Finalize2b((unsigned char*) hashresult);
-/*    
+*/
+
     CBlockHeader bh;
     CDataStream s(bytes, bytes + length, SER_GETHASH, 0);
 
@@ -160,7 +163,6 @@ void Verushash::verushash_v2b2(const char * bytes, int length, void * hashresult
     {
         std::cout << ":verushash_v2b2 got an exception\n";
     }
-*/
 
 }
 

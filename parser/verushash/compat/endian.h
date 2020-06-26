@@ -2,13 +2,16 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or https://www.opensource.org/licenses/mit-license.php .
 
-
 #ifndef BITCOIN_COMPAT_ENDIAN_H
 #define BITCOIN_COMPAT_ENDIAN_H
 
-#include "../config/bitcoin-config.h"
+#if defined(HAVE_CONFIG_H)
+#include "config/bitcoin-config.h"
+#endif
+
 #include <stdint.h>
-#include "byteswap.h"
+
+#include "compat/byteswap.h"
 
 #if defined(HAVE_ENDIAN_H)
 #include <endian.h>

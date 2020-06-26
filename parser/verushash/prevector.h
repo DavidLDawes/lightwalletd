@@ -1,14 +1,14 @@
 #ifndef _BITCOIN_PREVECTOR_H_
 #define _BITCOIN_PREVECTOR_H_
 
+#include <util.h>
+
 #include <assert.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 
 #include <iterator>
-
-[[noreturn]] extern void new_handler_terminate();
 
 #pragma pack(push, 1)
 /** Implements a drop-in replacement for std::vector<T> which stores up to N

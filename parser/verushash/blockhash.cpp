@@ -4,7 +4,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "include/utilstrencodings.h"
-#include "solutiondata.h"
+#include "include/sodium/solutiondata.h"
 
 CActivationHeight CConstVerusSolutionVector::activationHeight;
 uint160 ASSETCHAINS_CHAINID = uint160(ParseHex("1af5b8015c64d39ab44c60ead8317f9f5a9b6c4c"));
