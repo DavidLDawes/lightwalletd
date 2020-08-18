@@ -27,6 +27,21 @@ Documentation for lightwalletd clients (the gRPC interface) is in `docs/rtd/inde
 
 # Local/Developer Usage
 
+This branch introduces storing the VRSC chain data in a PostgreSQL database.
+
+THe initial simple implementation expects the DB on localhost:5432 and the schema can be created using SQL with the following commands:
+```
+CREATE DATABASE vrsc;
+CREATE TABLE blocks (
+   height int PRIMARY KEY,
+   hash CHAR(32) UNIQUE NOT NULL,
+   prev_hash CHAR(32) UNIQUE,
+   time INT NOT NULL,
+   header TEXT NOT NULL,
+   vtx TEXT
+);
+```
+
 ## Zcashd
 
 You must start a local instance of `verusd`, and its `VRSC.conf` file must include the following entries

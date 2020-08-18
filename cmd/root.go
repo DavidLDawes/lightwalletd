@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -25,10 +26,13 @@ import (
 	"github.com/asherda/lightwalletd/common/logging"
 	"github.com/asherda/lightwalletd/frontend"
 	"github.com/asherda/lightwalletd/walletrpc"
+
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 var cfgFile string
 var logger = logrus.New()
+var db *pgxpool.Pool
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -194,8 +198,27 @@ func startServer(opts *common.Options) error {
 		os.Stderr.WriteString(fmt.Sprintf("\n  ** Can't create db directory: %s\n\n", dbPath))
 		os.Exit(1)
 	}
+
+	// TODO: switch postgreSQL URL to a command line option
+	dbURL := "user=postgres password=mysecretpassword host=localhost port=5432 dbname=vrsc sslmode=disable pool_max_conns=10"
+	poolConfig, err := pgxpool.ParseConfig(dbURL)
+	if err != nil {
+		common.Log.WithFields(logrus.Fields{
+			"error": err,
+		}).Fatal("\n** Unable to parse provided DB URL %s\n\n", dbURL)
+		os.Exit(1)
+	}
+
+	db, err = pgxpool.ConnectConfig(context.Background(), poolConfig)
+	if err != nil {
+		common.Log.WithFields(logrus.Fields{
+			"error": err,
+		}).Fatal("\n** Unable get a connection from the PostgrSQL connection pool\n\n")
+		os.Exit(1)
+	}
+
 	cache := common.NewBlockCache(dbPath, chainName, 1, opts.Redownload)
-	go common.BlockIngestor(cache, 0 /*loop forever*/)
+	go common.BlockIngestor(cache, db, 0 /*loop forever*/)
 
 	// Compact transaction service initialization
 	{

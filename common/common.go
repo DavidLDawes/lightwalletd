@@ -4,6 +4,7 @@
 package common
 
 import (
+	"context"
 	"encoding/hex"
 	"encoding/json"
 	"strconv"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/asherda/lightwalletd/parser"
 	"github.com/asherda/lightwalletd/walletrpc"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -142,9 +144,10 @@ func getBlockFromRPC(height int) (*walletrpc.CompactBlock, error) {
 	return block.ToCompact(), nil
 }
 
-// BlockIngestor runs as a goroutine and polls zcashd for new blocks, adding them
-// to the cache. The repetition count, rep, is nonzero only for unit-testing.
-func BlockIngestor(c *BlockCache, rep int) {
+// BlockIngestor runs as a goroutine and polls zcashd for new blocks, adding
+//  them to the cache. If conn is passed in then use it to store a copy of
+//  the data as we ingest it. The repetition count, rep, is nonzero only for unit-testing.
+func BlockIngestor(c *BlockCache, db *pgxpool.Pool, rep int) {
 	lastLog := time.Now()
 	reorgCount := 0
 	lastHeightLogged := 0
@@ -191,7 +194,7 @@ func BlockIngestor(c *BlockCache, rep int) {
 			// and there's no new block yet, but we want to back up
 			// so we detect a reorg in which the new chain is the
 			// same length or shorter.
-			reorgCount += 1
+			reorgCount++
 			if reorgCount > 100 {
 				Log.Fatal("Reorg exceeded max of 100 blocks! Help!")
 			}
@@ -219,9 +222,25 @@ func BlockIngestor(c *BlockCache, rep int) {
 		// We have a valid block to add.
 		wait = true
 		reorgCount = 0
+		block.GetHeader()
 		if err := c.Add(height, block); err != nil {
 			Log.Fatal("Cache add failed:", err)
 		}
+
+		if _, err := db.Exec(context.Background(), `use vrsc; insert into block(
+			height, hash, prev_hash, time, header)
+			values ($1, $2, $2, $4, $5, $6)
+		)
+		on conflict (id) do update`, block.Height, block.Hash, block.PrevHash, block.Time, block.Header, block.Vtx); err == nil {
+			Log.WithFields(logrus.Fields{
+				"height": height,
+			}).Warn("PosgreSQL: Record already exists, height %d", height)
+		} else {
+			Log.WithFields(logrus.Fields{
+				"height": height,
+			}).Warn("PosgreSQL: Server error, height %d", height)
+		}
+
 		// Don't log these too often.
 		if time.Now().Sub(lastLog).Seconds() >= 4 && c.GetNextHeight() == height+1 && height != lastHeightLogged {
 			lastLog = time.Now()
