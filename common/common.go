@@ -4,16 +4,17 @@
 package common
 
 import (
-	"context"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"strconv"
 	"strings"
 	"time"
 
+	_ "github.com/lib/pq"
+
 	"github.com/asherda/lightwalletd/parser"
 	"github.com/asherda/lightwalletd/walletrpc"
-	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -147,7 +148,7 @@ func getBlockFromRPC(height int) (*walletrpc.CompactBlock, error) {
 // BlockIngestor runs as a goroutine and polls zcashd for new blocks, adding
 //  them to the cache. If conn is passed in then use it to store a copy of
 //  the data as we ingest it. The repetition count, rep, is nonzero only for unit-testing.
-func BlockIngestor(c *BlockCache, db *pgxpool.Pool, rep int) {
+func BlockIngestor(c *BlockCache, db *sql.DB, rep int) {
 	lastLog := time.Now()
 	reorgCount := 0
 	lastHeightLogged := 0
@@ -226,18 +227,11 @@ func BlockIngestor(c *BlockCache, db *pgxpool.Pool, rep int) {
 		if err := c.Add(height, block); err != nil {
 			Log.Fatal("Cache add failed:", err)
 		}
-		conn, err := db.Acquire(context.Background())
-		defer conn.Release()
+
 		// Add it to PostgreSQL DB
-		if _, err := conn.Exec(context.Background(), "insert into blocks(height, hash, prev_hash, time, header) VALUES ($1, $2, $3, $4, $5);", block.Height, block.Hash, block.PrevHash, block.Time, block.Header); err == nil {
-			Log.WithFields(logrus.Fields{
-				"height": height,
-			}).Warn("PosgreSQL: Record already exists, height %d", height)
-		} else {
-			Log.Fatalf("error parsing JSON getblockchaininfo response: %v", err)
-			Log.WithFields(logrus.Fields{
-				"height": height,
-			}).Warn("PosgreSQL: Server error, height %d, error: %v", height, err)
+		result, err := persistToDB(db, block.Height, block.Hash, block.PrevHash, block.Time, block.GetHeader(), block.GetVtx())
+		if err != nil {
+			Log.Fatal(result, err)
 		}
 
 		// Don't log these too often.
@@ -294,4 +288,109 @@ func displayHash(hash []byte) string {
 		rhash[i], rhash[j] = rhash[j], rhash[i]
 	}
 	return hex.EncodeToString(rhash)
+}
+
+// TODO move the postgres DB stuff (the remainder of this source file
+// (plus bits from cmd.go maybe) to it's own file
+var stmtBlockInsert *sql.Stmt = nil
+var stmtBlockDelete *sql.Stmt = nil
+var stmtTxInsert *sql.Stmt = nil
+var stmtSpendInsert *sql.Stmt = nil
+var stmtOutputInsert *sql.Stmt = nil
+
+// SetupPreparedStatements adds prepared statements to insert into the
+// 4 tables we use. It also includes delete for blocks to
+// support reorgs. We set cascading deletes up so we only need to
+// delete the block.
+func SetupPreparedStatements(db *sql.DB) (string, error) {
+	var err error = nil
+
+	// First the insert prepared statement for the outermost record, blocks
+	stmtBlockInsert, err = db.Prepare("INSERT INTO blocks(height, hash, prev_hash, time, header) VALUES ($1, $2, $3, $4, $5);")
+	if err != nil {
+		return "Unable to prepare SQL blocks insert statement", err
+	}
+
+	// Also the update prepared statement for the outermost record,
+	// blocks, in case of reorg
+	stmtBlockDelete, err = db.Prepare("DELETE blocks WHERE height = $1;")
+	if err != nil {
+		return "Unable to prepare SQL blocks delete statement", err
+	}
+
+	stmtTxInsert, err = db.Prepare("INSERT INTO tx(index, height, hash, fee) VALUES ($1, $2, $3, $4);")
+	if err != nil {
+		return "Unable to prepare SQL tx insert statement", err
+	}
+
+	stmtSpendInsert, err = db.Prepare("INSERT INTO spend(tx_hash, nf) VALUES ($1, $2);")
+	if err != nil {
+		return "Unable to prepare SQL spend insert statement", err
+	}
+
+	stmtOutputInsert, err = db.Prepare("INSERT INTO output(tx_hash, cmu, epk, ciphertext) VALUES ($1, $2, $3, $4);")
+	if err != nil {
+		return "Unable to prepare SQL output insert statement", err
+	}
+	return "", nil
+}
+
+func persistToDB(db *sql.DB, height uint64, hash []byte, prevHash []byte, time uint32, header []byte, vtx []*walletrpc.CompactTx) (string, error) {
+	// Add it to PostgreSQL DB
+	var err error = nil
+
+	// First add the blocks record
+	// until we fix the header, put a fake header in place if needed
+	// (it's always needed because we have not fixed the header yet)
+	var tempHeader []byte = nil
+	if header == nil {
+		tempHeader = []byte("Missing a header still")
+	} else {
+		tempHeader = header
+	}
+	_, err = stmtBlockInsert.Exec(height, hash, prevHash, time, tempHeader)
+	if err != nil {
+		// Block already exists, reorg possible so replace it
+		// first get rid of it and related stuff
+		_, err = stmtBlockDelete.Exec(height)
+		if err != nil {
+			return "Unable to delete existing record from DB blocks, ", err
+		}
+
+		// deleted OK, (cascading through tx and it's outputs and spends, so put
+		// it back in now
+		_, err = stmtBlockInsert.Exec(height, hash, prevHash, time, tempHeader)
+		if err != nil {
+			return "Unable to insert record into DB blocks after deleting, ", err
+		}
+		return "", nil
+	}
+
+	// Now handle the TX array - put it in it's own table with a reference
+	// to the height of the related block
+	for _, tx := range vtx {
+		_, err = stmtTxInsert.Exec(tx.Index, height, tx.GetHash(), tx.GetFee())
+		if err != nil {
+			return "Unable to insert record into DB tx", err
+		}
+
+		// Within each tx, handle the spend array - put it in it's own table
+		// with a reference to the TX hash of the related tx
+		for _, spend := range tx.GetSpends() {
+			_, err = stmtSpendInsert.Exec(tx.GetHash(), spend.GetNf())
+			if err != nil {
+				return "Unable to insert record into DB spend", err
+			}
+		}
+
+		// Within each tx, handle the output array - put it in it's own table
+		// with a reference to the TX hash of the related tx
+		for _, output := range tx.GetOutputs() {
+			_, err = stmtOutputInsert.Exec(tx.GetHash(), output.GetCmu(), output.GetEpk(), output.GetCiphertext())
+			if err != nil {
+				return "Unable to insert record into DB output", err
+			}
+		}
+	}
+	return "", nil
 }

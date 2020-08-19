@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"context"
+	"database/sql"
 	"fmt"
 	"net"
 	"net/http"
@@ -26,13 +26,20 @@ import (
 	"github.com/asherda/lightwalletd/common/logging"
 	"github.com/asherda/lightwalletd/frontend"
 	"github.com/asherda/lightwalletd/walletrpc"
+)
 
-	"github.com/jackc/pgx/v4/pgxpool"
+// DB definitions
+// TODO: Hoist to DB stuff a separate package
+const (
+	host     = "localhost"
+	port     = 5432
+	user     = "postgres"
+	password = "mysecretpassword"
+	dbname   = "vrsc"
 )
 
 var cfgFile string
 var logger = logrus.New()
-var db *pgxpool.Pool
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -199,23 +206,29 @@ func startServer(opts *common.Options) error {
 		os.Exit(1)
 	}
 
-	// TODO: switch postgreSQL URL to a command line option
-	dbURL := "user=postgres password=mysecretpassword host=localhost port=5432 dbname=vrsc sslmode=disable pool_max_conns=10"
-	poolConfig, err := pgxpool.ParseConfig(dbURL)
+	// TODO: switch postgreSQL info to a command line option
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s sslmode=disable",
+		host, port, user, password)
+
+	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
 		common.Log.WithFields(logrus.Fields{
-			"error": err,
-		}).Fatal("\n** Unable to parse provided DB URL %s\n\n", dbURL)
-		os.Exit(1)
+			"error":   err,
+			"sqlInfo": psqlInfo,
+		}).Fatal("unable to open DB connection")
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		common.Log.WithFields(logrus.Fields{
+			"error":   err,
+			"sqlInfo": psqlInfo,
+		}).Fatal("failed to verify DB connection")
 	}
 
-	db, err = pgxpool.ConnectConfig(context.Background(), poolConfig)
-	if err != nil {
-		common.Log.WithFields(logrus.Fields{
-			"error": err,
-		}).Fatal("\n** Unable get a connection from the PostgrSQL connection pool\n\n")
-		os.Exit(1)
-	}
+	common.SetupPreparedStatements(db)
 
 	cache := common.NewBlockCache(dbPath, chainName, 1, opts.Redownload)
 	go common.BlockIngestor(cache, db, 0 /*loop forever*/)

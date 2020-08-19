@@ -27,43 +27,57 @@ Documentation for lightwalletd clients (the gRPC interface) is in `docs/rtd/inde
 
 # Local/Developer Usage
 
-This branch introduces storing the VRSC chain data in a PostgreSQL database.
+This branch introduces storing the VRSC chain data in a PostgreSQL database. Currently it attempts to mimic the data stored in the disk cache Note that the header is not being set correctly yet.
 
-THe initial simple implementation expects the DB on localhost:5432 and the schema can be created using SQL with the following commands:
+TODO: Fix the header in the SQL DB
+
+The schema uses tables for block, tx, spend and output. The relations and fkeys are as follows:
+1. block table has height as an integer index, from 1 to the current block height, and contains block details (hashes, header, time).
+2. tx table has transactions related to a block, using the tx(index)plus the block(height) (the fkey to the block) as a multipart key. This allows 0, 1 or many tx records per block(height) and makes it easy to select all txs for a given block. tx also stores the tx(hash) value which is unique to each tx.
+3. spend table has nf, plus it's own serial (autoincrementing integer) index as a key, and includes the tx(hash) as a foreign reference from related tx. This allows 0 to many to exist per tx, and allows us to easily fetch all spends for a given tx(hash).
+4. output table has it's own serial (autoincrementing integer) index as a key, and includes the tx(hash) as a foreign reference from related tx. This allows 0 to many to exist per tx and allows easy acces to all outputs for a given tx(hash). output also contains cmu, epk and ciphertext binary strings.
+
+TODO: Multichain support - add chain ID to block and tx as an fkey reference to the (yet to be created) chain SQL DB table.
+
+The initial simple implementation expects the DB on localhost:5432 and the schema can be created using SQL with the following commands:
 ```
 CREATE DATABASE vrsc;
 
 CREATE TABLE blocks (
    height INT PRIMARY KEY,
-   hash CHAR(32) UNIQUE NOT NULL,
-   prev_hash CHAR(32) UNIQUE,
+   hash BYTEA UNIQUE NOT NULL,
+   prev_hash BYTEA UNIQUE,
    time INT NOT NULL,
-   header TEXT NOT NULL,
+   header BYTEA NOT NULL
 );
 
-)
 CREATE TABLE tx (
-    index BIGINT PRIMARY KEY,
-    height INT REFERENCES blocks (height),
-    hash CHAR(32),
-    fee INT
+    index BIGINT NOT NULL,
+    height INT REFERENCES blocks (height) ON DELETE CASCADE NOT NULL,
+    hash BYTEA UNIQUE NOT NULL,
+    fee INT,
+    PRIMARY KEY(height, index)
 );
 
 CREATE TABLE spend (
     index SERIAL PRIMARY KEY,
-    tx_index INT REFERENCES tx (index) NOT NULL,
-    nf TEXT NOT NULL
+    tx_hash BYTEA REFERENCES tx (hash) ON DELETE CASCADE NOT NULL,
+    nf BYTEA NOT NULL
 );
 
 CREATE TABLE output (
     index SERIAL PRIMARY KEY,
-    tx_index INT REFERENCES tx (index) NOT NULL,
-    cmu TEXT NOT NULL,
-	epk TEXT NOT NULL,
-	ciphertext TEXT NOT NULL
+    tx_hash BYTEA REFERENCES tx (hash) ON DELETE CASCADE NOT NULL,
+    cmu BYTEA NOT NULL,
+	epk BYTEA NOT NULL,
+	ciphertext BYTEA NOT NULL
 );
 ```
+TODO: add schema auto-creation
 
+Currently it has the DB host as localhost and port 5432 hard wired, along with the password and user. Works OK for development (kinda - verusd, postgres and lwd all on the same system during rapid block ingestion is a fairly heavy load) so we can establish the code to write the DB records works.
+
+TODO: add injection of DB details via CLI and/or environment
 ## Zcashd
 
 You must start a local instance of `verusd`, and its `VRSC.conf` file must include the following entries
