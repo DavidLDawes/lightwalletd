@@ -226,19 +226,18 @@ func BlockIngestor(c *BlockCache, db *pgxpool.Pool, rep int) {
 		if err := c.Add(height, block); err != nil {
 			Log.Fatal("Cache add failed:", err)
 		}
-
-		if _, err := db.Exec(context.Background(), `use vrsc; insert into block(
-			height, hash, prev_hash, time, header)
-			values ($1, $2, $2, $4, $5, $6)
-		)
-		on conflict (id) do update`, block.Height, block.Hash, block.PrevHash, block.Time, block.Header, block.Vtx); err == nil {
+		conn, err := db.Acquire(context.Background())
+		defer conn.Release()
+		// Add it to PostgreSQL DB
+		if _, err := conn.Exec(context.Background(), "insert into blocks(height, hash, prev_hash, time, header) VALUES ($1, $2, $3, $4, $5);", block.Height, block.Hash, block.PrevHash, block.Time, block.Header); err == nil {
 			Log.WithFields(logrus.Fields{
 				"height": height,
 			}).Warn("PosgreSQL: Record already exists, height %d", height)
 		} else {
+			Log.Fatalf("error parsing JSON getblockchaininfo response: %v", err)
 			Log.WithFields(logrus.Fields{
 				"height": height,
-			}).Warn("PosgreSQL: Server error, height %d", height)
+			}).Warn("PosgreSQL: Server error, height %d, error: %v", height, err)
 		}
 
 		// Don't log these too often.

@@ -32,13 +32,35 @@ This branch introduces storing the VRSC chain data in a PostgreSQL database.
 THe initial simple implementation expects the DB on localhost:5432 and the schema can be created using SQL with the following commands:
 ```
 CREATE DATABASE vrsc;
+
 CREATE TABLE blocks (
-   height int PRIMARY KEY,
+   height INT PRIMARY KEY,
    hash CHAR(32) UNIQUE NOT NULL,
    prev_hash CHAR(32) UNIQUE,
    time INT NOT NULL,
    header TEXT NOT NULL,
-   vtx TEXT
+);
+
+)
+CREATE TABLE tx (
+    index BIGINT PRIMARY KEY,
+    height INT REFERENCES blocks (height),
+    hash CHAR(32),
+    fee INT
+);
+
+CREATE TABLE spend (
+    index SERIAL PRIMARY KEY,
+    tx_index INT REFERENCES tx (index) NOT NULL,
+    nf TEXT NOT NULL
+);
+
+CREATE TABLE output (
+    index SERIAL PRIMARY KEY,
+    tx_index INT REFERENCES tx (index) NOT NULL,
+    cmu TEXT NOT NULL,
+	epk TEXT NOT NULL,
+	ciphertext TEXT NOT NULL
 );
 ```
 
