@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/asherda/lightwalletd/walletrpc"
+	"github.com/Asherda/lightwalletd/walletrpc"
 	"github.com/golang/protobuf/proto"
 )
 

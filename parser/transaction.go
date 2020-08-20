@@ -6,8 +6,8 @@ package parser
 import (
 	"crypto/sha256"
 
-	"github.com/asherda/lightwalletd/parser/internal/bytestring"
-	"github.com/asherda/lightwalletd/walletrpc"
+	"github.com/Asherda/lightwalletd/parser/internal/bytestring"
+	"github.com/Asherda/lightwalletd/walletrpc"
 	"github.com/pkg/errors"
 )
 

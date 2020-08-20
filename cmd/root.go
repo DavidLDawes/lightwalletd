@@ -22,10 +22,10 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"
 
-	"github.com/asherda/lightwalletd/common"
-	"github.com/asherda/lightwalletd/common/logging"
-	"github.com/asherda/lightwalletd/frontend"
-	"github.com/asherda/lightwalletd/walletrpc"
+	"github.com/Asherda/lightwalletd/common"
+	"github.com/Asherda/lightwalletd/common/logging"
+	"github.com/Asherda/lightwalletd/frontend"
+	"github.com/Asherda/lightwalletd/walletrpc"
 )
 
 // DB definitions

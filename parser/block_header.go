@@ -9,8 +9,8 @@ import (
 	"math/big"
 	"unsafe"
 
-	"github.com/asherda/lightwalletd/parser/internal/bytestring"
-	"github.com/asherda/lightwalletd/parser/verushash"
+	verushash "github.com/Asherda/Go-VerusHash"
+	"github.com/Asherda/lightwalletd/parser/internal/bytestring"
 	"github.com/pkg/errors"
 )
 

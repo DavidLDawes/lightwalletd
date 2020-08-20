@@ -10,8 +10,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/asherda/lightwalletd/parser"
-	"github.com/asherda/lightwalletd/walletrpc"
+	"github.com/Asherda/lightwalletd/parser"
+	"github.com/Asherda/lightwalletd/walletrpc"
 )
 
 var compacts []*walletrpc.CompactBlock

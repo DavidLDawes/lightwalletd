@@ -22,11 +22,11 @@ VERSION := `git describe --tags`
 GITCOMMIT := `git rev-parse HEAD`
 BUILDDATE := `date +%Y-%m-%d`
 BUILDUSER := `whoami`
-LDFLAGSSTRING :=-X github.com/asherda/lightwalletd/common.Version=$(VERSION)
-LDFLAGSSTRING +=-X github.com/asherda/lightwalletd/common.GitCommit=$(GITCOMMIT)
-LDFLAGSSTRING +=-X github.com/asherda/lightwalletd/common.Branch=$(BRANCH)
-LDFLAGSSTRING +=-X github.com/asherda/lightwalletd/common.BuildDate=$(BUILDDATE)
-LDFLAGSSTRING +=-X github.com/asherda/lightwalletd/common.BuildUser=$(BUILDUSER)
+LDFLAGSSTRING :=-X github.com/Asherda/lightwalletd/common.Version=$(VERSION)
+LDFLAGSSTRING +=-X github.com/Asherda/lightwalletd/common.GitCommit=$(GITCOMMIT)
+LDFLAGSSTRING +=-X github.com/Asherda/lightwalletd/common.Branch=$(BRANCH)
+LDFLAGSSTRING +=-X github.com/Asherda/lightwalletd/common.BuildDate=$(BUILDDATE)
+LDFLAGSSTRING +=-X github.com/Asherda/lightwalletd/common.BuildUser=$(BUILDUSER)
 LDFLAGS :=-ldflags "$(LDFLAGSSTRING)"
 
 # There are some files that are generated but are also in source control
@@ -37,7 +37,7 @@ PWD := $(shell pwd)
 
 .PHONY: all dep build clean test coverage lint doc simpledoc
 
-all: first-make-timestamp build-dep build $(GENERATED_FILES)
+all: first-make-timestamp parser/verushash/libverushash.a build $(GENERATED_FILES)
 
 # Ensure that the generated files that are also in git source control are
 # initially more recent than the files they're generated from (so we don't try
@@ -128,13 +128,6 @@ docker_remove_all:
 # Get dependencies
 dep:
 	@go get -v -d ./...
-
-# Build Swig module
-build-dep:
-	cd parser/verushash && \
-	cmake . && \
-	make && \
-	swig -go -cgo -c++ -intgosize 64 verushash.i
 
 # Build binary
 build:

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"unsafe"
 
-	"github.com/asherda/lightwalletd/parser/verushash"
+	"github.com/Asherda/lightwalletd/parser/verushash"
 )
 
 // VerusHash holds the VerusHash object used for the VerusCoin hashing methods

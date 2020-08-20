@@ -16,8 +16,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/asherda/lightwalletd/common"
-	"github.com/asherda/lightwalletd/walletrpc"
+	"github.com/Asherda/lightwalletd/common"
+	"github.com/Asherda/lightwalletd/walletrpc"
 )
 
 // ErrUnspecified error: we do not serve that here
