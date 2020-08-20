@@ -1,4 +1,5 @@
-// Copyright (c) 2019-2020 The Zcash developers
+// Package common Copyright (c) 2019-2020 The Zcash developers
+// Copyright 2020 The VerusCoin Developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or https://www.opensource.org/licenses/mit-license.php .
 package common
@@ -17,10 +18,10 @@ import (
 
 // DbConfig is used by root.go to ser the DB info
 type DbConfig struct {
-	SqlHost     string
-	SqlPort     int
-	SqlUser     string
-	SqlPassword string
+	SQLHost string
+	SQLPort uint
+	SQLUser string
+	SQLPW   string
 }
 
 // GetDBPool gets a pgx Pool ready for the ingestor while checking for errors
@@ -28,7 +29,7 @@ func GetDBPool(cfg DbConfig) *pgxpool.Pool {
 	// TODO: switch Postgres data to command line options
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s sslmode=disable",
-		cfg.SqlHost, cfg.SqlPort, cfg.SqlUser, cfg.SqlPassword)
+		cfg.SQLHost, cfg.SQLPort, cfg.SQLUser, cfg.SQLPW)
 
 	poolConfig, err := pgxpool.ParseConfig(psqlInfo)
 	if err != nil {

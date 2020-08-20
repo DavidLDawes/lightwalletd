@@ -1,4 +1,5 @@
-// Copyright (c) 2019-2020 The Zcash developers
+// Package parser
+// Copyright (c) 2019-2020 The Zcash developers, 2020 The VerusCoin Developers and David L. Dawes
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or https://www.opensource.org/licenses/mit-license.php .
 package parser

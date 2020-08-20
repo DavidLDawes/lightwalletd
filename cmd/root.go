@@ -25,13 +25,10 @@ import (
 	"github.com/asherda/lightwalletd/common/logging"
 	"github.com/asherda/lightwalletd/frontend"
 	"github.com/asherda/lightwalletd/walletrpc"
-
-	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 var cfgFile string
 var logger = logrus.New()
-var db *pgxpool.Pool
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -52,6 +49,11 @@ var rootCmd = &cobra.Command{
 			NoTLSVeryInsecure: viper.GetBool("no-tls-very-insecure"),
 			DataDir:           viper.GetString("data-dir"),
 			Redownload:        viper.GetBool("redownload"),
+			SQL:               viper.GetBool("sql"),
+			SQLHost:           viper.GetString("sql-host"),
+			SQLPort:           viper.GetUint("sql-port"),
+			SQLUser:           viper.GetString("sql-user"),
+			SQLPW:             viper.GetString("sql-pw"),
 			Darkside:          viper.GetBool("darkside-very-insecure"),
 		}
 
@@ -198,13 +200,11 @@ func startServer(opts *common.Options) error {
 		os.Exit(1)
 	}
 
-	// TODO: hook the values here up to the command line parameters
-	// and/or the environment
 	cfg := common.DbConfig{
-		SqlHost:     "localhost",
-		SqlPort:     5432,
-		SqlUser:     "postgres",
-		SqlPassword: "mysecretpassword",
+		SQLHost: opts.SQLHost,
+		SQLPort: opts.SQLPort,
+		SQLUser: opts.SQLUser,
+		SQLPW:   opts.SQLPW,
 	}
 
 	dbPool := common.GetDBPool(cfg)
@@ -286,6 +286,11 @@ func init() {
 	rootCmd.Flags().Bool("no-tls-very-insecure", false, "run without the required TLS certificate, only for debugging, DO NOT use in production")
 	rootCmd.Flags().Bool("redownload", false, "re-fetch all blocks from zcashd; reinitialize local cache files")
 	rootCmd.Flags().String("data-dir", "/var/lib/lightwalletd", "data directory (such as db)")
+	rootCmd.Flags().Bool("sql", false, "enable SQL support - ingestor stores blocks, txs, spends and outputs in related tables, see README.md for schema")
+	rootCmd.Flags().String("sql-host", "localhost", "the host name or IP address of the SQL server, default is localhost")
+	rootCmd.Flags().Int("sql-port", 5432, "the TCP port to use to connect to the SQL server, default is 5432")
+	rootCmd.Flags().String("sql-name", "postgres", "the user name for the credentials to access the SQL server, default is postgres")
+	rootCmd.Flags().String("sql-pw", "mysecretpassword", "the password for the credentials to access the SQL server, default is mysecretpassword")
 	rootCmd.Flags().Bool("darkside-very-insecure", false, "run with GRPC-controllable mock zcashd for integration testing (shuts down after 30 minutes)")
 
 	viper.BindPFlag("grpc-bind-addr", rootCmd.Flags().Lookup("grpc-bind-addr"))
@@ -310,6 +315,16 @@ func init() {
 	viper.SetDefault("redownload", false)
 	viper.BindPFlag("data-dir", rootCmd.Flags().Lookup("data-dir"))
 	viper.SetDefault("data-dir", "/var/lib/lightwalletd")
+	viper.BindPFlag("sql", rootCmd.Flags().Lookup("sql"))
+	viper.SetDefault("sql", false)
+	viper.BindPFlag("sql-host", rootCmd.Flags().Lookup("sql-host"))
+	viper.SetDefault("sql-host", "localhost")
+	viper.BindPFlag("sql-port", rootCmd.Flags().Lookup("sql-port"))
+	viper.SetDefault("sql-port", 5432)
+	viper.BindPFlag("sql-user", rootCmd.Flags().Lookup("sql-user"))
+	viper.SetDefault("sql-user", "postgres")
+	viper.BindPFlag("sql-pw", rootCmd.Flags().Lookup("sql-pw"))
+	viper.SetDefault("sql-pw", "mysecretpassword")
 	viper.BindPFlag("darkside-very-insecure", rootCmd.Flags().Lookup("darkside-very-insecure"))
 	viper.SetDefault("darkside-very-insecure", false)
 

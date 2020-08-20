@@ -1,4 +1,5 @@
-// Copyright (c) 2019-2020 The Zcash developers
+// Package common Copyright (c) 2019-2020 The Zcash developers
+// Copyright (c) 2020 The VerusCoin Developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or https://www.opensource.org/licenses/mit-license.php .
 package common
@@ -18,12 +19,19 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// 'make build' will overwrite this string with the output of git-describe (tag)
+// Version 'make build' will overwrite this string with the output of git-describe (tag)
 var Version = "v0.0.0.0-dev"
+
+// GitCommit 'make build' will overwrite this string with the output of git-describe (tag)
 var GitCommit = ""
+
+// BuildDate  'make build' will overwrite this string with the output of git-describe (tag)
 var BuildDate = ""
+
+// BuildUser 'make build' will overwrite this string with the output of git-describe (tag)
 var BuildUser = ""
 
+// Options Defines all of our command line option settings
 type Options struct {
 	GRPCBindAddr      string `json:"grpc_bind_address,omitempty"`
 	HTTPBindAddr      string `json:"http_bind_address,omitempty"`
@@ -36,6 +44,11 @@ type Options struct {
 	NoTLSVeryInsecure bool   `json:"no_tls_very_insecure,omitempty"`
 	Redownload        bool   `json:"redownload"`
 	DataDir           string `json:"data-dir"`
+	SQL               bool   `json:"sql"`
+	SQLHost           string `json:"sql-host"`
+	SQLPort           uint   `json:"sql-port"`
+	SQLUser           string `json:"sql-user"`
+	SQLPW             string `json:"sql-pw"`
 	Darkside          bool   `json:"darkside"`
 }
 
