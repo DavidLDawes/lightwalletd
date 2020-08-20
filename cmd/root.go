@@ -30,6 +30,16 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
+// TODO: Hoist to DB stuff a separate package
+// TODO: Move this DB config stuff to command line options
+const (
+	host     = "localhost"
+	port     = 5432
+	user     = "postgres"
+	password = "mysecretpassword"
+	dbname   = "vrsc"
+)
+
 var cfgFile string
 var logger = logrus.New()
 var db *pgxpool.Pool
@@ -199,26 +209,29 @@ func startServer(opts *common.Options) error {
 		os.Exit(1)
 	}
 
-	// TODO: switch postgreSQL URL to a command line option
-	dbURL := "user=postgres password=mysecretpassword host=localhost port=5432 sslmode=disable pool_max_conns=10"
-	poolConfig, err := pgxpool.ParseConfig(dbURL)
+	// TODO: switch Postgres data to command line options
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s sslmode=disable",
+		host, port, user, password)
+
+	poolConfig, err := pgxpool.ParseConfig(psqlInfo)
 	if err != nil {
 		common.Log.WithFields(logrus.Fields{
-			"error": err,
-		}).Fatal("\n** Unable to parse provided DB URL %s\n\n", dbURL)
-		os.Exit(1)
+			"error":   err,
+			"sqlInfo": psqlInfo,
+		}).Fatal("unable to parse psqlInfo for DB connection: %s\n\n", psqlInfo)
 	}
 
-	db, err = pgxpool.ConnectConfig(context.Background(), poolConfig)
+	dbPool, err := pgxpool.ConnectConfig(context.Background(), poolConfig)
 	if err != nil {
 		common.Log.WithFields(logrus.Fields{
-			"error": err,
-		}).Fatal("\n** Unable get a connection from the PostgrSQL connection pool\n\n")
-		os.Exit(1)
+			"error":   err,
+			"sqlInfo": psqlInfo,
+		}).Fatal("unable to configure connections for the pool using the poolconfig built from %s", psqlInfo)
 	}
 
 	cache := common.NewBlockCache(dbPath, chainName, 1, opts.Redownload)
-	go common.BlockIngestor(cache, db, 0 /*loop forever*/)
+	go common.BlockIngestor(cache, dbPool, 0 /*loop forever*/)
 
 	// Compact transaction service initialization
 	{

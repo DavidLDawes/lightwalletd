@@ -7,12 +7,14 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/asherda/lightwalletd/parser"
 	"github.com/asherda/lightwalletd/walletrpc"
+	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -147,7 +149,7 @@ func getBlockFromRPC(height int) (*walletrpc.CompactBlock, error) {
 // BlockIngestor runs as a goroutine and polls zcashd for new blocks, adding
 //  them to the cache. If conn is passed in then use it to store a copy of
 //  the data as we ingest it. The repetition count, rep, is nonzero only for unit-testing.
-func BlockIngestor(c *BlockCache, db *pgxpool.Pool, rep int) {
+func BlockIngestor(c *BlockCache, dbPool *pgxpool.Pool, rep int) {
 	lastLog := time.Now()
 	reorgCount := 0
 	lastHeightLogged := 0
@@ -222,22 +224,20 @@ func BlockIngestor(c *BlockCache, db *pgxpool.Pool, rep int) {
 		// We have a valid block to add.
 		wait = true
 		reorgCount = 0
-		block.GetHeader()
 		if err := c.Add(height, block); err != nil {
 			Log.Fatal("Cache add failed:", err)
 		}
-		conn, err := db.Acquire(context.Background())
-		defer conn.Release()
-		// Add it to PostgreSQL DB
-		if _, err := conn.Exec(context.Background(), "insert into blocks(height, hash, prev_hash, time, header) VALUES ($1, $2, $3, $4, $5);", block.Height, block.Hash, block.PrevHash, block.Time, block.Header); err == nil {
-			Log.WithFields(logrus.Fields{
-				"height": height,
-			}).Warn("PosgreSQL: Record already exists, height %d", height)
-		} else {
-			Log.Fatalf("error parsing JSON getblockchaininfo response: %v", err)
-			Log.WithFields(logrus.Fields{
-				"height": height,
-			}).Warn("PosgreSQL: Server error, height %d, error: %v", height, err)
+		conn, err := dbPool.Acquire(context.Background())
+
+		// Add it to PostgreSQL
+		if conn != nil {
+			result, err := persistToDB(conn, block.Height, block.Hash, block.PrevHash, block.Time, block.GetHeader(), block.GetVtx())
+			if err != nil {
+				Log.Fatal(result, err)
+			} else {
+				Log.Info(fmt.Sprint("added block to DB at height ", height))
+			}
+			conn.Release()
 		}
 
 		// Don't log these too often.
@@ -294,4 +294,110 @@ func displayHash(hash []byte) string {
 		rhash[i], rhash[j] = rhash[j], rhash[i]
 	}
 	return hex.EncodeToString(rhash)
+}
+
+// TODO move the postgres DB stuff (the remainder of this source file
+// (plus bits from cmd.go maybe) to it's own file
+
+func persistToDB(db *pgxpool.Conn, height uint64, hash []byte, prevHash []byte, time uint32, header []byte, vtx []*walletrpc.CompactTx) (string, error) {
+	// Add it to PostgreSQL DB
+	var err error = nil
+
+	// First add the blocks record
+	// until we fix the header, put a fake header in place if needed
+	// (it's always needed because we have not fixed the header yet)
+	var tempHeader []byte = nil
+	if header == nil {
+		tempHeader = []byte("Missing a header still")
+	} else {
+		tempHeader = header
+	}
+
+	// All or nothing: get all related records updated, or none at all
+	blocktx, err := db.Begin(context.Background())
+	if err != nil {
+		return fmt.Sprint("unable to open a transaction, failed to write block to DB at height %1", height), err
+	}
+
+	commandTag, err := blocktx.Exec(context.Background(), "INSERT INTO blocks(height, hash, prev_hash, time, header) VALUES ($1, $2, $3, $4, $5);", height, hash, prevHash, time, tempHeader)
+	if err != nil {
+		// Block already exists, reorg possible so replace it
+		// first get rid of it and related stuff
+		commandTag, err = db.Exec(context.Background(), "DELETE FROM blocks WHERE height = $1;", height)
+
+		if err != nil {
+			blocktx.Rollback(context.Background())
+			return fmt.Sprintf("Failed to add new block, failed to delete existing block, unable save block in DB at height %1", height), err
+		}
+
+		// deleted OK, (cascading through tx and it's outputs and spends, so put
+		// it back in now
+		_, err = blocktx.Exec(context.Background(), "INSERT INTO blocks(height, hash, prev_hash, time, header) VALUES ($1, $2, $3, $4, $5);", height, hash, prevHash, time, tempHeader)
+		if err != nil {
+			blocktx.Rollback(context.Background())
+			return fmt.Sprintf("Unable to insert record into DB blocks after deleting at height %1", height), err
+		}
+	} else {
+		result, err := checkExecResult(err, commandTag, "block", height)
+		if err != nil {
+			blocktx.Rollback(context.Background())
+			return result, err
+		}
+	}
+
+	// Now handle the TX array - put it in it's own table with a reference
+	// to the height of the related block
+	for _, tx := range vtx {
+		commandTag, err := blocktx.Exec(context.Background(), "INSERT INTO tx(index, height, hash, fee) VALUES ($1, $2, $3, $4);", tx.Index, height, tx.GetHash(), tx.GetFee())
+		result, err := checkExecResult(err, commandTag, "tx", height)
+		if err != nil {
+			blocktx.Rollback(context.Background())
+			return result, err
+		}
+
+		// Within each tx, handle the spend array - put it in it's own table
+		// with a reference to the TX hash of the related tx
+		for _, spend := range tx.GetSpends() {
+			commandTag, err := blocktx.Exec(context.Background(), "INSERT INTO spend(tx_hash, nf) VALUES ($1, $2);", tx.GetHash(), spend.GetNf())
+			result, err := checkExecResult(err, commandTag, "spend", height)
+			if err != nil {
+				blocktx.Rollback(context.Background())
+				return result, err
+			}
+		}
+
+		// Within each tx, handle the output array - put it in it's own table
+		// with a reference to the TX hash of the related tx
+		for _, output := range tx.GetOutputs() {
+			commandTag, err := blocktx.Exec(context.Background(), "INSERT INTO output(tx_hash, cmu, epk, ciphertext) VALUES ($1, $2, $3, $4);", tx.GetHash(), output.GetCmu(), output.GetEpk(), output.GetCiphertext())
+			result, err := checkExecResult(err, commandTag, "output", height)
+			if err != nil {
+				blocktx.Rollback(context.Background())
+				return result, err
+			}
+		}
+	}
+	err = blocktx.Commit(context.Background())
+	if err != nil {
+		return fmt.Sprint("Failed to commit block and related table updates at height %d", height), err
+	}
+
+	return "", nil
+}
+
+func checkExecResult(err error, tag pgconn.CommandTag, table string, height uint64) (string, error) {
+	if err != nil {
+		// Record already exists, error result
+		return fmt.Sprintf("Failed to add new %s, failed to delete existing block, unable save block in DB at height %d", table, height), err
+	} else {
+		if tag.RowsAffected() < 1 {
+			return fmt.Sprintf("insert into %s affected 0 rows, should be 1, at height %1", table, height), errors.New("insert into block did not affect any rows")
+		} else {
+			if tag.RowsAffected() > 1 {
+				return fmt.Sprint("insert into %s affected too many rows - %d -  should be 1 - at height %d", table, tag.RowsAffected, height), errors.New("insert into blocks affected too many rows")
+			}
+		}
+	}
+	// We're good, return a nil error and an empty description string
+	return "", nil
 }

@@ -7,7 +7,7 @@ require (
 	github.com/golang/protobuf v1.4.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
-	github.com/jackc/pgx v3.6.2+incompatible
+	github.com/jackc/pgconn v1.6.4
 	github.com/jackc/pgx/v4 v4.8.1
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v1.5.1

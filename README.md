@@ -35,32 +35,34 @@ CREATE DATABASE vrsc;
 
 CREATE TABLE blocks (
    height INT PRIMARY KEY,
-   hash CHAR(32) UNIQUE NOT NULL,
-   prev_hash CHAR(32) UNIQUE,
+   hash BYTEA UNIQUE NOT NULL,
+   prev_hash BYTEA UNIQUE,
    time INT NOT NULL,
-   header TEXT NOT NULL,
+   header BYTEA NOT NULL,
 );
 
 )
 CREATE TABLE tx (
-    index BIGINT PRIMARY KEY,
-    height INT REFERENCES blocks (height),
-    hash CHAR(32),
-    fee INT
+    index BIGINT NOT NULL,
+    height INT REFERENCES blocks (height) ON DELETE CASCADE NOT NULL,
+    hash BYTEA UNIQUE NOT NULL,
+    fee INT NOT NULL,
+    PRIMARY KEY(height, index)
 );
 
 CREATE TABLE spend (
     index SERIAL PRIMARY KEY,
-    tx_index INT REFERENCES tx (index) NOT NULL,
-    nf TEXT NOT NULL
+
+    tx_hash BYTEA REFERENCES tx (hash) ON DELETE CASCADE NOT NULL,
+    nf BYTEA NOT NULL
 );
 
 CREATE TABLE output (
     index SERIAL PRIMARY KEY,
-    tx_index INT REFERENCES tx (index) NOT NULL,
-    cmu TEXT NOT NULL,
-	epk TEXT NOT NULL,
-	ciphertext TEXT NOT NULL
+    tx_hash BYTEA REFERENCES tx (hash) ON DELETE CASCADE NOT NULL,
+    cmu BYTEA NOT NULL,
+	epk BYTEA NOT NULL,
+	ciphertext BYTEA NOT NULL
 );
 ```
 
