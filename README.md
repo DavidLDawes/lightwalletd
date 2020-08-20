@@ -29,7 +29,7 @@ Documentation for lightwalletd clients (the gRPC interface) is in `docs/rtd/inde
 
 This branch introduces storing the VRSC chain data in a PostgreSQL database.
 
-THe initial simple implementation expects the DB on localhost:5432 and the schema can be created using SQL with the following commands:
+The initial simple implementation expects the DB on localhost:5432 and the schema can be created using SQL with the following commands:
 ```
 CREATE DATABASE vrsc;
 
@@ -95,7 +95,7 @@ Install [Boost](https://www.boost.org/)
 
 Install [Go](https://golang.org/dl/#stable) version 1.11 or later. You can see your current version by running `go version`.
 
-Clone the [current repository](https://github.com/zcash/lightwalletd) into a local directory that is _not_ within any component of
+Clone the [current repository](https://github.com/asherda/lightwalletd) into a local directory that is _not_ within any component of
 your `$GOPATH` (`$HOME/go` by default), then build the lightwalletd server binary by running `make`.
 
 ## To run SERVER

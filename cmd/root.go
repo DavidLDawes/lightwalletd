@@ -200,7 +200,7 @@ func startServer(opts *common.Options) error {
 	}
 
 	// TODO: switch postgreSQL URL to a command line option
-	dbURL := "user=postgres password=mysecretpassword host=localhost port=5432 dbname=vrsc sslmode=disable pool_max_conns=10"
+	dbURL := "user=postgres password=mysecretpassword host=localhost port=5432 sslmode=disable pool_max_conns=10"
 	poolConfig, err := pgxpool.ParseConfig(dbURL)
 	if err != nil {
 		common.Log.WithFields(logrus.Fields{
