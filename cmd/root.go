@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -28,16 +27,6 @@ import (
 	"github.com/asherda/lightwalletd/walletrpc"
 
 	"github.com/jackc/pgx/v4/pgxpool"
-)
-
-// TODO: Hoist to DB stuff a separate package
-// TODO: Move this DB config stuff to command line options
-const (
-	host     = "localhost"
-	port     = 5432
-	user     = "postgres"
-	password = "mysecretpassword"
-	dbname   = "vrsc"
 )
 
 var cfgFile string
@@ -209,26 +198,16 @@ func startServer(opts *common.Options) error {
 		os.Exit(1)
 	}
 
-	// TODO: switch Postgres data to command line options
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
-		"password=%s sslmode=disable",
-		host, port, user, password)
-
-	poolConfig, err := pgxpool.ParseConfig(psqlInfo)
-	if err != nil {
-		common.Log.WithFields(logrus.Fields{
-			"error":   err,
-			"sqlInfo": psqlInfo,
-		}).Fatal("unable to parse psqlInfo for DB connection: %s\n\n", psqlInfo)
+	// TODO: hook the values here up to the command line parameters
+	// and/or the environment
+	cfg := common.DbConfig{
+		SqlHost:     "localhost",
+		SqlPort:     5432,
+		SqlUser:     "postgres",
+		SqlPassword: "mysecretpassword",
 	}
 
-	dbPool, err := pgxpool.ConnectConfig(context.Background(), poolConfig)
-	if err != nil {
-		common.Log.WithFields(logrus.Fields{
-			"error":   err,
-			"sqlInfo": psqlInfo,
-		}).Fatal("unable to configure connections for the pool using the poolconfig built from %s", psqlInfo)
-	}
+	dbPool := common.GetDBPool(cfg)
 
 	cache := common.NewBlockCache(dbPath, chainName, 1, opts.Redownload)
 	go common.BlockIngestor(cache, dbPool, 0 /*loop forever*/)
