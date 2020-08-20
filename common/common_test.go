@@ -267,7 +267,7 @@ func TestBlockIngestor(t *testing.T) {
 	Sleep = sleepStub
 	os.RemoveAll(unitTestPath)
 	testcache := NewBlockCache(unitTestPath, unitTestChain, 380640, false)
-	BlockIngestor(testcache, 11)
+	BlockIngestor(testcache, nil, 11)
 	if step != 11 {
 		t.Error("unexpected final step", step)
 	}

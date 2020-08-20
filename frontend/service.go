@@ -20,22 +20,27 @@ import (
 	"github.com/asherda/lightwalletd/walletrpc"
 )
 
+// ErrUnspecified error: we do not serve that here
 var (
 	ErrUnspecified = errors.New("request for unspecified identifier")
 )
 
+// LwdStreamer the light wallet daomon streamer contains the BlockCache
 type LwdStreamer struct {
 	cache *common.BlockCache
 }
 
+// NewLwdStreamer pass in the BlockCach to get the streamer, nil errors
 func NewLwdStreamer(cache *common.BlockCache) (walletrpc.CompactTxStreamerServer, error) {
 	return &LwdStreamer{cache}, nil
 }
 
+// DarksideStreamer DarkSide equivalent to LWD stuff
 type DarksideStreamer struct {
 	cache *common.BlockCache
 }
 
+// NewDarksideStreamer DarkSide equivalent to LWD stuff
 func NewDarksideStreamer(cache *common.BlockCache) (walletrpc.DarksideStreamerServer, error) {
 	return &DarksideStreamer{cache}, nil
 }
@@ -191,9 +196,9 @@ func (s *LwdStreamer) GetTransaction(ctx context.Context, txf *walletrpc.TxFilte
 }
 
 // GetLightdInfo gets the LightWalletD (this server) info, and includes information
-// it gets from its backend zcashd.
+// it gets from its backend verusd.
 func (s *LwdStreamer) GetLightdInfo(ctx context.Context, in *walletrpc.Empty) (*walletrpc.LightdInfo, error) {
-	saplingHeight, blockHeight, chainName, consensusBranchId := common.GetSaplingInfo()
+	saplingHeight, blockHeight, chainName, consensusBranchID := common.GetSaplingInfo()
 
 	return &walletrpc.LightdInfo{
 		Version:                 common.Version,
@@ -201,7 +206,7 @@ func (s *LwdStreamer) GetLightdInfo(ctx context.Context, in *walletrpc.Empty) (*
 		TaddrSupport:            true,
 		ChainName:               chainName,
 		SaplingActivationHeight: uint64(saplingHeight),
-		ConsensusBranchId:       consensusBranchId,
+		ConsensusBranchID:       consensusBranchID,
 		BlockHeight:             uint64(blockHeight),
 	}, nil
 }
@@ -256,6 +261,7 @@ func (s *LwdStreamer) SendTransaction(ctx context.Context, rawtx *walletrpc.RawT
 // This rpc is used only for testing.
 var concurrent int64
 
+// Ping used for testing
 func (s *LwdStreamer) Ping(ctx context.Context, in *walletrpc.Duration) (*walletrpc.PingResponse, error) {
 	var response walletrpc.PingResponse
 	response.Entry = atomic.AddInt64(&concurrent, 1)
@@ -264,27 +270,27 @@ func (s *LwdStreamer) Ping(ctx context.Context, in *walletrpc.Duration) (*wallet
 	return &response, nil
 }
 
-// Darkside
+// DarksideGetIncomingTransactions used for testing
 func (s *DarksideStreamer) DarksideGetIncomingTransactions(in *walletrpc.Empty, resp walletrpc.DarksideStreamer_DarksideGetIncomingTransactionsServer) error {
 	// Get all of the new incoming transactions evil zcashd has accepted.
 	result, rpcErr := common.RawRequest("x_getincomingtransactions", nil)
 
-	var new_txs []string
+	var newTxs []string
 	if rpcErr != nil {
 		return rpcErr
 	}
-	err := json.Unmarshal(result, &new_txs)
+	err := json.Unmarshal(result, &newTxs)
 
 	if err != nil {
 		return err
 	}
 
-	for _, tx_str := range new_txs {
-		tx_bytes, err := hex.DecodeString(tx_str)
+	for _, txStr := range newTxs {
+		txBytes, err := hex.DecodeString(txStr)
 		if err != nil {
 			return err
 		}
-		err = resp.Send(&walletrpc.RawTransaction{Data: tx_bytes, Height: 0})
+		err = resp.Send(&walletrpc.RawTransaction{Data: txBytes, Height: 0})
 		if err != nil {
 			return err
 		}
@@ -293,6 +299,7 @@ func (s *DarksideStreamer) DarksideGetIncomingTransactions(in *walletrpc.Empty, 
 	return nil
 }
 
+// DarksideSetState used for testing
 func (s *DarksideStreamer) DarksideSetState(ctx context.Context, state *walletrpc.DarksideLightwalletdState) (*walletrpc.Empty, error) {
 	match, err := regexp.Match("\\A[a-zA-Z0-9]+\\z", []byte(state.BranchID))
 	if err != nil || !match {

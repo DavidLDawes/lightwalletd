@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2020 The Zcash developers
+// Package frontend Copyright (c) 2019-2020 The Zcash developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or https://www.opensource.org/licenses/mit-license.php .
 package frontend
@@ -11,6 +11,8 @@ import (
 	ini "gopkg.in/ini.v1"
 )
 
+// NewVRPCFromConf gets the VRSC RPC connection using the configured path
+// to reach the VRSC.conf file
 func NewVRPCFromConf(confPath interface{}) (*rpcclient.Client, error) {
 	connCfg, err := connFromConf(confPath)
 	if err != nil {

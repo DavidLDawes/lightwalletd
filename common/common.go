@@ -228,10 +228,12 @@ func BlockIngestor(c *BlockCache, db *sql.DB, rep int) {
 			Log.Fatal("Cache add failed:", err)
 		}
 
-		// Add it to PostgreSQL DB
-		result, err := persistToDB(db, block.Height, block.Hash, block.PrevHash, block.Time, block.GetHeader(), block.GetVtx())
-		if err != nil {
-			Log.Fatal(result, err)
+		// Add it to PostgreSQL
+		if db != nil {
+			result, err := persistToDB(db, block.Height, block.Hash, block.PrevHash, block.Time, block.GetHeader(), block.GetVtx())
+			if err != nil {
+				Log.Fatal(result, err)
+			}
 		}
 
 		// Don't log these too often.
@@ -313,7 +315,7 @@ func SetupPreparedStatements(db *sql.DB) (string, error) {
 
 	// Also the update prepared statement for the outermost record,
 	// blocks, in case of reorg
-	stmtBlockDelete, err = db.Prepare("DELETE blocks WHERE height = $1;")
+	stmtBlockDelete, err = db.Prepare("DELETE FROM blocks WHERE height = $1;")
 	if err != nil {
 		return "Unable to prepare SQL blocks delete statement", err
 	}
