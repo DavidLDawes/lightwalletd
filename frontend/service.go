@@ -17,8 +17,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/asherda/lightwalletd/common"
-	"github.com/asherda/lightwalletd/walletrpc"
+	"github.com/Asherda/lightwalletd/common"
+	"github.com/Asherda/lightwalletd/walletrpc"
 )
 
 type lwdStreamer struct {
@@ -259,7 +259,7 @@ func (s *lwdStreamer) SendTransaction(ctx context.Context, rawtx *walletrpc.RawT
 	}, nil
 }
 
-func getTaddressBalanceZcashdRpc(addressList []string) (*walletrpc.Balance, error) {
+func getTaddressBalanceZcashdRPC(addressList []string) (*walletrpc.Balance, error) {
 	params := make([]json.RawMessage, 1)
 	addrList := "{\"addresses\":["
 	notFirst := false
@@ -289,7 +289,7 @@ func getTaddressBalanceZcashdRpc(addressList []string) (*walletrpc.Balance, erro
 
 // GetTaddressBalance returns the total balance for a list of taddrs
 func (s *lwdStreamer) GetTaddressBalance(ctx context.Context, addresses *walletrpc.AddressList) (*walletrpc.Balance, error) {
-	return getTaddressBalanceZcashdRpc(addresses.Addresses)
+	return getTaddressBalanceZcashdRPC(addresses.Addresses)
 }
 
 // GetTaddressBalanceStream returns the total balance for a list of taddrs
@@ -305,7 +305,7 @@ func (s *lwdStreamer) GetTaddressBalanceStream(addresses walletrpc.CompactTxStre
 		}
 		addressList = append(addressList, addr.Address)
 	}
-	balance, err := getTaddressBalanceZcashdRpc(addressList)
+	balance, err := getTaddressBalanceZcashdRPC(addressList)
 	if err != nil {
 		return err
 	}
@@ -324,7 +324,7 @@ func (s *lwdStreamer) Ping(ctx context.Context, in *walletrpc.Duration) (*wallet
 	return &response, nil
 }
 
-// SetMetaState lets the test driver control some GetLightdInfo values.
+// Reset lets the test driver control some GetLightdInfo values.
 func (s *DarksideStreamer) Reset(ctx context.Context, ms *walletrpc.DarksideMetaState) (*walletrpc.Empty, error) {
 	match, err := regexp.Match("\\A[a-fA-F0-9]+\\z", []byte(ms.BranchID))
 	if err != nil || !match {

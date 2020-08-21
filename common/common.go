@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/asherda/lightwalletd/parser"
-	"github.com/asherda/lightwalletd/walletrpc"
+	"github.com/Asherda/lightwalletd/parser"
+	"github.com/Asherda/lightwalletd/walletrpc"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -25,6 +25,7 @@ var (
 	BuildUser = ""
 )
 
+// Options structure containing variables for our command line options
 type Options struct {
 	GRPCBindAddr      string `json:"grpc_bind_address,omitempty"`
 	HTTPBindAddr      string `json:"http_bind_address,omitempty"`
@@ -54,14 +55,18 @@ var Sleep func(d time.Duration)
 var Log *logrus.Entry
 
 type (
+	// Upgradeinfo kept pnly the ActivationHeight field
 	Upgradeinfo struct {
 		// there are other fields that aren't needed here, omit them
 		ActivationHeight int
 	}
+	// ConsensusInfo Nextblock and Chaintip
 	ConsensusInfo struct {
 		Nextblock string
 		Chaintip  string
 	}
+
+	// Blockchaininfo Includes Chain, Upgrades - UpgradeInfo map, Headers and Consensus
 	Blockchaininfo struct {
 		Chain     string
 		Upgrades  map[string]Upgradeinfo

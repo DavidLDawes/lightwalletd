@@ -19,7 +19,7 @@ stages:
   - monitor
 
 before_script:
-  - apk update && apk add make git gcc musl-dev curl bash boost-dev cmake cmake-doc extra-cmake-modules extra-cmake-modules-doc
+  - apk update && apk add make git gcc musl-dev curl bash
 
 # ************************************************************************/
 # BUILD

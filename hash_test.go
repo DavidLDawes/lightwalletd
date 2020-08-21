@@ -6,33 +6,31 @@ import (
 	"testing"
 	"unsafe"
 
-	"github.com/asherda/lightwalletd/parser/verushash"
+	"github.com/Asherda/lightwalletd/parser/verushash"
 )
 
 // VerusHash holds the VerusHash object used for the VerusCoin hashing methods
 var VerusHash = verushash.NewVerushash()
 
 func checkV2b2hash(header string, expected string) bool {
-	vh2_testdata, err := hex.DecodeString(header)
-	if err != nil || len(vh2_testdata) < 1 {
+	vh2Testdata, err := hex.DecodeString(header)
+	if err != nil || len(vh2Testdata) < 1 {
 		fmt.Printf("Failed to decode '%s'\n", header)
 		return false
-	} else {
-		//fmt.Printf("Hashing '%s'\n", header)
-
-		vh2 := string(vh2_testdata[:])
-		hash := make([]byte, 32)
-		ptrHash := uintptr(unsafe.Pointer(&hash[0]))
-
-		VerusHash.Verushash_v2b2(string(vh2), ptrHash)
-
-		if hex.EncodeToString(hash) != expected {
-			fmt.Printf("got %v\nbut expected %v\n", hex.EncodeToString(hash), expected)
-			return false
-		} else {
-			return true
-		}
 	}
+	//fmt.Printf("Hashing '%s'\n", header)
+
+	vh2 := string(vh2Testdata[:])
+	hash := make([]byte, 32)
+	ptrHash := uintptr(unsafe.Pointer(&hash[0]))
+
+	VerusHash.Verushash_v2b2(string(vh2), ptrHash)
+
+	if hex.EncodeToString(hash) != expected {
+		fmt.Printf("got %v\nbut expected %v\n", hex.EncodeToString(hash), expected)
+		return false
+	}
+	return true
 }
 
 func TestHashV2b2(t *testing.T) {

@@ -12,7 +12,7 @@ import (
 	"unsafe"
 
 	verushash "github.com/Asherda/Go-VerusHash"
-	"github.com/asherda/lightwalletd/parser/internal/bytestring"
+	"github.com/Asherda/lightwalletd/parser/internal/bytestring"
 	"github.com/pkg/errors"
 )
 
@@ -133,6 +133,7 @@ func NewBlockHeader() *BlockHeader {
 	}
 }
 
+// BlockHeaderFromParts assembles a blockheader out of the usual inputs
 func BlockHeaderFromParts(version int32, prevhash []byte, merkleroot []byte, saplingroot []byte, time uint32, nbitsbytes []byte, nonce []byte, solution []byte) *BlockHeader {
 	return &BlockHeader{
 		RawBlockHeader: &RawBlockHeader{

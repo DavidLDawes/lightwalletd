@@ -1,3 +1,4 @@
+// Package testclient
 /*
  *
  * Copyright 2015 gRPC authors.
@@ -30,7 +31,7 @@ import (
 	"sync"
 	"time"
 
-	pb "github.com/asherda/lightwalletd/walletrpc"
+	pb "github.com/Asherda/lightwalletd/walletrpc"
 	"google.golang.org/grpc"
 )
 
@@ -38,6 +39,7 @@ const (
 	address = "localhost:9067"
 )
 
+// Options structure with variables for our command line options
 type Options struct {
 	concurrency int    `json:"concurrency"`
 	iterations  int    `json:"iterations"`
