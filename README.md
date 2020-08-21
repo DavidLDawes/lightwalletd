@@ -5,7 +5,10 @@ This is an alpha build and is currently under active development. Please be advi
 - The code **has not been subjected to thorough review** by engineers at the Electric Coin Company
 - We **are actively changing** the codebase and adding features where/when needed
 
-The current version always reloads the data each time it starts. Data is loaded starting with block 1. until the most recent block is reached. After that new blocks are added as we get them, until the next restart, then it reloads etc.
+On initial startup lightwalletd starts loading all the blocks starting from block 1. As they are loaded they are added to a disk file, the local cache.
+
+Once all blocks are added, lightwalletd continues waiting for more blocks, adding them as they occur. If lightwalletd is stopped then restrarted, it picks up where it left off usig the disk cache and continues ingesting new blocks as they occur.
+
 🔒 Security Warnings
 
 The Lightwalletd Server is experimental and a work in progress. Use it at your own risk. Developers should familiarize themselves with the [wallet app threat model](https://zcash.readthedocs.io/en/latest/rtd_pages/wallet_threat_model.html), since it contains important information about the security and privacy limitations of light wallets that use Lightwalletd.
@@ -14,9 +17,9 @@ The Lightwalletd Server is experimental and a work in progress. Use it at your o
 
 # Overview
 
-[lightwalletd](https://github.com/Asherda/lightwalletd) is a backend service that provides a bandwidth-efficient interface to the VerusCoin blockchain. Currently, lightwalletd supports the Sapling protocol version as its primary concern. The intended purpose of lightwalletd is to support the development of mobile-friendly shielded light wallets. The VerusCOin developers are porting this to the VerusCoin VRSC chain now. This version uses verusd rather than zcashd, but still has the old zcashd hashing support so it does not work yet. It thinks we are stuck at a reord immediately. Next PR should fix that and get lightwalletd working properly against VerusCoin's VESC chain using verusd.
+[lightwalletd](https://github.com/Asherda/lightwalletd) is a backend service that provides a bandwidth-efficient interface to the VerusCoin blockchain. Currently, lightwalletd supports the Sapling protocol version as its primary concern. The intended purpose of lightwalletd is to support the development of mobile-friendly shielded light wallets.
 
-lightwalletd is a backend service that provides a bandwidth-efficient interface to the Zcash blockchain for mobile and other wallets, such as [Zecwallet](https://github.com/adityapk00/zecwallet-lite-lib).
+The VerusCoin developers ported lightwalletd to the VerusCoin VRSC chain. This version uses verusd rather than zcashd and implements the new VerusCoin hashing algorithms, up to and including V2b2. 
 
 Lightwalletd has not yet undergone audits or been subject to rigorous testing. It lacks some affordances necessary for production-level reliability. We do not recommend using it to handle customer funds at this time (April 2020).
 
