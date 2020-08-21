@@ -13,10 +13,11 @@ The Lightwalletd Server is experimental and a work in progress. Use it at your o
 ---
 
 # Overview
+[lightwalletd](https://github.com/Asherda/lightwalletd) is a backend service that provides a bandwidth-efficient interface to the VerusCoin blockchain. Currently, lightwalletd supports the Sapling protocol version as its primary concern. The intended purpose of lightwalletd is to support the development of mobile-friendly shielded light wallets.
 
-[lightwalletd](https://github.com/Asherda/lightwalletd) is a backend service that provides a bandwidth-efficient interface to the VerusCoin blockchain. Currently, lightwalletd supports the Sapling protocol version as its primary concern. The intended purpose of lightwalletd is to support the development of mobile-friendly shielded light wallets. The VerusCOin developers are porting this to the VerusCoin VRSC chain now. This version uses verusd rather than zcashd, but still has the old zcashd hashing support so it does not work yet. It thinks we are stuck at a reord immediately. Next PR should fix that and get lightwalletd working properly against VerusCoin's VESC chain using verusd.
+The VerusCoin developers ported lightwalletd to the VerusCoin VRSC chain now. This version uses verusd rather than zcashd, and supports the correct VerusHash implem,entations through V2b2.
 
-lightwalletd is a backend service that provides a bandwidth-efficient interface to the Zcash blockchain for mobile and other wallets, such as [Zecwallet](https://github.com/adityapk00/zecwallet-lite-lib).
+lightwalletd is a backend service that provides a bandwidth-efficient interface to the VerusCOin blockchain for mobile and other wallets, such as [Zecwallet](https://github.com/adityapk00/zecwallet-lite-lib).
 
 Lightwalletd has not yet undergone audits or been subject to rigorous testing. It lacks some affordances necessary for production-level reliability. We do not recommend using it to handle customer funds at this time (April 2020).
 
@@ -27,9 +28,25 @@ Documentation for lightwalletd clients (the gRPC interface) is in `docs/rtd/inde
 
 # Local/Developer Usage
 
+## Postgres Support
 This branch introduces storing the VRSC chain data in a PostgreSQL database.
 
-The initial simple implementation expects the DB on localhost:5432 and the schema can be created using SQL with the following commands:
+### Postgres CLI Options
+Enable Postgres support by adding the --sql command line option, the remaining settings and their defaults are:
++----------+-----------------+
+|Setting   |Default          |
++----------+-----------------+
+|sql-host  |localhost        |
+|sql-port  |5432             |
+|sql-user  |postgres         |
+|sql-pw    |mysecretpassword |
++----------+-----------------+
+If you setup a default postgres container with port 5432 mapped (which tthe hub.docker.com/postgres sets up by default, I thin) then default settings will work once you add --sql to the CLI.
+
+### Postgres Schema
+The Postgres implementation assumes the DB already exists and has the tables setup. 
+
+The following SQL commands create the schema used by lightwalletd when --sql is present on the CLI, so run these first. If not running postgres locally then set the host and other SQL command line options appropriately when running lightwalletd.
 ```
 CREATE DATABASE vrsc;
 

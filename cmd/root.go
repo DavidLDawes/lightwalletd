@@ -14,6 +14,7 @@ import (
 	"github.com/btcsuite/btcd/rpcclient"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -30,6 +31,7 @@ import (
 
 var cfgFile string
 var logger = logrus.New()
+var dbPool *pgxpool.Pool = nil
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -218,7 +220,9 @@ func startServer(opts *common.Options) error {
 		SQLPW:   opts.SQLPW,
 	}
 
-	dbPool := common.GetDBPool(cfg)
+	if opts.SQL {
+		dbPool = common.GetDBPool(cfg)
+	}
 
 	cache := common.NewBlockCache(dbPath, chainName, 1, opts.Redownload)
 	go common.BlockIngestor(cache, dbPool, 0 /*loop forever*/)
@@ -301,7 +305,7 @@ func init() {
 	rootCmd.Flags().Bool("sql", false, "enable SQL support - ingestor stores blocks, txs, spends and outputs in related tables, see README.md for schema")
 	rootCmd.Flags().String("sql-host", "localhost", "the host name or IP address of the SQL server, default is localhost")
 	rootCmd.Flags().Int("sql-port", 5432, "the TCP port to use to connect to the SQL server, default is 5432")
-	rootCmd.Flags().String("sql-name", "postgres", "the user name for the credentials to access the SQL server, default is postgres")
+	rootCmd.Flags().String("sql-user", "postgres", "the user name for the credentials to access the SQL server, default is postgres")
 	rootCmd.Flags().String("sql-pw", "mysecretpassword", "the password for the credentials to access the SQL server, default is mysecretpassword")
 	rootCmd.Flags().Bool("darkside-very-insecure", false, "run with GRPC-controllable mock zcashd for integration testing (shuts down after 30 minutes)")
 	rootCmd.Flags().Int("darkside-timeout", 30, "override 30 minute default darkside timeout")

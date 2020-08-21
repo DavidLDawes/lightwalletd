@@ -45,11 +45,11 @@ type Options struct {
 	NoTLSVeryInsecure bool   `json:"no_tls_very_insecure,omitempty"`
 	Redownload        bool   `json:"redownload"`
 	DataDir           string `json:"data-dir"`
-	SQL               bool   `json:"sql"`
-	SQLHost           string `json:"sql-host"`
+	SQL               bool   `json:"sql,omitempty"`
+	SQLHost           string `json:"sql-host,omitempty"`
 	SQLPort           uint   `json:"sql-port"`
-	SQLUser           string `json:"sql-user"`
-	SQLPW             string `json:"sql-pw"`
+	SQLUser           string `json:"sql-user,omitempty"`
+	SQLPW             string `json:"sql-pw,omitempty"`
 	Darkside          bool   `json:"darkside"`
 }
 
@@ -255,15 +255,21 @@ func BlockIngestor(c *BlockCache, dbPool *pgxpool.Pool, rep int) {
 		if err := c.Add(height, block); err != nil {
 			Log.Fatal("Cache add failed:", err)
 		}
-		conn, err := dbPool.Acquire(context.Background())
+		if dbPool != nil {
+			conn, err := dbPool.Acquire(context.Background())
 
-		// Add it to PostgreSQL
-		if conn != nil {
-			result, err := persistToDB(conn, block.Height, block.Hash, block.PrevHash, block.Time, block.GetHeader(), block.GetVtx())
-			if err != nil {
-				Log.Fatal(result, err)
+			if err == nil {
+				// Add it to PostgreSQL
+				if conn != nil {
+					result, err := persistToDB(conn, block.Height, block.Hash, block.PrevHash, block.Time, block.GetHeader(), block.GetVtx())
+					if err != nil {
+						Log.Fatal(result, err)
+					}
+					conn.Release()
+				}
+			} else {
+				Log.Fatal("DB update failed at height ", height, err)
 			}
-			conn.Release()
 		}
 
 		// Don't log these too often.
