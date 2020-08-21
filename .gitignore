@@ -19,3 +19,4 @@ cert.*
 parser/verushash/CMakeFiles
 CMakeCache.txt
 cmake_install.cmake
+.github

@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/btcsuite/btcd/rpcclient"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -55,8 +56,6 @@ var rootCmd = &cobra.Command{
 		common.Log.Debugf("Options: %#v\n", opts)
 
 		filesThatShouldExist := []string{
-			opts.TLSCertPath,
-			opts.TLSKeyPath,
 			opts.LogFile,
 		}
 		if !fileExists(opts.LogFile) {
@@ -65,14 +64,15 @@ var rootCmd = &cobra.Command{
 		if !opts.Darkside {
 			filesThatShouldExist = append(filesThatShouldExist, opts.VerusdConfPath)
 		}
+		if !opts.NoTLSVeryInsecure {
+			filesThatShouldExist = append(filesThatShouldExist,
+				opts.TLSCertPath, opts.TLSKeyPath)
+		}
 
 		for _, filename := range filesThatShouldExist {
-			if opts.NoTLSVeryInsecure && (filename == opts.TLSCertPath || filename == opts.TLSKeyPath) {
-				continue
-			}
 			if !fileExists(filename) {
 				os.Stderr.WriteString(fmt.Sprintf("\n  ** File does not exist: %s\n\n", filename))
-				os.Exit(1)
+				common.Log.Fatal("required file ", filename, " does not exist")
 			}
 		}
 
@@ -120,7 +120,7 @@ func startServer(opts *common.Options) error {
 	var server *grpc.Server
 
 	if opts.NoTLSVeryInsecure {
-		common.Log.Warningln("Starting insecure server")
+		common.Log.Warningln("Starting insecure no-TLS (plaintext) server")
 		fmt.Println("Starting insecure server")
 		server = grpc.NewServer(
 			grpc.StreamInterceptor(
@@ -132,7 +132,10 @@ func startServer(opts *common.Options) error {
 				grpc_prometheus.UnaryServerInterceptor),
 			))
 	} else {
-		transportCreds, err := credentials.NewServerTLSFromFile(opts.TLSCertPath, opts.TLSKeyPath)
+		var transportCreds credentials.TransportCredentials
+
+		var err error
+		transportCreds, err = credentials.NewServerTLSFromFile(opts.TLSCertPath, opts.TLSKeyPath)
 		if err != nil {
 			common.Log.WithFields(logrus.Fields{
 				"cert_file": opts.TLSCertPath,
@@ -163,10 +166,16 @@ func startServer(opts *common.Options) error {
 	// sending transactions, but in the future it could back a different type
 	// of block streamer.
 
+	var saplingHeight int
+	var blockHeight int
+	var chainName string
+	var branchID string
+	var rpcClient *rpcclient.Client
+	var err error
 	if opts.Darkside {
-		common.RawRequest = common.DarkSideRawRequest
+		chainName = "darkside"
 	} else {
-		rpcClient, err := frontend.NewVRPCFromConf(opts.VerusdConfPath)
+		rpcClient, err = frontend.NewVRPCFromConf(opts.VerusdConfPath)
 		if err != nil {
 			common.Log.WithFields(logrus.Fields{
 				"error": err,
@@ -174,12 +183,14 @@ func startServer(opts *common.Options) error {
 		}
 		// Indirect function for test mocking (so unit tests can talk to stub functions).
 		common.RawRequest = rpcClient.RawRequest
+		// Get the sapling activation height from the RPC
+		// (this first RPC also verifies that we can communicate with zcashd)
+		saplingHeight, blockHeight, chainName, branchID = common.GetSaplingInfo()
+		common.Log.Info("Got sapling height ", saplingHeight,
+			" block height ", blockHeight,
+			" chain ", chainName,
+			" branchID ", branchID)
 	}
-
-	// Get the sapling activation height from the RPC
-	// (this first RPC also verifies that we can communicate with zcashd)
-	saplingHeight, blockHeight, chainName, branchID := common.GetSaplingInfo()
-	common.Log.Info("Got sapling height ", saplingHeight, " block height ", blockHeight, " chain ", chainName, " branchID ", branchID)
 
 	dbPath := filepath.Join(opts.DataDir, "db")
 	if opts.Darkside {
@@ -195,7 +206,17 @@ func startServer(opts *common.Options) error {
 		os.Exit(1)
 	}
 	cache := common.NewBlockCache(dbPath, chainName, 1, opts.Redownload)
-	go common.BlockIngestor(cache, 0 /*loop forever*/)
+	if !opts.Darkside {
+		go common.BlockIngestor(cache, 0 /*loop forever*/)
+	} else {
+		// Darkside wants to control starting the block ingestor.
+		// Original code:
+		// common.DarksideInit(cache, int(opts.DarksideTimeout))
+		//
+		// Somewhere in the merges I lost opts.DarksideTimeout, so I'll
+		// just default it to 1 (which is in minutes)
+		common.DarksideInit(cache, 1)
+	}
 
 	// Compact transaction service initialization
 	{
@@ -269,9 +290,11 @@ func init() {
 	rootCmd.Flags().String("verusd-conf-path", "./verusd.conf", "conf file to pull VRSC RPC creds from")
 	rootCmd.Flags().String("zcash-conf-path", "./zcash.conf", "conf file to pull ZCash RPC creds from, not supported as we switch to VRSC")
 	rootCmd.Flags().Bool("no-tls-very-insecure", false, "run without the required TLS certificate, only for debugging, DO NOT use in production")
+	rootCmd.Flags().Bool("gen-cert-very-insecure", false, "run with self-signed TLS certificate, only for debugging, DO NOT use in production")
 	rootCmd.Flags().Bool("redownload", false, "re-fetch all blocks from zcashd; reinitialize local cache files")
 	rootCmd.Flags().String("data-dir", "/var/lib/lightwalletd", "data directory (such as db)")
 	rootCmd.Flags().Bool("darkside-very-insecure", false, "run with GRPC-controllable mock zcashd for integration testing (shuts down after 30 minutes)")
+	rootCmd.Flags().Int("darkside-timeout", 30, "override 30 minute default darkside timeout")
 
 	viper.BindPFlag("grpc-bind-addr", rootCmd.Flags().Lookup("grpc-bind-addr"))
 	viper.SetDefault("grpc-bind-addr", "127.0.0.1:9077")
@@ -289,14 +312,22 @@ func init() {
 	viper.SetDefault("verusd-conf-path", "./VRSC.conf")
 	viper.BindPFlag("zcash-conf-path", rootCmd.Flags().Lookup("zcash-conf-path"))
 	viper.SetDefault("zcash-conf-path", "./zcash.conf")
+	viper.BindPFlag("rpcuser", rootCmd.Flags().Lookup("rpcuser"))
+	viper.BindPFlag("rpcpassword", rootCmd.Flags().Lookup("rpcpassword"))
+	viper.BindPFlag("rpchost", rootCmd.Flags().Lookup("rpchost"))
+	viper.BindPFlag("rpcport", rootCmd.Flags().Lookup("rpcport"))
 	viper.BindPFlag("no-tls-very-insecure", rootCmd.Flags().Lookup("no-tls-very-insecure"))
 	viper.SetDefault("no-tls-very-insecure", false)
+	viper.BindPFlag("gen-cert-very-insecure", rootCmd.Flags().Lookup("gen-cert-very-insecure"))
+	viper.SetDefault("gen-cert-very-insecure", false)
 	viper.BindPFlag("redownload", rootCmd.Flags().Lookup("redownload"))
 	viper.SetDefault("redownload", false)
 	viper.BindPFlag("data-dir", rootCmd.Flags().Lookup("data-dir"))
 	viper.SetDefault("data-dir", "/var/lib/lightwalletd")
 	viper.BindPFlag("darkside-very-insecure", rootCmd.Flags().Lookup("darkside-very-insecure"))
 	viper.SetDefault("darkside-very-insecure", false)
+	viper.BindPFlag("darkside-timeout", rootCmd.Flags().Lookup("darkside-timeout"))
+	viper.SetDefault("darkside-timeout", 30)
 
 	logger.SetFormatter(&logrus.TextFormatter{
 		//DisableColors:          true,

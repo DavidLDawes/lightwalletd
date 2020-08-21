@@ -8,7 +8,7 @@ This is an alpha build and is currently under active development. Please be advi
 The current version always reloads the data each time it starts. Data is loaded starting with block 1. until the most recent block is reached. After that new blocks are added as we get them, until the next restart, then it reloads etc.
 🔒 Security Warnings
 
-The Lightwalletd server is experimental software. Use it at your own risk.
+The Lightwalletd Server is experimental and a work in progress. Use it at your own risk. Developers should familiarize themselves with the [wallet app threat model](https://zcash.readthedocs.io/en/latest/rtd_pages/wallet_threat_model.html), since it contains important information about the security and privacy limitations of light wallets that use Lightwalletd.
 
 ---
 

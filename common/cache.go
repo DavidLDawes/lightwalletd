@@ -1,6 +1,8 @@
 // Copyright (c) 2019-2020 The Zcash developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or https://www.opensource.org/licenses/mit-license.php .
+
+// Package common contains utilities that are shared by other packages.
 package common
 
 import (
@@ -17,10 +19,6 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-type blockCacheEntry struct {
-	data []byte
-}
-
 // BlockCache contains a consecutive set of recent compact blocks in marshalled form.
 type BlockCache struct {
 	lengthsName, blocksName string // pathnames
@@ -32,19 +30,28 @@ type BlockCache struct {
 	mutex                   sync.RWMutex
 }
 
+// GetNextHeight returns the height of the lowest unobtained block.
 func (c *BlockCache) GetNextHeight() int {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 	return c.nextBlock
 }
 
+// GetFirstHeight returns the height of the lowest block (usually Sapling activation).
+func (c *BlockCache) GetFirstHeight() int {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+	return c.firstBlock
+}
+
+// GetLatestHash returns the hash (block ID) of the most recent (highest) known block.
 func (c *BlockCache) GetLatestHash() []byte {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 	return c.latestHash
 }
 
-//  HashMismatch indicates if the given prev-hash doesn't match the most recent block's hash
+// HashMismatch indicates if the given prev-hash doesn't match the most recent block's hash
 // so reorgs can be detected.
 func (c *BlockCache) HashMismatch(prevhash []byte) bool {
 	c.mutex.RLock()
@@ -175,6 +182,13 @@ func (c *BlockCache) setLatestHash() {
 	}
 }
 
+// Reset is used only for darkside testing.
+func (c *BlockCache) Reset(startHeight int) {
+	c.setDbFiles(c.firstBlock) // empty the cache
+	c.firstBlock = startHeight
+	c.nextBlock = startHeight
+}
+
 // NewBlockCache returns an instance of a block cache object.
 // (No locking here, we assume this is single-threaded.)
 func NewBlockCache(dbPath string, chainName string, startHeight int, redownload bool) *BlockCache {
@@ -267,7 +281,7 @@ func (c *BlockCache) Add(height int, block *walletrpc.CompactBlock) error {
 	}
 	bheight := int(block.Height)
 
-	// TODO COINBASE-HEIGHT: restore this check after coinbase height is fixed
+	// XXX check? TODO COINBASE-HEIGHT: restore this check after coinbase height is fixed
 	if false && bheight != height {
 		// This could only happen if verusd returned the wrong
 		// block (not the height we requested).
@@ -365,12 +379,13 @@ func (c *BlockCache) GetLatestHeight() int {
 	return c.nextBlock - 1
 }
 
+// Sync ensures that the db files are flushed to disk, can be called unnecessarily.
 func (c *BlockCache) Sync() {
 	c.lengthsFile.Sync()
 	c.blocksFile.Sync()
 }
 
-// Currently used only for testing.
+// Close is Currently used only for testing.
 func (c *BlockCache) Close() {
 	// Some operating system require you to close files before you can remove them.
 	if c.lengthsFile != nil {

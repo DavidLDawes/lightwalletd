@@ -1,6 +1,8 @@
 // Copyright (c) 2019-2020 The Zcash developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or https://www.opensource.org/licenses/mit-license.php .
+
+// Package parser deserializes the block header from zcashd.
 package parser
 
 import (
@@ -19,8 +21,9 @@ const (
 	equihashSizeMainnet             = 1344 // size of a mainnet / testnet Equihash solution in bytes
 )
 
-// A block header as defined in version 2018.0-beta-29 of the Zcash Protocol Spec.
-type rawBlockHeader struct {
+// RawBlockHeader implements the block header as defined in version
+// 2018.0-beta-29 of the Zcash Protocol Spec.
+type RawBlockHeader struct {
 	// The block version number indicates which set of block validation rules
 	// to follow. The current and only defined block version number for Zcash
 	// is 4.
@@ -59,10 +62,10 @@ type rawBlockHeader struct {
 	Solution []byte
 }
 
+// BlockHeader extends RawBlockHeader by adding a cache for the block hash.
 type BlockHeader struct {
-	*rawBlockHeader
-	cachedHash      []byte
-	targetThreshold *big.Int
+	*RawBlockHeader
+	cachedHash []byte
 }
 
 // VerusHash holds the VerusHash object used for the VerusCoin hashing methods
@@ -98,17 +101,18 @@ func WriteCompactLengthPrefixedLen(buf *bytes.Buffer, length int) {
 	}
 }
 
-func WriteCompactLengthPrefixed(buf *bytes.Buffer, val []byte) {
+func writeCompactLengthPrefixed(buf *bytes.Buffer, val []byte) {
 	WriteCompactLengthPrefixedLen(buf, len(val))
 	binary.Write(buf, binary.LittleEndian, val)
 }
 
-func (hdr *rawBlockHeader) GetSize() int {
+func (hdr *RawBlockHeader) getSize() int {
 	return serBlockHeaderMinusEquihashSize + CompactLengthPrefixedLen(len(hdr.Solution))
 }
 
-func (hdr *rawBlockHeader) MarshalBinary() ([]byte, error) {
-	headerSize := hdr.GetSize()
+// MarshalBinary returns the block header in serialized form
+func (hdr *RawBlockHeader) MarshalBinary() ([]byte, error) {
+	headerSize := hdr.getSize()
 	backing := make([]byte, 0, headerSize)
 	buf := bytes.NewBuffer(backing)
 	binary.Write(buf, binary.LittleEndian, hdr.Version)
@@ -118,19 +122,20 @@ func (hdr *rawBlockHeader) MarshalBinary() ([]byte, error) {
 	binary.Write(buf, binary.LittleEndian, hdr.Time)
 	binary.Write(buf, binary.LittleEndian, hdr.NBitsBytes)
 	binary.Write(buf, binary.LittleEndian, hdr.Nonce)
-	WriteCompactLengthPrefixed(buf, hdr.Solution)
+	writeCompactLengthPrefixed(buf, hdr.Solution)
 	return backing[:headerSize], nil
 }
 
+// NewBlockHeader return a pointer to a new block header instance.
 func NewBlockHeader() *BlockHeader {
 	return &BlockHeader{
-		rawBlockHeader: new(rawBlockHeader),
+		RawBlockHeader: new(RawBlockHeader),
 	}
 }
 
 func BlockHeaderFromParts(version int32, prevhash []byte, merkleroot []byte, saplingroot []byte, time uint32, nbitsbytes []byte, nonce []byte, solution []byte) *BlockHeader {
 	return &BlockHeader{
-		rawBlockHeader: &rawBlockHeader{
+		RawBlockHeader: &RawBlockHeader{
 			Version:              version,
 			HashPrevBlock:        prevhash,
 			HashMerkleRoot:       merkleroot,
