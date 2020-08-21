@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/asherda/lightwalletd/common"
+	"github.com/Asherda/lightwalletd/common"
 	"github.com/spf13/cobra"
 )
 

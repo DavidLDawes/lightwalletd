@@ -35,9 +35,9 @@ GENERATED_FILES := docs/rtd/index.html walletrpc/compact_formats.pb.go walletrpc
 
 PWD := $(shell pwd)
 
-.PHONY: all dep build clean test coverage lint doc simpledoc
+.PHONY: all dep build clean test coverage lint doc simpledoc proto
 
-all: first-make-timestamp build-dep build $(GENERATED_FILES)
+all: first-make-timestamp build $(GENERATED_FILES)
 
 # Ensure that the generated files that are also in git source control are
 # initially more recent than the files they're generated from (so we don't try
@@ -85,6 +85,8 @@ doc: docs/rtd/index.html
 docs/rtd/index.html: walletrpc/compact_formats.proto walletrpc/service.proto walletrpc/darkside.proto
 	docker run --rm -v $(PWD)/docs/rtd:/out -v $(PWD)/walletrpc:/protos pseudomuto/protoc-gen-doc
 
+proto: walletrpc/service.pb.go walletrpc/darkside.pb.go
+
 walletrpc/service.pb.go: walletrpc/service.proto
 	cd walletrpc && protoc service.proto --go_out=plugins=grpc:.
 
@@ -128,13 +130,6 @@ docker_remove_all:
 # Get dependencies
 dep:
 	@go get -v -d ./...
-
-# Build Swig module
-build-dep:
-	cd parser/verushash && \
-	cmake . && \
-	make && \
-	swig -go -cgo -c++ -intgosize 64 verushash.i
 
 # Build binary
 build:

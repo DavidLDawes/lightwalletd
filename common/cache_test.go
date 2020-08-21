@@ -10,8 +10,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/asherda/lightwalletd/parser"
-	"github.com/asherda/lightwalletd/walletrpc"
+	"github.com/Asherda/lightwalletd/parser"
+	"github.com/Asherda/lightwalletd/walletrpc"
 )
 
 var compacts []*walletrpc.CompactBlock
@@ -46,9 +46,12 @@ func TestCache(t *testing.T) {
 	for _, test := range compactTests {
 		blockData, _ := hex.DecodeString(test.Full)
 		block := parser.NewBlock()
-		_, err = block.ParseFromSlice(blockData)
+		blockData, err = block.ParseFromSlice(blockData)
 		if err != nil {
 			t.Fatal(err)
+		}
+		if len(blockData) > 0 {
+			t.Error("Extra data remaining")
 		}
 		compacts = append(compacts, block.ToCompact())
 	}

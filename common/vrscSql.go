@@ -8,7 +8,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/asherda/lightwalletd/walletrpc"
+	"github.com/Asherda/lightwalletd/walletrpc"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pkg/errors"

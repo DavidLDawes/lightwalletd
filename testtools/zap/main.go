@@ -28,7 +28,7 @@ func main() {
 		fmt.Println("read failed:", n, err)
 		os.Exit(1)
 	}
-	b[0] += 1
+	b[0]++
 	if n, err := f.WriteAt(b, offset); err != nil || n != 1 {
 		fmt.Println("read failed:", n, err)
 		os.Exit(1)

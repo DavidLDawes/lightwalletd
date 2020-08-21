@@ -10,7 +10,8 @@ import (
 	"google.golang.org/grpc/peer"
 )
 
-func LoggingInterceptor() grpc.ServerOption {
+// Interceptor simply returns a UnaryInterceptor for the LogInterceptor
+func Interceptor() grpc.ServerOption {
 	return grpc.UnaryInterceptor(LogInterceptor)
 }
 
@@ -22,6 +23,7 @@ func loggerFromContext(ctx context.Context) *logrus.Entry {
 	return log.WithFields(logrus.Fields{"peer_addr": "unknown"})
 }
 
+// LogInterceptor adds duration and result details
 func LogInterceptor(
 	ctx context.Context,
 	req interface{},

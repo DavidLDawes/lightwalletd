@@ -43,10 +43,12 @@
 # Create layer in case you want to modify local lightwalletd code
 FROM golang:1.13 AS lightwalletd_base
 
-ADD . /go/src/github.com/asherda/lightwalletd
-WORKDIR /go/src/github.com/asherda/lightwalletd
+ADD . /go/src/github.com/Asherda/lightwalletd
+WORKDIR /go/src/github.com/Asherda/lightwalletd
 RUN make \
-  && /usr/bin/install -c ./lightwalletd /usr/local/bin/
+  && /usr/bin/install -c ./lightwalletd /usr/local/bin/ \
+  && mkdir -p /var/lib/lightwalletd/db \
+  && chown 2002:2002 /var/lib/lightwalletd/db
 
 ARG LWD_USER=lightwalletd
 ARG LWD_UID=2002

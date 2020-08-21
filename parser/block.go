@@ -1,34 +1,42 @@
 // Copyright (c) 2019-2020 The Zcash developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or https://www.opensource.org/licenses/mit-license.php .
+
+// Package parser deserializes blocks from zcashd.
 package parser
 
 import (
 	"fmt"
 
-	"github.com/asherda/lightwalletd/parser/internal/bytestring"
-	"github.com/asherda/lightwalletd/walletrpc"
+	"github.com/Asherda/lightwalletd/parser/internal/bytestring"
+	"github.com/Asherda/lightwalletd/walletrpc"
 	"github.com/pkg/errors"
 )
 
+// Block represents a full block (not a compact block).
 type Block struct {
 	hdr    *BlockHeader
 	vtx    []*Transaction
 	height int
 }
 
+// NewBlock constructs a block instance.
 func NewBlock() *Block {
 	return &Block{height: -1}
 }
 
+// GetVersion returns a block's version number (current 4)
 func (b *Block) GetVersion() int {
 	return int(b.hdr.Version)
 }
 
+// GetTxCount returns the number of transactions in the block,
+// including the coinbase transaction (minimum 1).
 func (b *Block) GetTxCount() int {
 	return len(b.vtx)
 }
 
+// Transactions returns the list of the block's transactions.
 func (b *Block) Transactions() []*Transaction {
 	// TODO: these should NOT be mutable
 	return b.vtx
@@ -46,12 +54,12 @@ func (b *Block) GetEncodableHash() []byte {
 	return b.hdr.GetEncodableHash()
 }
 
-// GetDisplayPrevHash returns the prevHash field from b *Block
+// GetDisplayPrevHash returns the block's previous hash in big-endian format.
 func (b *Block) GetDisplayPrevHash() []byte {
 	return b.hdr.GetDisplayPrevHash()
 }
 
-// HasSaplingTransactions returns true if b *Block has Sapling TXs
+// HasSaplingTransactions indicates if the block contains any Sapling tx.
 func (b *Block) HasSaplingTransactions() bool {
 	for _, tx := range b.vtx {
 		if tx.HasSaplingElements() {
@@ -64,7 +72,8 @@ func (b *Block) HasSaplingTransactions() bool {
 // see https://github.com/zcash/lightwalletd/issues/17#issuecomment-467110828
 const genesisTargetDifficulty = 520617983
 
-// GetHeight extracts the block height from the coinbase transaction. See BIP34. Returns block height on success, or -1 on error.
+// GetHeight extracts the block height from the coinbase transaction. See
+// BIP34. Returns block height on success, or -1 on error.
 func (b *Block) GetHeight() int {
 	if b.height != -1 {
 		return b.height
@@ -91,12 +100,12 @@ func (b *Block) GetHeight() int {
 	return int(blockHeight)
 }
 
-// GetPrevHash returns the prevHash from the header
+// GetPrevHash returns the hash of the block's previous block (little-endian).
 func (b *Block) GetPrevHash() []byte {
 	return b.hdr.HashPrevBlock
 }
 
-// ToCompact returns b *Block as a CompactBlock
+// ToCompact returns the compact representation of the full block.
 func (b *Block) ToCompact() *walletrpc.CompactBlock {
 	compactBlock := &walletrpc.CompactBlock{
 		//TODO ProtoVersion: 1,
@@ -117,7 +126,9 @@ func (b *Block) ToCompact() *walletrpc.CompactBlock {
 	return compactBlock
 }
 
-// ParseFromSlice extracts the block header
+// ParseFromSlice deserializes a block from the given data stream
+// and returns a slice to the remaining data. The caller should verify
+// there is no remaining data if none is expected.
 func (b *Block) ParseFromSlice(data []byte) (rest []byte, err error) {
 	hdr := NewBlockHeader()
 	data, err = hdr.ParseFromSlice(data)
@@ -133,7 +144,8 @@ func (b *Block) ParseFromSlice(data []byte) (rest []byte, err error) {
 	data = []byte(s)
 
 	vtx := make([]*Transaction, 0, txCount)
-	for i := 0; len(data) > 0; i++ {
+	var i int
+	for i = 0; i < txCount && len(data) > 0; i++ {
 		tx := NewTransaction()
 		data, err = tx.ParseFromSlice(data)
 		if err != nil {
@@ -141,9 +153,10 @@ func (b *Block) ParseFromSlice(data []byte) (rest []byte, err error) {
 		}
 		vtx = append(vtx, tx)
 	}
-
+	if i < txCount {
+		return nil, errors.New("parsing block transactions: not enough data")
+	}
 	b.hdr = hdr
 	b.vtx = vtx
-
 	return data, nil
 }
