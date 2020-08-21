@@ -41,18 +41,18 @@ const (
 
 // Options structure with variables for our command line options
 type Options struct {
-	concurrency int    `json:"concurrency"`
-	iterations  int    `json:"iterations"`
-	op          string `json:"op"`
-	verbose     *bool  `json:"v"`
+	Concurrency int    `json:"concurrency"`
+	Iterations  int    `json:"iterations"`
+	Op          string `json:"op"`
+	Verbose     *bool  `json:"v"`
 }
 
 func main() {
 	opts := &Options{}
-	flag.IntVar(&opts.concurrency, "concurrency", 1, "number of threads")
-	flag.IntVar(&opts.iterations, "iterations", 1, "number of iterations")
-	flag.StringVar(&opts.op, "op", "ping", "operation(ping|getlightdinfo|getblock|getblockrange)")
-	opts.verbose = flag.Bool("v", false, "verbose (print operation results)")
+	flag.IntVar(&opts.Concurrency, "concurrency", 1, "number of threads")
+	flag.IntVar(&opts.Iterations, "iterations", 1, "number of iterations")
+	flag.StringVar(&opts.Op, "op", "ping", "operation(ping|getlightdinfo|getblock|getblockrange)")
+	opts.Verbose = flag.Bool("v", false, "verbose (print operation results)")
 	flag.Parse()
 
 	// Remaining args are all integers (at least for now)
@@ -76,11 +76,11 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 100000*time.Second)
 	defer cancel()
 	var wg sync.WaitGroup
-	wg.Add(opts.concurrency)
-	for i := 0; i < opts.concurrency; i++ {
+	wg.Add(opts.Concurrency)
+	for i := 0; i < opts.Concurrency; i++ {
 		go func(i int) {
-			for j := 0; j < opts.iterations; j++ {
-				switch opts.op {
+			for j := 0; j < opts.Iterations; j++ {
+				switch opts.Op {
 				case "ping":
 					var a pb.Duration
 					a.IntervalUs = 8 * 1000 * 1000 // default 8 seconds
@@ -91,7 +91,7 @@ func main() {
 					if err != nil {
 						log.Fatalf("Ping failed: %v", err)
 					}
-					if *opts.verbose {
+					if *opts.Verbose {
 						log.Println("thr:", i, "entry:", r.Entry, "exit:", r.Exit)
 					}
 				case "getlightdinfo":
@@ -99,7 +99,7 @@ func main() {
 					if err != nil {
 						log.Fatalf("GetLightwalletdInfo failed: %v", err)
 					}
-					if *opts.verbose {
+					if *opts.Verbose {
 						log.Println("thr:", i, r)
 					}
 				case "getblock":
@@ -112,7 +112,7 @@ func main() {
 						log.Fatalf("GetLightwalletdInfo failed: %v", err)
 					}
 					// Height is enough to see if it's working
-					if *opts.verbose {
+					if *opts.Verbose {
 						log.Println("thr:", i, r.Height)
 					}
 				case "getblockrange":
@@ -138,12 +138,12 @@ func main() {
 							log.Fatal(err)
 						}
 						// Height is enough to see if it's working
-						if *opts.verbose {
+						if *opts.Verbose {
 							log.Println("thr:", i, r.Height)
 						}
 					}
 				default:
-					log.Fatalf("unknown op %s", opts.op)
+					log.Fatalf("unknown op %s", opts.Op)
 				}
 			}
 			wg.Done()
