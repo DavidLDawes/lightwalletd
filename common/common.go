@@ -55,17 +55,16 @@ var Sleep func(d time.Duration)
 var Log *logrus.Entry
 
 type (
-	// Upgradeinfo kept pnly the ActivationHeight field
+	// Upgradeinfo omit all except ActivationHeight
 	Upgradeinfo struct {
 		// there are other fields that aren't needed here, omit them
 		ActivationHeight int
 	}
-	// ConsensusInfo Nextblock and Chaintip
+	// ConsensusInfo contains Nextblock and Chaintip
 	ConsensusInfo struct {
 		Nextblock string
 		Chaintip  string
 	}
-
 	// Blockchaininfo Includes Chain, Upgrades - UpgradeInfo map, Headers and Consensus
 	Blockchaininfo struct {
 		Chain     string
