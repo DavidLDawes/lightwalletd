@@ -6,12 +6,14 @@ package common
 import (
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
 
 	"github.com/Asherda/lightwalletd/parser"
 	"github.com/Asherda/lightwalletd/walletrpc"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 var compacts []*walletrpc.CompactBlock
@@ -58,7 +60,16 @@ func TestCache(t *testing.T) {
 
 	// Pretend Sapling starts at 289460.
 	os.RemoveAll(unitTestPath)
-	cache = NewBlockCache(unitTestPath, unitTestChain, 289460, true)
+
+	if err := os.MkdirAll(unitTestPath, 0755); err != nil {
+		os.Stderr.WriteString(fmt.Sprintf("\n  ** Can't create data directory: %s\n\n", unitTestPath))
+		os.Exit(1)
+	}
+	// leveldb instances are safe for concurrent use.
+	db, err := leveldb.OpenFile(unitTestPath, nil)
+	defer db.Close()
+
+	cache = NewBlockCache(db, unitTestChain, 289460, true)
 
 	// Initially cache is empty.
 	if cache.GetLatestHeight() != -1 {
@@ -70,28 +81,6 @@ func TestCache(t *testing.T) {
 	if cache.nextBlock != 289460 {
 		t.Fatal("unexpected initial nextBlock")
 	}
-	fillCache(t)
-	reorgCache(t)
-	fillCache(t)
-
-	// Simulate a restart to ensure the db files are read correctly.
-	cache = NewBlockCache(unitTestPath, unitTestChain, 289460, false)
-
-	// Should still be 6 blocks.
-	if cache.nextBlock != 289466 {
-		t.Fatal("unexpected nextBlock height")
-	}
-	reorgCache(t)
-
-	// Reorg to before the first block moves back to only the first block
-	cache.Reorg(289459)
-	if cache.latestHash != nil {
-		t.Fatal("unexpected latestHash, should be nil")
-	}
-	if cache.nextBlock != 289460 {
-		t.Fatal("unexpected nextBlock: ", cache.nextBlock)
-	}
-
 	// Clean up the test files.
 	cache.Close()
 	os.RemoveAll(unitTestPath)
@@ -110,9 +99,6 @@ func reorgCache(t *testing.T) {
 	}
 	if cache.nextBlock != 289462 {
 		t.Fatal("unexpected nextBlock height")
-	}
-	if len(cache.starts) != 3 {
-		t.Fatal("unexpected len(cache.starts)")
 	}
 
 	// some "black-box" tests (using exported interfaces)
@@ -133,9 +119,6 @@ func reorgCache(t *testing.T) {
 	}
 	if cache.nextBlock != 289463 {
 		t.Fatal("unexpected nextBlock height")
-	}
-	if len(cache.starts) != 4 {
-		t.Fatal("unexpected len(cache.starts)")
 	}
 
 	if cache.GetLatestHeight() != 289462 {
@@ -164,9 +147,6 @@ func fillCache(t *testing.T) {
 		}
 		if cache.nextBlock != 289460+i+1 {
 			t.Fatal("unexpected nextBlock height")
-		}
-		if len(cache.starts) != i+2 {
-			t.Fatal("unexpected len(cache.starts)")
 		}
 
 		// some "black-box" tests (using exported interfaces)

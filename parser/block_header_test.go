@@ -57,6 +57,13 @@ func TestParseNBits(t *testing.T) {
 	}
 }
 
+var expectedHashes = []string{
+	"c55783bc1085e44d8d5205878bfcadb9e48ddb28f9096a7d45a8d1f6f6cbeb8e",
+	"6341437bb92e969a0813d875ac03281135f354c16bd31dae94c0c17bcd35b8b4",
+	"6aec0bb3f6d46c7ed2976f6ed75a8bdceefebe23905dda302cf670203bfa43e7",
+	"ce7dce5939e318bace89e4f45c4151e556c739337916603389f58842b26ff8eb",
+}
+
 func TestBlockHeader(t *testing.T) {
 	testBlocks, err := os.Open("../testdata/blocks")
 	if err != nil {
@@ -68,6 +75,8 @@ func TestBlockHeader(t *testing.T) {
 
 	scan := bufio.NewScanner(testBlocks)
 	var prevHash []byte
+	count := 0
+
 	for scan.Scan() {
 		blockDataHex := scan.Text()
 		blockData, err := hex.DecodeString(blockDataHex)
@@ -134,15 +143,14 @@ func TestBlockHeader(t *testing.T) {
 		}
 
 		// This is not necessarily true for anything but our current test cases.
-		for _, b := range hash[:4] {
-			if b != 0 {
-				t.Errorf("Hash lacked leading zeros: %x", hash)
-			}
+		if hex.EncodeToString(hash) != expectedHashes[count] {
+			t.Errorf("Hash is incorrect, got: %x but expected %s", hash, expectedHashes[count])
 		}
 		if prevHash != nil && !bytes.Equal(blockHeader.GetDisplayPrevHash(), prevHash) {
 			t.Errorf("Previous hash mismatch")
 		}
 		prevHash = hash
+		count++
 	}
 }
 

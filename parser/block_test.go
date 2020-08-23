@@ -248,11 +248,11 @@ func TestCompactBlocks(t *testing.T) {
 			continue
 		}
 		if hex.EncodeToString(block.GetDisplayHash()) != test.BlockHash {
-			t.Errorf("incorrect block hash in testnet block %x", test.BlockHash)
+			t.Errorf("incorrect block hash in testnet block %x, got ", block.GetDisplayHash())
 			continue
 		}
 		if hex.EncodeToString(block.GetDisplayPrevHash()) != test.PrevHash {
-			t.Errorf("incorrect block prevhash in testnet block %x", test.BlockHash)
+			t.Errorf("incorrect block prevhash in testnet block %x", block.GetDisplayHash())
 			continue
 		}
 		if !bytes.Equal(block.GetPrevHash(), block.hdr.HashPrevBlock) {

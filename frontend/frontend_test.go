@@ -19,6 +19,7 @@ import (
 	"github.com/Asherda/lightwalletd/common"
 	"github.com/Asherda/lightwalletd/walletrpc"
 	"github.com/sirupsen/logrus"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 var (
@@ -37,7 +38,10 @@ const (
 
 func testsetup() (walletrpc.CompactTxStreamerServer, *common.BlockCache) {
 	os.RemoveAll(unitTestPath)
-	cache := common.NewBlockCache(unitTestPath, unitTestChain, 380640, true)
+	// leveldb instances are safe for concurrent use.
+	db, err := leveldb.OpenFile(unitTestPath, nil)
+
+	cache := common.NewBlockCache(db, unitTestChain, 380640, true)
 	lwd, err := NewLwdStreamer(cache)
 	if err != nil {
 		os.Stderr.WriteString(fmt.Sprint("NewLwdStreamer failed:", err))
@@ -463,7 +467,7 @@ rpcuser = testlightwduser
 rpcpassword = testlightwdpassword
 `
 
-func TestNewZRPCFromConf(t *testing.T) {
+func TestNewVRPCFromConf(t *testing.T) {
 	connCfg, err := connFromConf([]byte(sampleconf))
 	if err != nil {
 		t.Fatal("connFromConf failed")
@@ -491,12 +495,12 @@ func TestNewZRPCFromConf(t *testing.T) {
 	}
 
 	// Can't verify returned values, but at least run it
-	_, err = NewZRPCFromConf([]byte(sampleconf))
+	_, err = NewVRPCFromConf([]byte(sampleconf))
 	if err != nil {
-		t.Fatal("NewZRPCFromClient failed")
+		t.Fatal("NewVRPCFromClient failed")
 	}
-	_, err = NewZRPCFromConf(10)
+	_, err = NewVRPCFromConf(10)
 	if err == nil {
-		t.Fatal("NewZRPCFromClient unexpected success")
+		t.Fatal("NewVRPCFromClient unexpected success")
 	}
 }

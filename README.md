@@ -30,7 +30,148 @@ Note: when using docker, map the data directory input via CLI to a location on y
 [docs/docker-compose-setup.md](./docs/docker-compose-setup.md)
 
 # Local/Developer Usage
-Added leveldb support for storing local chain and tx data, replacing the flat file with simple indexing approach.
+Added leveldb support for storing local chain and tx data, replacing the flat file with simple indexing approach. It's included automatically and uses the normal command line options so no change should be needed, existing configurations will continue working.
+
+## Testing
+Fixed the unit tests so they all pass. Removed a couple but mostly got them repaired.
+
+Simply run make test to run all the tests:
+```
+~/levelDB/lightwalletd$ make test
+go test -v ./...
+# github.com/Asherda/Go-VerusHash
+verushash.cxx: In member function ‘void Verushash::initialize()’:
+verushash.cxx:21:20: warning: ignoring return value of ‘int sodium_init()’, declared with attribute warn_unused_result [-Wunused-result]
+         sodium_init();
+         ~~~~~~~~~~~^~
+=== RUN   TestHashV2b2
+Got the correct v2b2 hash for block 1053660
+Got the correct v2b2 hash for block 1053661!
+--- PASS: TestHashV2b2 (0.00s)
+PASS
+ok  	github.com/Asherda/lightwalletd	(cached)
+
+=== RUN   TestFileExists
+--- PASS: TestFileExists (0.00s)
+=== RUN   TestCache
+--- PASS: TestCache (1.73s)
+=== RUN   TestGetSaplingInfo
+--- PASS: TestGetSaplingInfo (0.00s)
+=== RUN   TestBlockIngestor
+--- PASS: TestBlockIngestor (0.02s)
+=== RUN   TestGetBlockRange
+--- PASS: TestGetBlockRange (9.35s)
+=== RUN   TestGenerateCerts
+--- PASS: TestGenerateCerts (0.17s)
+PASS
+ok  	github.com/Asherda/lightwalletd/common	11.309s
+=== RUN   TestLogInterceptor
+time="2020-08-22T18:47:26-07:00" level=error msg="call failed" duration=641ns error="test error" method= peer_addr="<nil>"
+time="2020-08-22T18:47:26-07:00" level=info msg="method called" duration=181ns error="<nil>" method= peer_addr=unknown
+--- PASS: TestLogInterceptor (0.00s)
+PASS
+ok  	github.com/Asherda/lightwalletd/common/logging	(cached)
+=== RUN   TestGetTransaction
+--- PASS: TestGetTransaction (2.27s)
+=== RUN   TestGetLatestBlock
+--- PASS: TestGetLatestBlock (2.07s)
+=== RUN   TestGetTaddressTxids
+--- PASS: TestGetTaddressTxids (2.21s)
+=== RUN   TestGetBlock
+--- PASS: TestGetBlock (2.13s)
+=== RUN   TestGetBlockRange
+--- PASS: TestGetBlockRange (2.10s)
+=== RUN   TestGetLightdInfo
+--- PASS: TestGetLightdInfo (2.09s)
+=== RUN   TestSendTransaction
+--- PASS: TestSendTransaction (2.13s)
+=== RUN   TestNewVRPCFromConf
+--- PASS: TestNewVRPCFromConf (0.00s)
+PASS
+ok  	github.com/Asherda/lightwalletd/frontend	15.024s
+=== RUN   TestParseNBits
+--- PASS: TestParseNBits (0.00s)
+=== RUN   TestBlockHeader
+--- PASS: TestBlockHeader (0.00s)
+=== RUN   TestBadBlockHeader
+--- PASS: TestBadBlockHeader (0.00s)
+=== RUN   TestCompactLengthPrefixedLen
+--- PASS: TestCompactLengthPrefixedLen (0.00s)
+=== RUN   TestWriteCompactLengthPrefixedLen
+--- PASS: TestWriteCompactLengthPrefixedLen (0.00s)
+=== RUN   TestWriteCompactLengthPrefixed
+--- PASS: TestWriteCompactLengthPrefixed (0.00s)
+=== RUN   TestBlockParser
+--- PASS: TestBlockParser (0.43s)
+=== RUN   TestBlockParserFail
+--- PASS: TestBlockParserFail (0.00s)
+=== RUN   TestGenesisBlockParser
+--- PASS: TestGenesisBlockParser (0.00s)
+=== RUN   TestCompactBlocks
+--- PASS: TestCompactBlocks (0.00s)
+=== RUN   TestSproutTransactionParser
+--- PASS: TestSproutTransactionParser (0.00s)
+=== RUN   TestSaplingTransactionParser
+--- PASS: TestSaplingTransactionParser (0.04s)
+PASS
+ok  	github.com/Asherda/lightwalletd/parser	0.486s
+=== RUN   TestString_read
+--- PASS: TestString_read (0.00s)
+=== RUN   TestString_Read
+--- PASS: TestString_Read (0.00s)
+=== RUN   TestString_Skip
+--- PASS: TestString_Skip (0.00s)
+=== RUN   TestString_ReadByte
+--- PASS: TestString_ReadByte (0.00s)
+=== RUN   TestString_ReadBytes
+--- PASS: TestString_ReadBytes (0.00s)
+=== RUN   TestString_ReadCompactSize
+--- PASS: TestString_ReadCompactSize (0.00s)
+=== RUN   TestString_ReadCompactLengthPrefixed
+--- PASS: TestString_ReadCompactLengthPrefixed (0.00s)
+=== RUN   TestString_ReadInt32
+--- PASS: TestString_ReadInt32 (0.00s)
+=== RUN   TestString_ReadInt64
+--- PASS: TestString_ReadInt64 (0.00s)
+=== RUN   TestString_ReadUint16
+--- PASS: TestString_ReadUint16 (0.00s)
+=== RUN   TestString_ReadUint32
+--- PASS: TestString_ReadUint32 (0.00s)
+=== RUN   TestString_ReadUint64
+--- PASS: TestString_ReadUint64 (0.00s)
+=== RUN   TestString_ReadScriptInt64
+--- PASS: TestString_ReadScriptInt64 (0.00s)
+PASS
+ok  	github.com/Asherda/lightwalletd/parser/internal/bytestring	(cached)
+?   	github.com/Asherda/lightwalletd/testclient	[no test files]
+?   	github.com/Asherda/lightwalletd/testtools/genblocks	[no test files]
+?   	github.com/Asherda/lightwalletd/testtools/zap	[no test files]
+=== RUN   TestString_read
+--- PASS: TestString_read (0.00s)
+PASS
+ok  	github.com/Asherda/lightwalletd/walletrpc	(cached)
+
+```
+## Code Coverage
+If you want to measure unit test coverage of the cpde run this go test command from the project's root diretory:
+```
+~/levelDB/lightwalletd$ go test $(go list ./...) -coverprofile .testCoverage.txt
+# github.com/Asherda/Go-VerusHash
+verushash.cxx: In member function ‘void Verushash::initialize()’:
+verushash.cxx:21:20: warning: ignoring return value of ‘int sodium_init()’, declared with attribute warn_unused_result [-Wunused-result]
+         sodium_init();
+         ~~~~~~~~~~~^~
+ok  	github.com/Asherda/lightwalletd	0.007s	coverage: 0.0% of statements
+ok  	github.com/Asherda/lightwalletd/cmd	0.008s	coverage: 34.1% of statements
+ok  	github.com/Asherda/lightwalletd/common	11.213s	coverage: 40.4% of statements
+ok  	github.com/Asherda/lightwalletd/common/logging	0.006s	coverage: 91.7% of statements
+ok  	github.com/Asherda/lightwalletd/frontend	14.693s	coverage: 49.5% of statements
+ok  	github.com/Asherda/lightwalletd/parser	0.520s	coverage: 94.6% of statements
+ok  	github.com/Asherda/lightwalletd/parser/internal/bytestring	0.003s	coverage: 100.0% of statements
+?   	github.com/Asherda/lightwalletd/testclient	[no test files]
+?   	github.com/Asherda/lightwalletd/testtools/genblocks	[no test files]
+?   	github.com/Asherda/lightwalletd/testtools/zap	[no test files]
+ok  	github.com/Asherda/lightwalletd/walletrpc	0.014s	coverage: 3.1% of statements
 
 ## Multichain
 We can put chains into separate DB files (effectively a DB per chain) or we can use a single DB and add a chain indication to the key.

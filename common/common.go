@@ -123,7 +123,7 @@ func getBlockFromRPC(height int) (*walletrpc.CompactBlock, error) {
 
 	// For some reason, the error responses are not JSON
 	if rpcErr != nil {
-		// Check to see if we are requesting a height the zcashd doesn't have yet
+		// Check to see if we are requesting a height the verusd doesn't have yet
 		if (strings.Split(rpcErr.Error(), ":"))[0] == "-8" {
 			return nil, nil
 		}

@@ -111,9 +111,9 @@ func (c *BlockCache) readBlock(height int) *walletrpc.CompactBlock {
 		return nil
 	}
 
-	diskcs := cacheResult[:8]
+	cachecs := cacheResult[:8]
 	b := cacheResult[8:]
-	if !bytes.Equal(checksum(height, b), diskcs) {
+	if !bytes.Equal(checksum(height, b), cachecs) {
 		Log.Warning("bad block checksum at height: ", height)
 		return nil
 	}
@@ -249,8 +249,9 @@ func (c *BlockCache) Add(height int, block *walletrpc.CompactBlock) error {
 	if err != nil {
 		return err
 	}
-
-	err = c.storeNewBlock(height, data)
+	checkSummed := checksum(height, data)
+	checkSummed = append(checkSummed, data...)
+	err = c.storeNewBlock(height, checkSummed)
 	if err != nil {
 		Log.Fatal("hash write at height", height, "failed: ", err)
 	}
@@ -284,7 +285,7 @@ func (c *BlockCache) Reorg(height int) {
 	}
 
 	// Remove the end of the cache.
-	c.flushBlocks(height, c.nextBlock)
+	c.flushBlocks(height+1, c.nextBlock)
 
 	// adjust to the new height
 	c.nextBlock = height
@@ -350,8 +351,8 @@ func (c *BlockCache) flushBlock(id string, height int) {
 		Log.Warning("error flushing block at height: ", err)
 	}
 
-	var hashID []byte = make([]byte, 32)
-	copy(hashID, c.GetLatestHash())
+	var hashID []byte = make([]byte, 33)
+	copy(hashID, []byte(blockHashPrefix))
 	hashID = append(hashID, []byte(c.latestHash)...)
 	err = c.ldb.Delete(hashID, &opt.WriteOptions{Sync: false})
 	if err != nil {
