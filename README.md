@@ -89,14 +89,16 @@ We'll work that out, for now this gets us live on levelDB which, even with two w
 ## LevelDB
 Switching from the simple two file index & serialzed compact data approach to using levelDB via [goleveldb](https://github.com/syndtr/goleveldb.git).
 
-This gives us better performance at large scale. We support looking blocks up by block height. With 2 writes per block on my dev machine I'm getting about 3.4K blocks every 4 seconds. The old schem was more like 1.7K.
+This gives us better performance at large scale. We support looking blocks up by block height. With 2 writes per block on my dev machine I'm getting about 5.6K blocks every 4 seconds. The old schem was more like 1.7K.
 ### Progress - Max Block Height
 To simplify housekeeping, we record the highest block cached in leveldb. On restart this allows us to resume where we left off and avoid rescanning. We check that the new block's prior_hash matches our recorded hash for the last cached block, so if we get a reorg we will notice and rewind and re-cache the data.
 
 ### Corruption Check
 Every block record is prepended by an 8 byte checksum for the block that is calculated when we store it. Each time we get a value we redo the checksum to ensure nothing has been corrupted.
-### Reorg and --redownload
-If calculated hashes don't line up with prevHash from the next block we assume we hit a chain reorg and rewind, getting the blocks over again, checking the hashes and rewinding up to 100 blocks before giving up.
+### Validation, Reorg and --redownload
+Each time we load we scan through the DB to make sure all the block records are present and the compactBlock checksums are correct. If something is not correct we will fix the corruption, or at least try to. The current test suite does not clean u p after itself completely, and creates records at height 2.3m or something like that. After running the tests successfully, when I ran a normal lightwalletd pass it complained abou corruption and worked backward from 2.3M or so all the way down ti 1.15M where the real current records are, then continued from there. I'll take a look at fixing the tests, but for now they have that side effect. They also gave me a good solid test of the "recover from corruption" code and it works fine.
+
+Once the levelDB records have been validated, as each new block shows up we compare it's prevHash field to the has we calculated for the prior block. If they do not match we assume we hit a chain reorg and rewind, getting the prior blocks, checking the hashes and rewinding up to 100 blocks before giving up. Any typical fork will be resolved within a much smaller number of blocks so this is pretty reasonable.
 
 The key value store is idempotent, so as soon as we write a new value for a given height the old one is gone. There's the usual small risk of data loss due to failures since we do not sync on writes, but the system notices corrupted blocks and hash mismatches and automatically corrects for them, so it's pretty resilient.
 
@@ -104,7 +106,7 @@ Reorgs work on the most recent blocks, no more than 100 of them, presumably due 
 
 The --redownload flag on the command line makes lightwalletd flush the levelDB and reload from scratch. Note that we need to delete all the records previously stored for the block before adding a new one. Since we are single threaded and single process, and there is a single record per key type, this works fine. It takes about 8 seconds to delete them all on the current VerusCoin chain, wkich has a bit over 1M records in August 2020.
 
-We have a utility function to flush ranges of blocks in cache.go called flushBlocks(first int, last int)
+We have a utility function in the code to flush ranges of blocks in cache.go called flushBlocks(first int, last int)
 ### Schema
 We ingest the blockchain data and store the results. A siplified view of the result:
 An array of blocks

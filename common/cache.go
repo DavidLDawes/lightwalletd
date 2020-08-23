@@ -184,30 +184,16 @@ func NewBlockCache(db *leveldb.DB, chainName string, startHeight int, redownload
 		c.flushBlocks(c.firstBlock, c.nextBlock)
 	}
 
-	// TODO: Validate checksums switch on CLI?
-	/* skip the index checking stuff, no index managing now
-	for i = c.firstBlock; i < c.nextBlock; i++ {
-
-		// Fetch the next block, make sure things look good
-		// H prefox for height, 76b809bb is the VerusCoin chain main branchID
-		data, err := c.ldb.Get([]byte(blockHeightPrefix + strconv.Itoa(height)), nil)
-		if err != nil {
-			// Log.Warning("Cache miss ", err)
-			c.nextBlock = i
-			break
-		}
-		c.starts = append(c.starts, offset)
+	for i := c.firstBlock; i < c.nextBlock; i++ {
 		// Check for corruption.
-		block := c.readBlock(c.nextBlock)
+		block := c.readBlock(i)
 		if block == nil {
-			Log.Warning("error reading block")
+			Log.Warning("error, record not found reading block at height ", i, ", attempting to recover")
 			c.recoverFromCorruption(c.nextBlock)
 			break
 		}
 		c.nextBlock++
 	}
-	c.setDbFiles(c.nextBlock)
-	*/
 
 	Log.Info("Found ", c.nextBlock-c.firstBlock, " blocks in cache")
 	return c
