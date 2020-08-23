@@ -85,7 +85,7 @@ go tool cover -html=coverage.out
 ## Multichain
 We can put chains into separate DB files (effectively a DB per chain) or we can use a single DB and add a chain indication to the key.
 
-We'll work that out, for now this gets us live on levelDB which, even with multiple writes per record (3: block by height, block by hash, and max height) is almost twice as fast as the flat disk method used before. If speed of ingesting is the sole concern we could dopr the block by hash and height writes, and simply count records to get height, but that's risky/error prone.
+We'll work that out, for now this gets us live on levelDB which, even with two writes per record (block by height, max height) is about three times as fast as the flat disk method used before. If speed of ingesting is the sole concern we could dopr the block by hash and height writes, and simply count records to get height, but that's risky/error prone.
 
 We may want to also do a cross chain hashing approach, I'll think about that and add details if so (can't a single block be multichain, so they'd all have the same hash across chains? So we'd need a 2 part key, hash + chainID)
 ## LevelDB
@@ -105,11 +105,9 @@ We ingest the blockchain data and store the results. A siplified view of the res
 An array of blocks
 - Each block is serialized into a single []byte array called a compactBlock
 - The block contains block details and an array of TXs, each of which is a compactTX. Each TX contains arrays of spends and outputs; all are serialzied into a single array.
-- When storing the block, we save it under Bnnnnnnnn where nnnnnnnn is the block height and under Hhhhh... (32 characters)..hhh, where the 32 h characters are the actual hash value for the block.
+- When storing the block, we save it under Bnnnnnnnn where nnnnnnnn is the block height.
 - When we store a new "latestBlock" we store the height under the key Icccccccc where cccccccc is the chainID.
-#### Note on Hashes
-We store a second copy of each block using the blockhash (with unique preamble) as the key. We could do the same with every TX, storing a second copy of it w/hash + prefix as the key, if we ever want to allow looking up TX by hash. This has NOT been implemented, just a thought.
-## Zcashd
+## Verusd
 
 You must start a local instance of `verusd`, and its `VRSC.conf` file must include the following entries
 (set the user and password strings accordingly):
