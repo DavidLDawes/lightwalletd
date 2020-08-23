@@ -14,6 +14,7 @@ import (
 
 	"github.com/Asherda/lightwalletd/walletrpc"
 	"github.com/golang/protobuf/proto"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 )
@@ -27,11 +28,12 @@ const (
 
 // BlockCache contains a consecutive set of recent compact blocks in marshalled form.
 type BlockCache struct {
-	firstBlock int         // height of the first block in the cache (we start at 1)
-	nextBlock  int         // height of the first block not in the cache
-	latestHash []byte      // hash of the most recent (highest height) block, for detecting reorgs.
-	ldb        *leveldb.DB // levelDB connection
-	mutex      sync.RWMutex
+	firstBlock int           // height of the first block in the cache (we start at 1)
+	nextBlock  int           // height of the first block not in the cache
+	latestHash []byte        // hash of the most recent (highest height) block, for detecting reorgs.
+	ldb        *leveldb.DB   // levelDB connection
+	sql        *pgxpool.Pool //
+	mutex      sync.RWMutex  //
 }
 
 // GetNextHeight returns the height of the lowest unobtained block.
@@ -73,6 +75,7 @@ func (c *BlockCache) setDbHeight(height int) {
 			height = c.firstBlock
 		}
 		c.flushBlocks(height, c.nextBlock)
+		c.storeNewHeight(true)
 		c.Sync()
 		c.nextBlock = height
 		c.setLatestHash()
@@ -161,9 +164,10 @@ func (c *BlockCache) Reset(startHeight int) {
 //
 // Multichain may go to per chain DB, so each cache has a levelDB connection
 // for it's own DB & we can do multiple chains in a single lwd easily.
-func NewBlockCache(db *leveldb.DB, chainName string, startHeight int, redownload bool) *BlockCache {
+func NewBlockCache(db *leveldb.DB, chainName string, startHeight int, sqlPool *pgxpool.Pool, redownload bool) *BlockCache {
 	c := &BlockCache{}
 	c.ldb = db
+	c.sql = sqlPool
 	c.firstBlock = startHeight
 
 	// Fetch the cache highwater record for the VerusCOin chain cache
@@ -192,7 +196,6 @@ func NewBlockCache(db *leveldb.DB, chainName string, startHeight int, redownload
 			c.recoverFromCorruption(c.nextBlock)
 			break
 		}
-		c.nextBlock++
 	}
 
 	Log.Info("Found ", c.nextBlock-c.firstBlock, " blocks in cache")

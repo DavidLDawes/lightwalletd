@@ -30,8 +30,7 @@ Note: when using docker, map the data directory input via CLI to a location on y
 [docs/docker-compose-setup.md](./docs/docker-compose-setup.md)
 
 # Local/Developer Usage
-Added leveldb support for storing local chain and tx data, replacing the flat file with simple indexing approach. It's included automatically and uses the normal command line options so no change should be needed, existing configurations will continue working.
-
+Adding hooks for cache and db. Work in progress, simple scheme to allow an additional file for each - cache and persist - and hook it in via main.go.
 ## Testing
 Fixed the unit tests so they all pass. Removed a couple but mostly got them repaired.
 

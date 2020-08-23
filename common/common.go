@@ -6,6 +6,7 @@
 package common
 
 import (
+	"context"
 	"encoding/hex"
 	"encoding/json"
 	"strconv"
@@ -39,6 +40,11 @@ type Options struct {
 	NoTLSVeryInsecure bool   `json:"no_tls_very_insecure,omitempty"`
 	Redownload        bool   `json:"redownload"`
 	DataDir           string `json:"data-dir"`
+	SQL               bool   `json:"sql,omitempty"`
+	SQLHost           string `json:"sql-host,omitempty"`
+	SQLPort           uint   `json:"sql-port"`
+	SQLUser           string `json:"sql-user,omitempty"`
+	SQLPW             string `json:"sql-pw,omitempty"`
 	Darkside          bool   `json:"darkside"`
 }
 
@@ -269,6 +275,26 @@ func BlockIngestor(c *BlockCache, rep int) {
 		if err := c.Add(height, block); err != nil {
 			Log.Fatal("Cache add failed:", err)
 		}
+
+		if c.sql != nil {
+			conn, err := c.sql.Acquire(context.Background())
+			if err == nil {
+				// Add it to the SQL DB - Postgres style snytax
+				if conn != nil {
+					result, err := persistToDB(conn, block.Height, block.Hash, block.PrevHash, block.Time, block.GetHeader(), block.GetVtx())
+					if err != nil {
+						Log.Fatal(result, err)
+					}
+					conn.Release()
+				}
+			} else {
+				Log.Fatal("DB update failed at height ", height, err)
+				if conn != nil {
+					conn.Release()
+				}
+			}
+		}
+
 		// Don't log these too often.
 		if time.Now().Sub(lastLog).Seconds() >= 4 && c.GetNextHeight() == height+1 && height != lastHeightLogged {
 			lastLog = time.Now()

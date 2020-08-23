@@ -18,6 +18,7 @@ import (
 	"github.com/btcsuite/btcd/rpcclient"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -30,6 +31,7 @@ import (
 
 var cfgFile string
 var logger = logrus.New()
+var sqlPool *pgxpool.Pool = nil
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -50,6 +52,11 @@ var rootCmd = &cobra.Command{
 			NoTLSVeryInsecure: viper.GetBool("no-tls-very-insecure"),
 			DataDir:           viper.GetString("data-dir"),
 			Redownload:        viper.GetBool("redownload"),
+			SQL:               viper.GetBool("sql"),
+			SQLHost:           viper.GetString("sql-host"),
+			SQLPort:           viper.GetUint("sql-port"),
+			SQLUser:           viper.GetString("sql-user"),
+			SQLPW:             viper.GetString("sql-pw"),
 			Darkside:          viper.GetBool("darkside-very-insecure"),
 		}
 
@@ -209,7 +216,16 @@ func startServer(opts *common.Options) error {
 	db, err := leveldb.OpenFile(dbPath, nil)
 	defer db.Close()
 
-	cache := common.NewBlockCache(db, chainName, 1, opts.Redownload)
+	if opts.SQL {
+		sqlPool = common.GetDBPool(common.DbConfig{
+			SQLHost: opts.SQLHost,
+			SQLPort: opts.SQLPort,
+			SQLUser: opts.SQLUser,
+			SQLPW:   opts.SQLPW,
+		})
+	}
+
+	cache := common.NewBlockCache(db, chainName, 1, sqlPool, opts.Redownload)
 	if !opts.Darkside {
 		go common.BlockIngestor(cache, 0 /*loop forever*/)
 	} else {
@@ -297,6 +313,11 @@ func init() {
 	rootCmd.Flags().Bool("gen-cert-very-insecure", false, "run with self-signed TLS certificate, only for debugging, DO NOT use in production")
 	rootCmd.Flags().Bool("redownload", false, "re-fetch all blocks from zcashd; reinitialize local cache files")
 	rootCmd.Flags().String("data-dir", "/var/lib/lightwalletd", "data directory (such as db)")
+	rootCmd.Flags().Bool("sql", false, "enable SQL support - ingestor stores blocks, txs, spends and outputs in related tables, see README.md for schema")
+	rootCmd.Flags().String("sql-host", "localhost", "the host name or IP address of the SQL server, default is localhost")
+	rootCmd.Flags().Int("sql-port", 5432, "the TCP port to use to connect to the SQL server, default is 5432")
+	rootCmd.Flags().String("sql-user", "postgres", "the user name for the credentials to access the SQL server, default is postgres")
+	rootCmd.Flags().String("sql-pw", "mysecretpassword", "the password for the credentials to access the SQL server, default is mysecretpassword")
 	rootCmd.Flags().Bool("darkside-very-insecure", false, "run with GRPC-controllable mock zcashd for integration testing (shuts down after 30 minutes)")
 	rootCmd.Flags().Int("darkside-timeout", 30, "override 30 minute default darkside timeout")
 
@@ -328,7 +349,18 @@ func init() {
 	viper.SetDefault("redownload", false)
 	viper.BindPFlag("data-dir", rootCmd.Flags().Lookup("data-dir"))
 	viper.SetDefault("data-dir", "/var/lib/lightwalletd")
-	viper.BindPFlag("darkside-very-insecure", rootCmd.Flags().Lookup("darkside-very-insecure"))
+	viper.BindPFlag("sql", rootCmd.Flags().Lookup("sql"))
+	viper.SetDefault("sql", false)
+	viper.BindPFlag("sql-host", rootCmd.Flags().Lookup("sql-host"))
+	viper.SetDefault("sql-host", "localhost")
+	viper.BindPFlag("sql-port", rootCmd.Flags().Lookup("sql-port"))
+	viper.SetDefault("sql-port", 5432)
+	viper.BindPFlag("sql-user", rootCmd.Flags().Lookup("sql-user"))
+	viper.SetDefault("sql-user", "postgres")
+	viper.BindPFlag("sql-pw", rootCmd.Flags().Lookup("sql-pw"))
+	viper.SetDefault("sql-pw", "mysecretpassword")
+	viper.BindPFlag("darkside-very-insecure",
+		rootCmd.Flags().Lookup("darkside-very-insecure"))
 	viper.SetDefault("darkside-very-insecure", false)
 	viper.BindPFlag("darkside-timeout", rootCmd.Flags().Lookup("darkside-timeout"))
 	viper.SetDefault("darkside-timeout", 30)
