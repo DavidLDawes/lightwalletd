@@ -85,19 +85,24 @@ go tool cover -html=coverage.out
 ## Multichain
 We can put chains into separate DB files (effectively a DB per chain) or we can use a single DB and add a chain indication to the key.
 
-We'll work that out, for now this gets us live on levelDB which, even with two writes per record (block by height, max height) is about three times as fast as the flat disk method used before. If speed of ingesting is the sole concern we could dopr the block by hash and height writes, and simply count records to get height, but that's risky/error prone.
-
-We may want to also do a cross chain hashing approach, I'll think about that and add details if so (can't a single block be multichain, so they'd all have the same hash across chains? So we'd need a 2 part key, hash + chainID)
+We'll work that out, for now this gets us live on levelDB which, even with two writes per record (block by height and max height) is about three times as fast as the prior flat file method.
 ## LevelDB
 Switching from the simple two file index & serialzed compact data approach to using levelDB via [goleveldb](https://github.com/syndtr/goleveldb.git).
 
-This gives us better performance at large scale, and since our data is relational but quite simple, we can store it in ways that make the details accessible in useful ways. For now we are allowing lookups by block height or block hash. TX hash and so forth would be simple to add, although each additon slows the ingestor down. With 3 writes per block on my dev machine I'm getting about 3K blocks every 4 seconds. The old schem was more like 1.7K.
+This gives us better performance at large scale. We support looking blocks up by block height. With 2 writes per block on my dev machine I'm getting about 3.4K blocks every 4 seconds. The old schem was more like 1.7K.
+### Progress - Max Block Height
+To simplify housekeeping, we record the highest block cached in leveldb. On restart this allows us to resume where we left off and avoid rescanning. We check that the new block's prior_hash matches our recorded hash for the last cached block, so if we get a reorg we will notice and rewind and re-cache the data.
 
-Additional record writing doesn't affect users of any given key set on the read side, but it allows different sorts of access and does increase total key size, of course.
-### Progress
-To simplify housekeeping, we record the highest block cached in leveldb. On restart this allows us to resume where we left off and avoid rescanning. We check that the new block's prior_hash matches our recorded hash for the last cached block, so if we get a reorg we will notice and rewind and re-cahce the data.
+### Corruption Check
+Every block record is prepended by an 8 byte checksum for the block that is calculated when we store it. Each time we get a value we redo the checksum to ensure nothing has been corrupted.
+### Reorg and --redownload
+If calculated hashes don't line up with prevHash from the next block we assume we hit a chain reorg and rewind, getting the blocks over again, checking the hashes and rewinding up to 100 blocks before giving up.
 
-Note that we need to delete all the records previously stored for the block before adding a new one. Since we are single threaded and single process, and there is a single record per key type, this works fine.
+The key value store is idempotent, so as soon as we write a new value for a given height the old one is gone. There's the usual small risk of data loss due to failures since we do not sync on writes, but the system notices corrupted blocks and hash mismatches and automatically corrects for them, so it's pretty resilient.
+
+Reorgs work on the most recent blocks, no more than 100 of them, presumably due to forks. If you want to simply flush the levelDB data, use the --redownload flag.
+
+The --redownload flag on the command line makes lightwalletd flush the levelDB and reload from scratch. Note that we need to delete all the records previously stored for the block before adding a new one. Since we are single threaded and single process, and there is a single record per key type, this works fine. It takes about 8 seconds to delete them all on the current VerusCoin chain, wkich has a bit over 1M records in August 2020.
 
 We have a utility function to flush ranges of blocks in cache.go called flushBlocks(first int, last int)
 ### Schema
@@ -219,8 +224,15 @@ docs](docs/darksidewalletd.md) for more information.
 # Pull Requests
 
 We welcome pull requests! We like to keep our Go code neatly formatted in a standard way,
-which the standard tool [gofmt](https://golang.org/cmd/gofmt/) can do. Please consider
-adding the following to the file `.git/hooks/pre-commit` in your clone:
+which the standard tool [gofmt](https://golang.org/cmd/gofmt/) can do. Also, run golint
+prior to checkin and keep things clean.
+
+Our current PR template asks for a design document link from the PR description and a
+test plan added as a comment. If no design is needed (i.e. a README update or depenency
+version update) then don't check off the box, explain the exception. Ditto the test plan.
+
+ Please consider adding the following to the
+file `.git/hooks/pre-commit` in your clone:
 
 ```
 #!/bin/sh
