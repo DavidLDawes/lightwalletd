@@ -77,6 +77,7 @@ func (c *BlockCache) setDbHeight(height int) {
 		c.flushBlocks(height, c.nextBlock)
 		c.storeNewHeight(true)
 		c.Sync()
+		c.storeNewHeight(true)
 		c.nextBlock = height
 		c.setLatestHash()
 	}
