@@ -95,7 +95,7 @@ To simplify housekeeping, we record the highest block cached in leveldb. On rest
 ### Corruption Check
 Every block record is prepended by an 8 byte checksum for the block that is calculated when we store it. Each time we get a value we redo the checksum to ensure nothing has been corrupted.
 ### Validation, Reorg and --redownload
-Each time we load we scan through the DB to make sure all the block records are present and the compactBlock checksums are correct. If something is not correct we will fix the corruption, or at least try to. The current test suite does not clean u p after itself completely, and creates records at height 2.3m or something like that. After running the tests successfully, when I ran a normal lightwalletd pass it complained abou corruption and worked backward from 2.3M or so all the way down ti 1.15M where the real current records are, then continued from there. I'll take a look at fixing the tests, but for now they have that side effect. They also gave me a good solid test of the "recover from corruption" code and it works fine.
+Each time we load we scan through the DB to make sure all the block records are present and the compactBlock checksums are correct. If something is not correct we will fix the corruption, or at least try to. 
 
 Once the levelDB records have been validated, as each new block shows up we compare it's prevHash field to the has we calculated for the prior block. If they do not match we assume we hit a chain reorg and rewind, getting the prior blocks, checking the hashes and rewinding up to 100 blocks before giving up. Any typical fork will be resolved within a much smaller number of blocks so this is pretty reasonable.
 
