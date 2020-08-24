@@ -32,7 +32,7 @@ type BlockCache struct {
 	nextBlock  int           // height of the first block not in the cache
 	latestHash []byte        // hash of the most recent (highest height) block, for detecting reorgs.
 	ldb        *leveldb.DB   // levelDB connection
-	sql        *pgxpool.Pool //
+	sqlConn    *pgxpool.Conn //
 	mutex      sync.RWMutex  //
 }
 
@@ -165,10 +165,10 @@ func (c *BlockCache) Reset(startHeight int) {
 //
 // Multichain may go to per chain DB, so each cache has a levelDB connection
 // for it's own DB & we can do multiple chains in a single lwd easily.
-func NewBlockCache(db *leveldb.DB, chainName string, startHeight int, sqlPool *pgxpool.Pool, redownload bool) *BlockCache {
+func NewBlockCache(db *leveldb.DB, chainName string, startHeight int, sqlConn *pgxpool.Conn, redownload bool) *BlockCache {
 	c := &BlockCache{}
 	c.ldb = db
-	c.sql = sqlPool
+	c.sqlConn = sqlConn
 	c.firstBlock = startHeight
 
 	// Fetch the cache highwater record for the VerusCOin chain cache

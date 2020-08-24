@@ -48,9 +48,23 @@ func GetDBPool(cfg DbConfig) *pgxpool.Pool {
 	return dbPool
 }
 
-func persistToDB(db *pgxpool.Conn, height uint64, hash []byte, prevHash []byte, time uint32, header []byte, vtx []*walletrpc.CompactTx) (string, error) {
+func GetConnectionFromPool(dbPool *pgxpool.Pool) *pgxpool.Conn {
+
+	if dbPool != nil {
+		conn, err := dbPool.Acquire(context.Background())
+
+		if err != nil {
+			return nil
+		}
+		return conn
+	}
+	return nil
+
+}
+
+func persistToDB(dbConn *pgxpool.Conn, height uint64, hash []byte, prevHash []byte, time uint32, header []byte, vtx []*walletrpc.CompactTx) (string, error) {
+	// Add it to the SQL DB - Postgres style snytax
 	// Add it to PostgreSQL DB
-	var err error = nil
 
 	// First add the blocks record
 	// until we fix the header, put a fake header in place if needed
@@ -63,16 +77,16 @@ func persistToDB(db *pgxpool.Conn, height uint64, hash []byte, prevHash []byte, 
 	}
 
 	// All or nothing: get all related records updated, or none at all
-	blocktx, err := db.Begin(context.Background())
+	blocktx, err := dbConn.Begin(context.Background())
 	if err != nil {
 		return fmt.Sprint("unable to open a transaction, failed to write block to DB at height %1", height), err
 	}
 
 	commandTag, err := blocktx.Exec(context.Background(), "SELECT COUNT(*) FROM blocks WHERE height=$1;", height)
 	if commandTag.RowsAffected() == 1 {
-		// Exisating record - a reorg, or restart after losing cache but not DB
+		// Existing record - a reorg, or restart after losing cache but not DB
 		// first get rid of the old block and the related stuff (txs, spends, outputs)
-		commandTag, err = db.Exec(context.Background(), "DELETE FROM blocks WHERE height = $1;", height)
+		commandTag, err = dbConn.Exec(context.Background(), "DELETE FROM blocks WHERE height = $1;", height)
 		if err != nil {
 			blocktx.Rollback(context.Background())
 			return fmt.Sprintf("Failed to cascade delete existing block, unable to save block in DB at height ", height), err
@@ -88,12 +102,12 @@ func persistToDB(db *pgxpool.Conn, height uint64, hash []byte, prevHash []byte, 
 
 		// Block already exists, reorg possible so replace it
 		// Start a DB transaction again, this time deleting first
-		blocktx, err := db.Begin(context.Background())
+		blocktx, err := dbConn.Begin(context.Background())
 		if err != nil {
 			return fmt.Sprint("unable to open a transaction after insert failed, failed to write block to DB at height %1", height), err
 		}
 		// first get rid of it and related stuff
-		commandTag, err = db.Exec(context.Background(), "DELETE FROM blocks WHERE height = $1;", height)
+		commandTag, err = dbConn.Exec(context.Background(), "DELETE FROM blocks WHERE height = $1;", height)
 
 		if err != nil {
 			blocktx.Rollback(context.Background())
@@ -151,7 +165,6 @@ func persistToDB(db *pgxpool.Conn, height uint64, hash []byte, prevHash []byte, 
 	if err != nil {
 		return fmt.Sprint("Failed to commit block and related table updates at height ", height), err
 	}
-
 	return "", nil
 }
 

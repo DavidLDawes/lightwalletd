@@ -224,8 +224,8 @@ func startServer(opts *common.Options) error {
 			SQLPW:   opts.SQLPW,
 		})
 	}
-
-	cache := common.NewBlockCache(db, chainName, 1, sqlPool, opts.Redownload)
+	sqlConn := common.GetConnectionFromPool(sqlPool)
+	cache := common.NewBlockCache(db, chainName, 1, sqlConn, opts.Redownload)
 	if !opts.Darkside {
 		go common.BlockIngestor(cache, 0 /*loop forever*/)
 	} else {
@@ -359,8 +359,7 @@ func init() {
 	viper.SetDefault("sql-user", "postgres")
 	viper.BindPFlag("sql-pw", rootCmd.Flags().Lookup("sql-pw"))
 	viper.SetDefault("sql-pw", "mysecretpassword")
-	viper.BindPFlag("darkside-very-insecure",
-		rootCmd.Flags().Lookup("darkside-very-insecure"))
+	viper.BindPFlag("darkside-very-insecure", rootCmd.Flags().Lookup("darkside-very-insecure"))
 	viper.SetDefault("darkside-very-insecure", false)
 	viper.BindPFlag("darkside-timeout", rootCmd.Flags().Lookup("darkside-timeout"))
 	viper.SetDefault("darkside-timeout", 30)

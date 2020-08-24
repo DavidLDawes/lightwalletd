@@ -6,7 +6,6 @@
 package common
 
 import (
-	"context"
 	"encoding/hex"
 	"encoding/json"
 	"strconv"
@@ -276,22 +275,10 @@ func BlockIngestor(c *BlockCache, rep int) {
 			Log.Fatal("Cache add failed:", err)
 		}
 
-		if c.sql != nil {
-			conn, err := c.sql.Acquire(context.Background())
-			if err == nil {
-				// Add it to the SQL DB - Postgres style snytax
-				if conn != nil {
-					result, err := persistToDB(conn, block.Height, block.Hash, block.PrevHash, block.Time, block.GetHeader(), block.GetVtx())
-					if err != nil {
-						Log.Fatal(result, err)
-					}
-					conn.Release()
-				}
-			} else {
-				Log.Fatal("DB update failed at height ", height, err)
-				if conn != nil {
-					conn.Release()
-				}
+		if c.sqlConn != nil {
+			result, err := persistToDB(c.sqlConn, block.Height, block.Hash, block.PrevHash, block.Time, block.GetHeader(), block.GetVtx())
+			if err != nil {
+				Log.Fatal(result, err)
 			}
 		}
 
