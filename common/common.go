@@ -35,6 +35,7 @@ type Options struct {
 	LogLevel          uint64 `json:"log_level,omitempty"`
 	LogFile           string `json:"log_file,omitempty"`
 	VerusdConfPath    string `json:"verusd_conf,omitempty"`
+	NoVerusd          bool   `json:"no_verusd,omitempty"`
 	ZcashConfPath     string `json:"zcash_conf,omitempty"`
 	NoTLSVeryInsecure bool   `json:"no_tls_very_insecure,omitempty"`
 	Redownload        bool   `json:"redownload"`
@@ -194,6 +195,11 @@ func BlockIngestor(c *BlockCache, rep int) {
 		}
 
 		height := c.GetNextHeight()
+		// Temp: create a DB with 20 blocks for test purposes
+		if height > 20 {
+			return
+		}
+		// End of temp
 		block, err := getBlockFromRPC(height)
 		if err != nil {
 			Log.WithFields(logrus.Fields{

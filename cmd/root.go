@@ -47,6 +47,7 @@ var rootCmd = &cobra.Command{
 			LogFile:           viper.GetString("log-file"),
 			ZcashConfPath:     viper.GetString("zcash-conf-path"),
 			VerusdConfPath:    viper.GetString("verusd-conf-path"),
+			NoVerusd:          viper.GetBool("no-verusd"),
 			NoTLSVeryInsecure: viper.GetBool("no-tls-very-insecure"),
 			DataDir:           viper.GetString("data-dir"),
 			Redownload:        viper.GetBool("redownload"),
@@ -61,7 +62,7 @@ var rootCmd = &cobra.Command{
 		if !fileExists(opts.LogFile) {
 			os.OpenFile(opts.LogFile, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
 		}
-		if !opts.Darkside {
+		if !opts.Darkside && !opts.NoVerusd {
 			filesThatShouldExist = append(filesThatShouldExist, opts.VerusdConfPath)
 		}
 		if !opts.NoTLSVeryInsecure {
@@ -175,23 +176,27 @@ func startServer(opts *common.Options) error {
 	if opts.Darkside {
 		chainName = "darkside"
 	} else {
-		rpcClient, err = frontend.NewVRPCFromConf(opts.VerusdConfPath)
-		if err != nil {
-			common.Log.WithFields(logrus.Fields{
-				"error": err,
-			}).Fatal("setting up RPC connection to verusd")
+		if opts.NoVerusd {
+			rpcClient = nil
+			common.Log.Info("--no-verusd flag on CLI, so no RPC client is created or used; RO data from GRPC only")
+		} else {
+			rpcClient, err = frontend.NewVRPCFromConf(opts.VerusdConfPath)
+			if err != nil {
+				common.Log.WithFields(logrus.Fields{
+					"error": err,
+				}).Fatal("setting up RPC connection to verusd")
+			}
+			// Indirect function for test mocking (so unit tests can talk to stub functions).
+			common.RawRequest = rpcClient.RawRequest
+			// Get the sapling activation height from the RPC
+			// (this first RPC also verifies that we can communicate with zcashd)
+			saplingHeight, blockHeight, chainName, branchID = common.GetSaplingInfo()
+			common.Log.Info("Got sapling height ", saplingHeight,
+				" block height ", blockHeight,
+				" chain ", chainName,
+				" branchID ", branchID)
 		}
-		// Indirect function for test mocking (so unit tests can talk to stub functions).
-		common.RawRequest = rpcClient.RawRequest
-		// Get the sapling activation height from the RPC
-		// (this first RPC also verifies that we can communicate with zcashd)
-		saplingHeight, blockHeight, chainName, branchID = common.GetSaplingInfo()
-		common.Log.Info("Got sapling height ", saplingHeight,
-			" block height ", blockHeight,
-			" chain ", chainName,
-			" branchID ", branchID)
 	}
-
 	dbPath := filepath.Join(opts.DataDir, "db")
 	if opts.Darkside {
 		os.RemoveAll(filepath.Join(dbPath, chainName))
@@ -210,16 +215,20 @@ func startServer(opts *common.Options) error {
 	defer db.Close()
 
 	cache := common.NewBlockCache(db, chainName, 1, opts.Redownload)
-	if !opts.Darkside {
-		go common.BlockIngestor(cache, 0 /*loop forever*/)
-	} else {
-		// Darkside wants to control starting the block ingestor.
-		// Original code:
-		// common.DarksideInit(cache, int(opts.DarksideTimeout))
-		//
-		// Somewhere in the merges I lost opts.DarksideTimeout, so I'll
-		// just default it to 1 (which is in minutes)
-		common.DarksideInit(cache, 1)
+
+	// --no-verusd means no ingestor, so !opts.NoVerusd means yes, create ingestor
+	if !opts.NoVerusd {
+		if !opts.Darkside {
+			go common.BlockIngestor(cache, 0 /*loop forever*/)
+		} else {
+			// Darkside wants to control starting the block ingestor.
+			// Original code:
+			// common.DarksideInit(cache, int(opts.DarksideTimeout))
+			//
+			// Somewhere in the merges I lost opts.DarksideTimeout, so I'll
+			// just default it to 1 (which is in minutes)
+			common.DarksideInit(cache, 1)
+		}
 	}
 
 	// Compact transaction service initialization
@@ -293,6 +302,7 @@ func init() {
 	rootCmd.Flags().String("log-file", "./server.log", "log file to write to")
 	rootCmd.Flags().String("verusd-conf-path", "./verusd.conf", "conf file to pull VRSC RPC creds from")
 	rootCmd.Flags().String("zcash-conf-path", "./zcash.conf", "conf file to pull ZCash RPC creds from, not supported as we switch to VRSC")
+	rootCmd.Flags().Bool("no-verusd", false, "run without verusd support - no ingesting, no rawTX support, just RO data served from GRPC")
 	rootCmd.Flags().Bool("no-tls-very-insecure", false, "run without the required TLS certificate, only for debugging, DO NOT use in production")
 	rootCmd.Flags().Bool("gen-cert-very-insecure", false, "run with self-signed TLS certificate, only for debugging, DO NOT use in production")
 	rootCmd.Flags().Bool("redownload", false, "re-fetch all blocks from zcashd; reinitialize local cache files")
@@ -320,6 +330,8 @@ func init() {
 	viper.BindPFlag("rpcpassword", rootCmd.Flags().Lookup("rpcpassword"))
 	viper.BindPFlag("rpchost", rootCmd.Flags().Lookup("rpchost"))
 	viper.BindPFlag("rpcport", rootCmd.Flags().Lookup("rpcport"))
+	viper.BindPFlag("no-verusd", rootCmd.Flags().Lookup("no-verusd"))
+	viper.SetDefault("no-verusd", false)
 	viper.BindPFlag("no-tls-very-insecure", rootCmd.Flags().Lookup("no-tls-very-insecure"))
 	viper.SetDefault("no-tls-very-insecure", false)
 	viper.BindPFlag("gen-cert-very-insecure", rootCmd.Flags().Lookup("gen-cert-very-insecure"))
