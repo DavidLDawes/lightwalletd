@@ -343,4 +343,4 @@ copying the “tx_hex” field.
 
 Check out some of the potential security test cases here: [wallet <->
 lightwalletd integration
-tests](https://github.com/zcash/lightwalletd/blob/master/docs/integration-tests.md)
+tests](https://github.com/Asherda/lightwalletd/blob/master/docs/integration-tests.md)

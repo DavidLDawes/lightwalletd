@@ -6,7 +6,7 @@ import (
 	"testing"
 	"unsafe"
 
-	verushash "github.com/Asherda/Go-VerusHash"
+	verushash "github.com/DavidLDawes/Go-VerusHash"
 )
 
 // VerusHash holds the VerusHash object used for the VerusCoin hashing methods

@@ -19,7 +19,7 @@ stages:
   - monitor
 
 before_script:
-  - apk update && apk add make git gcc musl-dev curl bash
+  - apk update && apk add make git gcc musl-dev curl bash build-base lib-sodium
 
 # ************************************************************************/
 # BUILD

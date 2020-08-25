@@ -4,4 +4,9 @@ log-file: /dev/stdout
 log-level: 10
 tls-cert: /secrets/lightwallted/cert.pem
 tls-key: /secrets/lightwallted/cert.key
+verusd-conf-path: /srv/verusd/VRSC.conf
 zcash-conf-path: /srv/zcashd/zcash.conf
+rpc-user: rpcuser
+rpc-password: rpcpassword
+rpc-host: localhost
+rpc-port: 27486

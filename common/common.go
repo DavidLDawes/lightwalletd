@@ -33,8 +33,13 @@ type Options struct {
 	TLSCertPath       string `json:"tls_cert_path,omitempty"`
 	TLSKeyPath        string `json:"tls_cert_key,omitempty"`
 	LogLevel          uint64 `json:"log_level,omitempty"`
+	RPCHost           string `json:"rpc_host,omitempty"`
+	RPCPort           string `json:"rpc_port,omitempty"`
+	RPCUser           string `json:"rpc_user,omitempty"`
+	RPCPassword       string `json:"rpc_passord,omitempty"`
 	LogFile           string `json:"log_file,omitempty"`
 	VerusdConfPath    string `json:"verusd_conf,omitempty"`
+	NoVerusd          bool   `json:"no_verusd,omitempty"`
 	ZcashConfPath     string `json:"zcash_conf,omitempty"`
 	NoTLSVeryInsecure bool   `json:"no_tls_very_insecure,omitempty"`
 	Redownload        bool   `json:"redownload"`
