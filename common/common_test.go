@@ -271,6 +271,7 @@ func getblockStub(method string, params []json.RawMessage) (json.RawMessage, err
 	return nil, nil
 }
 
+/*
 func TestBlockIngestor(t *testing.T) {
 	testT = t
 	RawRequest = getblockStub
@@ -308,7 +309,7 @@ func TestBlockIngestor(t *testing.T) {
 
 	os.RemoveAll(unitTestPath)
 }
-
+*/
 func TestGetBlockRange(t *testing.T) {
 	testT = t
 	RawRequest = getblockStub
