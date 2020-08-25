@@ -47,6 +47,10 @@ var rootCmd = &cobra.Command{
 			LogFile:           viper.GetString("log-file"),
 			ZcashConfPath:     viper.GetString("zcash-conf-path"),
 			VerusdConfPath:    viper.GetString("verusd-conf-path"),
+			RPCHost:           viper.GetString("rpc-host"),
+			RPCPort:           viper.GetString("rpc-port"),
+			RPCUser:           viper.GetString("rpc-user"),
+			RPCPassword:       viper.GetString("rpc-password"),
 			NoVerusd:          viper.GetBool("no-verusd"),
 			NoTLSVeryInsecure: viper.GetBool("no-tls-very-insecure"),
 			DataDir:           viper.GetString("data-dir"),
@@ -300,6 +304,10 @@ func init() {
 	rootCmd.Flags().String("tls-key", "./cert.key", "the path to a TLS key file")
 	rootCmd.Flags().Int("log-level", int(logrus.InfoLevel), "log level (logrus 1-7)")
 	rootCmd.Flags().String("log-file", "./server.log", "log file to write to")
+	rootCmd.Flags().String("rpc-host", ".localhost", "Host name or IP address of the RPC host, the VRSC peer")
+	rootCmd.Flags().String("rpc-port", "27486", "port to use for RPC access, default is 27486")
+	rootCmd.Flags().String("rpc-user", "rpc-user", "user name to use for RPC access")
+	rootCmd.Flags().String("rpc-password", "rpcpassword", "password to use for RPC access")
 	rootCmd.Flags().String("verusd-conf-path", "./verusd.conf", "conf file to pull VRSC RPC creds from")
 	rootCmd.Flags().String("zcash-conf-path", "./zcash.conf", "conf file to pull ZCash RPC creds from, not supported as we switch to VRSC")
 	rootCmd.Flags().Bool("no-verusd", false, "run without verusd support - no ingesting, no rawTX support, just RO data served from GRPC")
@@ -322,14 +330,18 @@ func init() {
 	viper.SetDefault("log-level", int(logrus.InfoLevel))
 	viper.BindPFlag("log-file", rootCmd.Flags().Lookup("log-file"))
 	viper.SetDefault("log-file", "./server.log")
+	viper.BindPFlag("rpc-host", rootCmd.Flags().Lookup("rpc-host"))
+	viper.SetDefault("rpc-host", "localhost")
+	viper.BindPFlag("rpc-port", rootCmd.Flags().Lookup("rpc-port"))
+	viper.SetDefault("rpc-port", "27486")
+	viper.BindPFlag("rpc-user", rootCmd.Flags().Lookup("rpc-user"))
+	viper.SetDefault("rpc-user", "rpc-user")
+	viper.BindPFlag("rpc-password", rootCmd.Flags().Lookup("rpc-password"))
+	viper.SetDefault("rpc-password", "rpcpassword")
 	viper.BindPFlag("verusd-conf-path", rootCmd.Flags().Lookup("verusd-conf-path"))
 	viper.SetDefault("verusd-conf-path", "./VRSC.conf")
 	viper.BindPFlag("zcash-conf-path", rootCmd.Flags().Lookup("zcash-conf-path"))
 	viper.SetDefault("zcash-conf-path", "./zcash.conf")
-	viper.BindPFlag("rpcuser", rootCmd.Flags().Lookup("rpcuser"))
-	viper.BindPFlag("rpcpassword", rootCmd.Flags().Lookup("rpcpassword"))
-	viper.BindPFlag("rpchost", rootCmd.Flags().Lookup("rpchost"))
-	viper.BindPFlag("rpcport", rootCmd.Flags().Lookup("rpcport"))
 	viper.BindPFlag("no-verusd", rootCmd.Flags().Lookup("no-verusd"))
 	viper.SetDefault("no-verusd", false)
 	viper.BindPFlag("no-tls-very-insecure", rootCmd.Flags().Lookup("no-tls-very-insecure"))

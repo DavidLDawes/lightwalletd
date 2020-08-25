@@ -1,13 +1,9 @@
-# Disclaimer
+## Disclaimer
 This is an experimental build and is currently under active development. Please be advised of the following:
 
 - This code currently is not audited by an external security auditor, use it at your own risk
 - The code **has not been subjected to thorough review** by engineers at the Electric Coin Company or anywhere else
 - We **are actively changing** the codebase and adding features where/when needed on multiple forks
-
-On initial startup lightwalletd starts loading all the blocks starting from block 1. As they are loaded they are added to a levelDB name/value DB store for fast scalable access. Records are stored by block height and by block hash, so blocks can be looked up by either value.
-
-Once all blocks are added, lightwalletd continues waiting for more blocks, adding them as they occur. If lightwalletd is stopped then restrarted, it picks up where it left off using lightwalletd and continues ingesting new blocks as they occur.
 
 🔒 Security Warnings
 
@@ -22,13 +18,21 @@ The Lightwalletd Server is experimental and a work in progress. Use it at your o
 The VerusCoin developers ported lightwalletd to the VerusCoin VRSC chain. This version uses verusd rather than zcashd and implements the new VerusCoin hashing algorithms, up to and including V2b2. 
 
 Lightwalletd has not yet undergone audits or been subject to rigorous testing. It lacks some affordances necessary for production-level reliability. We do not recommend using it to handle customer funds at this time (April 2020).
-
+## Documentation
 Documentation for lightwalletd clients (the gRPC interface) is in `docs/rtd/index.html`. The current version of this file corresponds to the two `.proto` files; if you change these files, please regenerate the documentation by running `make doc`, which requires docker to be installed. 
+## Startup
+On initial startup lightwalletd starts loading all the blocks starting from block 1. As they are loaded they are added to a levelDB name/value DB store (in a db subdirectory below the --data-dir value you input on the commmand line) for fast scalable access. Records are compactBlocks and they are stored by block height.
+
+Once all the blocks are added - well over 2 million - lightwalletd continues waiting for more blocks, adding them as they occur. If lightwalletd is stopped then restarted, it picks up where it left off, catching up rapidly and then continues ingesting new blocks as they occur.
+
+Once started lightwsalletd serves data via the GRPC endpoint. While the chain is being scanned in the first time performance is many times slower, but once the blockchain ingestor has caught up the overhead drops to a small amount minute and the GRPC endpoint can easily serve 25K requests per second on my dev box running both lightwalletd and verusd (plus browsers and tools etc.)
+
+Latency is around 4ms mostly at up to 100 or so parrallel request pn my machine. With more than 100 requests the throughput slowly increasess but the latency gets large/poor pretty quickly, 500 is slow and 1,000 is very slow.
 # Local/Developer docker-compose Usage
-Note: when using docker, map the data directory input via CLI to a location on your file system, so that the data persists even if the containers are destroyed. This avoids reloading everything every time.
+Note: when using docker, map the data directory (the one you put your DB on when you specified the --data-dir inside the container) via CLI to a location on your file system, so that the data persists even if the containers are destroyed. This avoids reloading everything every time.
 
+Reloading isn't too horrible, I get about 5K per 4 sedonds, 75K per minute, a bit less than 15 miuntes to load.
 [docs/docker-compose-setup.md](./docs/docker-compose-setup.md)
-
 # Local/Developer Usage
 Added leveldb support for storing local chain and tx data, replacing the flat file with simple indexing approach. It's included automatically and uses the normal command line options so no change should be needed, existing configurations will continue working.
 
@@ -60,23 +64,16 @@ ok  	github.com/Asherda/lightwalletd/walletrpc	(cached)
 ## Code Coverage
 If you want to measure unit test coverage of the code run this go test command from the project's root diretory:
 ```
-~/levelDB/lightwalletd$ go test $(go list ./...) -coverprofile coverage.out
-# github.com/Asherda/Go-VerusHash
-verushash.cxx: In member function ‘void Verushash::initialize()’:
-verushash.cxx:21:20: warning: ignoring return value of ‘int sodium_init()’, declared with attribute warn_unused_result [-Wunused-result]
-         sodium_init();
-         ~~~~~~~~~~~^~
-ok  	github.com/Asherda/lightwalletd	0.007s	coverage: 0.0% of statements
-ok  	github.com/Asherda/lightwalletd/cmd	0.008s	coverage: 34.1% of statements
-ok  	github.com/Asherda/lightwalletd/common	11.213s	coverage: 40.4% of statements
+go test $(go list ./...) -coverprofile coverage.out
+ok  	github.com/Asherda/lightwalletd	0.009s	coverage: 0.0% of statements
+ok  	github.com/Asherda/lightwalletd/cmd	0.008s	coverage: 37.3% of statements
+ok  	github.com/Asherda/lightwalletd/common	0.152s	coverage: 17.4% of statements
 ok  	github.com/Asherda/lightwalletd/common/logging	0.006s	coverage: 91.7% of statements
-ok  	github.com/Asherda/lightwalletd/frontend	14.693s	coverage: 49.5% of statements
-ok  	github.com/Asherda/lightwalletd/parser	0.520s	coverage: 94.6% of statements
+ok  	github.com/Asherda/lightwalletd/frontend	0.200s	coverage: 49.5% of statements
+ok  	github.com/Asherda/lightwalletd/parser	0.508s	coverage: 94.6% of statements
 ok  	github.com/Asherda/lightwalletd/parser/internal/bytestring	0.003s	coverage: 100.0% of statements
-?   	github.com/Asherda/lightwalletd/testclient	[no test files]
-?   	github.com/Asherda/lightwalletd/testtools/genblocks	[no test files]
 ?   	github.com/Asherda/lightwalletd/testtools/zap	[no test files]
-ok  	github.com/Asherda/lightwalletd/walletrpc	0.014s	coverage: 3.1% of statements
+ok  	github.com/Asherda/lightwalletd/walletrpc	0.006s	coverage: 3.1% of statements
 ```
 Once that runs you can take a look at coverage while viewing the source code by running:
 ```
@@ -145,7 +142,7 @@ Install [Boost](https://www.boost.org/)
 
 Install [Go](https://golang.org/dl/#stable) version 1.11 or later. You can see your current version by running `go version`.
 
-Clone the [current repository](https://github.com/zcash/lightwalletd) into a local directory that is _not_ within any component of
+Clone the [current repository](https://github.com/Asherda/lightwalletd) into a local directory that is _not_ within any component of
 your `$GOPATH` (`$HOME/go` by default), then build the lightwalletd server binary by running `make`.
 
 ## To run SERVER
@@ -222,6 +219,140 @@ nature of the corruption.
 Lightwalletd now supports a mode that enables integration testing of itself and
 wallets that connect to it. See the [darksidewalletd
 docs](docs/darksidewalletd.md) for more information.
+
+# Visual Studio Code
+Using Visual Studio Code to run and debug lightwalletd requires setting up the path and command line options in launch.json. Using the "Open Configurations" selection from the Run menu, put the following code in:
+```
+{
+    //    "--verusd-url", "127.0.0.1:27486",
+    "version": "0.2.0",
+    "configurations": [
+
+
+        {
+            "name": "Launch",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "/home/virtualsoundnw/levelDB/lightwalletd/main.go",
+            "env": {},
+            "args": ["--log-file", "/logs/server.log", "--grpc-bind-addr", "localhost:18232", "--verusd-conf-path", "/home/virtualsoundnw/.komodo/VRSC/VRSC.conf", "--data-dir", ".", "--rpc-host", "localhost", "--rpc-port", "27486", "--rpc-user", "verus", "--rpc-password", "nOWBdmihcwPS5xNjkd78HkjnOp0-pQ3h06hjlv0inO-g"]
+        }
+    ]
+}
+```
+You'll need to correct the paths and dig the user and password out of ~/.komodo/VRSC/VRSC.conf.
+# Testing the GRPC server
+You can use [grcpurl, a command line utility for hitting GRPC endpoints](https://github.com/fullstorydev/grpcurl/releases) (like curl but specialized) to hit the GRPC endpoint. GRPC allows you to discover the detials interactively:
+```
+grpcurl --cacert cert.pem  localhost:18232  list
+cash.z.wallet.sdk.rpc.CompactTxStreamer
+grpc.reflection.v1alpha.ServerReflection
+```
+If you don't want to bother with certs then use the -insecure option:
+```
+grpcurl insecure  localhost:18232  list
+cash.z.wallet.sdk.rpc.CompactTxStreamer
+grpc.reflection.v1alpha.ServerReflection
+```
+We have a CompactTxServer, so let's look at that usingg the list command again:
+```
+grpcurl -insecure localhost:18232  list cash.z.wallet.sdk.rpc.CompactTxStreamer
+cash.z.wallet.sdk.rpc.CompactTxStreamer.GetBlock
+cash.z.wallet.sdk.rpc.CompactTxStreamer.GetBlockRange
+cash.z.wallet.sdk.rpc.CompactTxStreamer.GetLatestBlock
+cash.z.wallet.sdk.rpc.CompactTxStreamer.GetLightdInfo
+cash.z.wallet.sdk.rpc.CompactTxStreamer.GetTaddressBalance
+cash.z.wallet.sdk.rpc.CompactTxStreamer.GetTaddressBalanceStream
+cash.z.wallet.sdk.rpc.CompactTxStreamer.GetTaddressTxids
+cash.z.wallet.sdk.rpc.CompactTxStreamer.GetTransaction
+cash.z.wallet.sdk.rpc.CompactTxStreamer.Ping
+cash.z.wallet.sdk.rpc.CompactTxStreamer.SendTransaction
+```
+GetLightdInfo is the simplest as it has no parameters:
+```
+grpcurl -insecure localhost:18232 cash.z.wallet.sdk.rpc.CompactTxStreamer.GetLightdInfo
+{
+  "version": "v0.0.0.0-dev",
+  "vendor": "ECC LightWalletD",
+  "taddrSupport": true,
+  "chainName": "main",
+  "saplingActivationHeight": "227520",
+  "consensusBranchId": "76b809bb",
+  "blockHeight": "1153505"
+}
+```
+You can also get the endpoint described like so:
+```
+grpcurl -insecure localhost:18232 describe cash.z.wallet.sdk.rpc.CompactTxStreamer.GetLightdInfo
+cash.z.wallet.sdk.rpc.CompactTxStreamer.GetLightdInfo is a method:
+rpc GetLightdInfo ( .cash.z.wallet.sdk.rpc.Empty ) returns ( .cash.z.wallet.sdk.rpc.LightdInfo );
+```
+Mostly you provide JSOn data with a -d flag, depending on the verb. Check the describe first for assistance, and use describe on parameters and return values too. For GetBlock:
+```
+grpcurl --cacert cert.pem localhost:18232  describe cash.z.wallet.sdk.rpc.CompactTxStreamer.GetBlock
+cash.z.wallet.sdk.rpc.CompactTxStreamer.GetBlock is a method:
+rpc GetBlock ( .cash.z.wallet.sdk.rpc.BlockID ) returns ( .cash.z.wallet.sdk.rpc.CompactBlock );
+```
+So drilling into what a BlockID (your input) is, we see:
+```
+grpcurl --cacert cert.pem localhost:18232  describe cash.z.wallet.sdk.rpc.BlockID
+cash.z.wallet.sdk.rpc.BlockID is a message:
+message BlockID {
+  uint64 height = 1;
+  bytes hash = 2;
+}
+```
+We can use parameter 1 to request a block like so:
+```
+grpcurl --cacert cert.pem -d '{"height": 100}' localhost:18232  cash.z.wallet.sdk.rpc.CompactTxStreamer.GetBlock
+{
+  "height": "100",
+  "hash": "3qqfTq1mJ5daCLLmAs4X51iwSiGDnyE2xCgJDs8AAAA=",
+  "prevHash": "kTvo85dvyYMDcw3oyH2QODjq5vZawQoBro2C8SUAAAA=",
+  "time": 1526887503
+}
+```
+If you're copying and pasting the above examples, be careful of the single quotes ' as they sometimes get converted into "more attractive left and right leaning single quotes" to surround things, which breaks GRPC.
+# Load/Latency Testing
+Using [ghz, a "Simple gRPC benchmarking and load testing tool" ](https://github.com/bojand/ghz/releases) we can check latency and throughout under load, for example here we hammer on Geblock:
+```
+ ghz  --cacert cert.pem -d '{"height": 10}' -i walletrpc/service.proto,walletrpc/compact_formats -c 100 -n 100000 --call cash.z.wallet.sdk.rpc.CompactTxStreamer.GetBlock localhost:18232
+
+Summary:
+  Count:	100000
+  Total:	4.08 s
+  Slowest:	21.67 ms
+  Fastest:	0.23 ms
+  Average:	3.96 ms
+  Requests/sec:	24519.14
+
+Response time histogram:
+  0.227 [1]	|
+  2.371 [28853]	|∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+  4.516 [29173]	|∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+  6.660 [30424]	|∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+  8.805 [9288]	|∎∎∎∎∎∎∎∎∎∎∎∎
+  10.949 [1898]	|∎∎
+  13.094 [302]	|
+  15.238 [52]	|
+  17.383 [8]	|
+  19.527 [0]	|
+  21.672 [1]	|
+
+Latency distribution:
+  10 % in 0.69 ms 
+  25 % in 1.75 ms 
+  50 % in 4.17 ms 
+  75 % in 5.41 ms 
+  90 % in 6.87 ms 
+  95 % in 7.83 ms 
+  99 % in 9.81 ms 
+
+Status code distribution:
+  [OK]   100000 responses   
+```
+
 
 # Pull Requests
 

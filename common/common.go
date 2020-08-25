@@ -33,6 +33,10 @@ type Options struct {
 	TLSCertPath       string `json:"tls_cert_path,omitempty"`
 	TLSKeyPath        string `json:"tls_cert_key,omitempty"`
 	LogLevel          uint64 `json:"log_level,omitempty"`
+	RPCHost           string `json:"rpc_host,omitempty"`
+	RPCPort           string `json:"rpc_port,omitempty"`
+	RPCUser           string `json:"rpc_user,omitempty"`
+	RPCPassword       string `json:"rpc_passord,omitempty"`
 	LogFile           string `json:"log_file,omitempty"`
 	VerusdConfPath    string `json:"verusd_conf,omitempty"`
 	NoVerusd          bool   `json:"no_verusd,omitempty"`
@@ -195,11 +199,6 @@ func BlockIngestor(c *BlockCache, rep int) {
 		}
 
 		height := c.GetNextHeight()
-		// Temp: create a DB with 20 blocks for test purposes
-		if height > 20 {
-			return
-		}
-		// End of temp
 		block, err := getBlockFromRPC(height)
 		if err != nil {
 			Log.WithFields(logrus.Fields{
