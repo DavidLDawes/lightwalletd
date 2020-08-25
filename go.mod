@@ -3,7 +3,7 @@ module github.com/Asherda/lightwalletd
 go 1.13
 
 require (
-	github.com/DavidLDawes/Go-VerusHash v0.0.0-20200825012311-e004bf9a17ba
+	github.com/DavidLDawes/Go-VerusHash v0.0.0-20200825015559-eaf28ab6d352
 	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/golang/protobuf v1.4.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0
