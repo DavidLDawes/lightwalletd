@@ -11,7 +11,7 @@ import (
 	"math/big"
 	"unsafe"
 
-	verushash "github.com/Asherda/Go-VerusHash"
+	verushash "github.com/DavidLDawes/Go-VerusHash"
 	"github.com/Asherda/lightwalletd/parser/internal/bytestring"
 	"github.com/pkg/errors"
 )
