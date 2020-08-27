@@ -120,7 +120,7 @@ func GetSaplingInfo() (int, int, string, string) {
 		blockchaininfo.Consensus.Nextblock
 }
 
-func getBlockFromRPC(height int) (*walletrpc.CompactBlock, error) {
+func getBlockFromRPC(height int, cache *BlockCache) (*walletrpc.CompactBlock, error) {
 	params := make([]json.RawMessage, 2)
 	params[0] = json.RawMessage("\"" + strconv.Itoa(height) + "\"")
 	params[1] = json.RawMessage("0") // non-verbose (raw hex)
@@ -159,6 +159,29 @@ func getBlockFromRPC(height int) (*walletrpc.CompactBlock, error) {
 		return nil, errors.New("received unexpected height block")
 	}
 
+	vparams := make([]json.RawMessage, 2)
+	vparams[0] = json.RawMessage("\"" + strconv.Itoa(height) + "\"")
+	vparams[1] = json.RawMessage("2") // verbose JSON, includes Identities
+	verboseResult, rpcVerboseErr := RawRequest("getblock", vparams)
+	var verboseBlock parser.VerboseBlock
+	if rpcVerboseErr == nil {
+		err := json.Unmarshal(verboseResult, &verboseBlock)
+		if err != nil {
+			Log.Fatalf("error parsing JSON getblockchaininfo response ", err)
+		}
+	}
+	for _, nextTx := range verboseBlock.Tx {
+		for _, nextOut := range nextTx.Vout {
+			scriptPubKey := nextOut.ScriptPubKey
+			idPrimary := scriptPubKey.Identityprimary
+			if len(idPrimary.Name) > 0 {
+				err = cache.persistID(idPrimary)
+				if err != nil {
+					Log.Fatalf("error storing identity info at height ", height, " for identity named '", idPrimary.Name, "' with error ", err)
+				}
+			}
+		}
+	}
 	return block.ToCompact(), nil
 }
 
@@ -199,7 +222,7 @@ func BlockIngestor(c *BlockCache, rep int) {
 		}
 
 		height := c.GetNextHeight()
-		block, err := getBlockFromRPC(height)
+		block, err := getBlockFromRPC(height, c)
 		if err != nil {
 			Log.WithFields(logrus.Fields{
 				"height": height,
@@ -294,7 +317,7 @@ func GetBlock(cache *BlockCache, height int) (*walletrpc.CompactBlock, error) {
 	}
 
 	// Not in the cache, ask zcashd
-	block, err := getBlockFromRPC(height)
+	block, err := getBlockFromRPC(height, cache)
 	if err != nil {
 		return nil, err
 	}

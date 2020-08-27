@@ -2,7 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or https://www.opensource.org/licenses/mit-license.php .
 
-// Package parser deserializes (full) transactions (zcashd).
+// Package parser deserializes (full) transactions (verusd).
 package parser
 
 import (
@@ -14,13 +14,13 @@ import (
 )
 
 type rawTransaction struct {
-	fOverwintered      bool
+	overwintered       bool
 	version            uint32
-	nVersionGroupID    uint32
+	versionGroupID     uint32
 	transparentInputs  []*txIn
 	transparentOutputs []*txOut
-	nLockTime          uint32
-	nExpiryHeight      uint32
+	lockTime           uint32
+	expiryHeight       uint32
 	valueBalance       int64
 	shieldedSpends     []*spend
 	shieldedOutputs    []*output
@@ -268,7 +268,7 @@ func (p *joinSplit) ParseFromSlice(data []byte) ([]byte, error) {
 	return []byte(s), nil
 }
 
-// Transaction encodes a full (zcashd) transaction.
+// Transaction encodes a full (verusd) transaction.
 type Transaction struct {
 	*rawTransaction
 	rawBytes []byte
@@ -343,12 +343,12 @@ func (tx *Transaction) ParseFromSlice(data []byte) ([]byte, error) {
 		return nil, errors.New("could not read header")
 	}
 
-	tx.fOverwintered = (header >> 31) == 1
+	tx.overwintered = (header >> 31) == 1
 	tx.version = header & 0x7FFFFFFF
 
 	if tx.version >= 3 {
-		if !s.ReadUint32(&tx.nVersionGroupID) {
-			return nil, errors.New("could not read nVersionGroupId")
+		if !s.ReadUint32(&tx.versionGroupID) {
+			return nil, errors.New("could not read versionGroupID")
 		}
 	}
 
@@ -390,13 +390,13 @@ func (tx *Transaction) ParseFromSlice(data []byte) ([]byte, error) {
 		}
 	}
 
-	if !s.ReadUint32(&tx.nLockTime) {
-		return nil, errors.New("could not read nLockTime")
+	if !s.ReadUint32(&tx.lockTime) {
+		return nil, errors.New("could not read lockTime")
 	}
 
-	if tx.fOverwintered {
-		if !s.ReadUint32(&tx.nExpiryHeight) {
-			return nil, errors.New("could not read nExpiryHeight")
+	if tx.overwintered {
+		if !s.ReadUint32(&tx.expiryHeight) {
+			return nil, errors.New("could not read expiryHeight")
 		}
 	}
 

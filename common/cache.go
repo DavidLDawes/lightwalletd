@@ -8,10 +8,12 @@ package common
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"hash/fnv"
 	"strconv"
 	"sync"
 
+	"github.com/Asherda/lightwalletd/parser"
 	"github.com/Asherda/lightwalletd/walletrpc"
 	"github.com/golang/protobuf/proto"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -362,13 +364,25 @@ func (c *BlockCache) storeNewBlock(height int, block []byte) error {
 		Log.Fatal("blocks write at height", height, "failed: ", err)
 		return err
 	}
-	var hashID []byte = nil
-	copy(hashID, blockHashPrefix)
-	hashID = append(hashID, []byte(c.latestHash)...)
+	hashID := make([]byte, 33)
+	hashID = append(hashID, []byte(blockHashPrefix)...)
+	hashID = append(hashID, c.latestHash...)
 	err = c.ldb.Put(hashID, block, &opt.WriteOptions{Sync: false})
 	if err != nil {
 		Log.Fatal("hash write at height", height, "failed: ", err)
 		return err
 	}
 	return nil
+}
+
+func (c *BlockCache) persistID(idPrimary parser.Identityprimary) error {
+	id, err := json.Marshal(idPrimary)
+	if err != nil {
+		return err
+	}
+	err = c.ldb.Put([]byte(idPrefix+idPrimary.Name), id, &opt.WriteOptions{Sync: false})
+	if err != nil {
+		Log.Fatal("identity write for name ", idPrimary.Name, " failed: ", err)
+	}
+	return err
 }

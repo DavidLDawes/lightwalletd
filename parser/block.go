@@ -20,6 +20,56 @@ type Block struct {
 	height int
 }
 
+type Identityprimary struct {
+	Version           int
+	Flags             int
+	Primaryaddresses  []string
+	Minimumsignatures int
+	Identityaddress   string
+	Parent            string
+	Name              string
+}
+
+type ScriptPubKey struct {
+	Type            string
+	Identityprimary Identityprimary
+	ReqSigs         int
+	Addresses       []string
+	Asm             string
+	Hex             string
+}
+
+type Vout struct {
+	Value        float64
+	ValueZat     int
+	ValueSat     int
+	N            int
+	ScriptPubKey ScriptPubKey
+}
+
+type TX struct {
+	Txid           string
+	Overwintered   bool
+	Version        int
+	Versiongroupid string
+	Locktime       int
+	Expiryheight   int
+	Vout           []Vout
+}
+
+type VerboseBlock struct {
+	Hash             string
+	Validationtype   string
+	Confirmations    int
+	Size             int
+	Height           int
+	Version          int
+	Merkleroot       string
+	Segid            int
+	Finalsaplingroot string
+	Tx               []TX
+}
+
 // NewBlock constructs a block instance.
 func NewBlock() *Block {
 	return &Block{height: -1}
@@ -118,9 +168,7 @@ func (b *Block) ToCompact() *walletrpc.CompactBlock {
 	// Only Sapling transactions have a meaningful compact encoding
 	saplingTxns := make([]*walletrpc.CompactTx, 0, len(b.vtx))
 	for idx, tx := range b.vtx {
-		if tx.HasSaplingElements() {
-			saplingTxns = append(saplingTxns, tx.ToCompact(idx))
-		}
+		saplingTxns = append(saplingTxns, tx.ToCompact(idx))
 	}
 	compactBlock.Vtx = saplingTxns
 	return compactBlock
