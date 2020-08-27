@@ -222,6 +222,7 @@ func BlockIngestor(c *BlockCache, rep int) {
 		}
 
 		height := c.GetNextHeight()
+
 		block, err := getBlockFromRPC(height, c)
 		if err != nil {
 			Log.WithFields(logrus.Fields{

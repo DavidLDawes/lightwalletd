@@ -115,8 +115,10 @@ func (s *lwdStreamer) GetBlock(ctx context.Context, id *walletrpc.BlockID) (*wal
 
 	// Precedence: a hash is more specific than a height. If we have it, use it first.
 	if id.Hash != nil {
-		// TODO: Get block by hash
-		return nil, errors.New("GetBlock by Hash is not yet implemented")
+		cBlock := s.cache.GetByHash(id.Hash)
+		if cBlock != nil {
+			return cBlock, nil
+		}
 	}
 	cBlock, err := common.GetBlock(s.cache, int(id.Height))
 

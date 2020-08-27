@@ -32,7 +32,7 @@ type BlockCache struct {
 	firstBlock int         // height of the first block in the cache (we start at 1)
 	nextBlock  int         // height of the first block not in the cache
 	latestHash []byte      // hash of the most recent (highest height) block, for detecting reorgs.
-	ldb        *leveldb.DB // levelDB connection
+	Ldb        *leveldb.DB // levelDB connection
 	mutex      sync.RWMutex
 }
 
@@ -101,11 +101,11 @@ func checksum(height int, b []byte) []byte {
 
 // Caller should hold (at least) c.mutex.RLock().
 func (c *BlockCache) readBlock(height int) *walletrpc.CompactBlock {
-	if c.ldb == nil {
+	if c.Ldb == nil {
 		return nil
 	}
 
-	cacheResult, err := c.ldb.Get([]byte(blockHeightPrefix+strconv.Itoa(height)), nil)
+	cacheResult, err := c.Ldb.Get([]byte(blockHeightPrefix+strconv.Itoa(height)), nil)
 	if err != nil {
 		return nil
 	}
@@ -130,6 +130,42 @@ func (c *BlockCache) readBlock(height int) *walletrpc.CompactBlock {
 	if int(block.Height) != height {
 		// Could be file corruption.
 		Log.Warning("block unexpected height at height ", height)
+		return nil
+	}
+	return block
+}
+
+// Caller should hold (at least) c.mutex.RLock().
+func (c *BlockCache) readBlockByHash(hash []byte) *walletrpc.CompactBlock {
+	if c.Ldb == nil {
+		return nil
+	}
+	hashID := make([]byte, 33)
+	hashID = append(hashID, []byte(blockHashPrefix)...)
+	hashID = append(hashID, hash...)
+
+	cacheResult, err := c.Ldb.Get(hashID, nil)
+	if err != nil {
+		//Log.Warning("block fetch by hash for hash: ", hash, " failed, no cache entry found")
+		return nil
+	}
+	if len(cacheResult) < 72 {
+		Log.Warning("block fetch by hash for hash : ", hash, " failed, result too short. ")
+		return nil
+	}
+
+	cachecs := cacheResult[:8]
+	b := cacheResult[8:]
+	block := &walletrpc.CompactBlock{}
+	err = proto.Unmarshal(b, block)
+	if err != nil {
+		// Could be file corruption.
+		Log.Warning("block unmarshal for hash: ", hashID, " failed: ", err)
+		return nil
+	}
+
+	if !bytes.Equal(checksum(int(block.Height), b), cachecs) {
+		Log.Warning("bad block checksum at height: ", int(block.Height))
 		return nil
 	}
 	return block
@@ -166,12 +202,12 @@ func (c *BlockCache) Reset(startHeight int) {
 // for it's own DB & we can do multiple chains in a single lwd easily.
 func NewBlockCache(db *leveldb.DB, chainName string, startHeight int, redownload bool) *BlockCache {
 	c := &BlockCache{}
-	c.ldb = db
+	c.Ldb = db
 	c.firstBlock = startHeight
 
 	// Fetch the cache highwater record for the VerusCOin chain cache
 	// H prefox for height, 76b809bb is the VerusCoin chain main branchID
-	data, err := c.ldb.Get([]byte(idPrefix+"76b809bb"), nil)
+	data, err := c.Ldb.Get([]byte(idPrefix+"76b809bb"), nil)
 	if err != nil {
 		Log.Warning("No max cache height record, starting with no cache", err)
 		c.nextBlock = c.firstBlock
@@ -302,6 +338,19 @@ func (c *BlockCache) Get(height int) *walletrpc.CompactBlock {
 	return block
 }
 
+// GetByHash returns the compact block that has the matching hash
+// if it's in the cache, else nil.
+func (c *BlockCache) GetByHash(hash []byte) *walletrpc.CompactBlock {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+
+	if hash == nil || len(hash) != 32 {
+		return nil
+	}
+
+	return c.readBlockByHash(hash)
+}
+
 // GetLatestHeight returns the height of the most recent block, or -1
 // if the cache is empty.
 func (c *BlockCache) GetLatestHeight() int {
@@ -320,8 +369,8 @@ func (c *BlockCache) Sync() {
 
 // Close is Currently used only for testing.
 func (c *BlockCache) Close() {
-	if c.ldb != nil {
-		c.ldb.Close()
+	if c.Ldb != nil {
+		c.Ldb.Close()
 	}
 }
 
@@ -336,7 +385,7 @@ func (c *BlockCache) flushBlocks(height int, last int) {
 func (c *BlockCache) flushBlock(id string, height int) {
 	key := []byte(blockHashPrefix + strconv.Itoa(height))
 	// lets sync these, want deleted items to stay deleted even if we crash
-	err := c.ldb.Delete(key, &opt.WriteOptions{Sync: false})
+	err := c.Ldb.Delete(key, &opt.WriteOptions{Sync: false})
 	if err != nil {
 		Log.Warning("error flushing block at height: ", err)
 	}
@@ -345,7 +394,7 @@ func (c *BlockCache) flushBlock(id string, height int) {
 		var hashID []byte = make([]byte, 33)
 		copy(hashID, []byte(blockHashPrefix))
 		hashID = append(hashID, []byte(c.latestHash)...)
-		err = c.ldb.Delete(hashID, &opt.WriteOptions{Sync: false})
+		err = c.Ldb.Delete(hashID, &opt.WriteOptions{Sync: false})
 		if err != nil {
 			Log.Warning("flushing block by hash at height: ", err)
 		}
@@ -355,11 +404,11 @@ func (c *BlockCache) flushBlock(id string, height int) {
 func (c *BlockCache) storeNewHeight(sync bool) error {
 	bytesHeight := make([]byte, 8)
 	binary.LittleEndian.PutUint64(bytesHeight, (uint64)(c.nextBlock&0xFFFFFFFFFFFFFFF))
-	return c.ldb.Put([]byte(idPrefix+"76b809bb"), bytesHeight, &opt.WriteOptions{Sync: sync})
+	return c.Ldb.Put([]byte(idPrefix+"76b809bb"), bytesHeight, &opt.WriteOptions{Sync: sync})
 }
 
 func (c *BlockCache) storeNewBlock(height int, block []byte) error {
-	err := c.ldb.Put([]byte(blockHeightPrefix+strconv.Itoa(height)), block, &opt.WriteOptions{Sync: false})
+	err := c.Ldb.Put([]byte(blockHeightPrefix+strconv.Itoa(height)), block, &opt.WriteOptions{Sync: false})
 	if err != nil {
 		Log.Fatal("blocks write at height", height, "failed: ", err)
 		return err
@@ -367,7 +416,7 @@ func (c *BlockCache) storeNewBlock(height int, block []byte) error {
 	hashID := make([]byte, 33)
 	hashID = append(hashID, []byte(blockHashPrefix)...)
 	hashID = append(hashID, c.latestHash...)
-	err = c.ldb.Put(hashID, block, &opt.WriteOptions{Sync: false})
+	err = c.Ldb.Put(hashID, block, &opt.WriteOptions{Sync: false})
 	if err != nil {
 		Log.Fatal("hash write at height", height, "failed: ", err)
 		return err
@@ -380,7 +429,7 @@ func (c *BlockCache) persistID(idPrimary parser.Identityprimary) error {
 	if err != nil {
 		return err
 	}
-	err = c.ldb.Put([]byte(idPrefix+idPrimary.Name), id, &opt.WriteOptions{Sync: false})
+	err = c.Ldb.Put([]byte(idPrefix+idPrimary.Name), id, &opt.WriteOptions{Sync: false})
 	if err != nil {
 		Log.Fatal("identity write for name ", idPrimary.Name, " failed: ", err)
 	}
