@@ -21,6 +21,10 @@ import (
 	"github.com/Asherda/lightwalletd/walletrpc"
 )
 
+var (
+	ErrUnspecified = errors.New("request for unspecified identifier")
+)
+
 type lwdStreamer struct {
 	cache *common.BlockCache
 }
@@ -259,6 +263,16 @@ func (s *lwdStreamer) SendTransaction(ctx context.Context, rawtx *walletrpc.RawT
 		ErrorCode:    int32(errCode),
 		ErrorMessage: errMsg,
 	}, nil
+}
+
+func (s *lwdStreamer) GetIdentity(ctx context.Context, request *walletrpc.GetIdentityRequest) (*walletrpc.GetIdentityResponse, error) {
+	result, rpcErr := s.cache.GetIdentityFromRequest(request)
+
+	if rpcErr != nil {
+		common.Log.Errorf("GetIdentity error: %s", rpcErr.Error())
+		return nil, errors.New((strings.Split(rpcErr.Error(), ":"))[0])
+	}
+	return result, nil
 }
 
 func getTaddressBalanceZcashdRPC(addressList []string) (*walletrpc.Balance, error) {

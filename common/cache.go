@@ -16,6 +16,7 @@ import (
 	"github.com/Asherda/lightwalletd/parser"
 	"github.com/Asherda/lightwalletd/walletrpc"
 	"github.com/golang/protobuf/proto"
+	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 )
@@ -169,6 +170,35 @@ func (c *BlockCache) readBlockByHash(hash []byte) *walletrpc.CompactBlock {
 		return nil
 	}
 	return block
+}
+
+// Caller should hold (at least) c.mutex.RLock().
+func (c *BlockCache) readIDByName(name []byte) *walletrpc.GetIdentityResponse {
+	if c.Ldb == nil {
+		return nil
+	}
+	nameForID := []byte([]byte(idPrefix))
+	nameForID = append(nameForID, name...)
+
+	cacheResult, err := c.Ldb.Get(nameForID, nil)
+	if err != nil {
+		//Log.Info("identity fetch by name for name: ", name, " failed, no cache entry found")
+		return nil
+	}
+	if len(cacheResult) < 1 {
+		Log.Warning("identity fetch by name for name : ", name, " failed, result too short. ")
+		return nil
+	}
+
+	id := &walletrpc.GetIdentityResponse{}
+	err = proto.Unmarshal(cacheResult, id)
+	if err != nil {
+		// Could be file corruption.
+		Log.Warning("identity unmarshal for name: ", name, " failed: ", err)
+		return nil
+	}
+
+	return id
 }
 
 // Caller should hold c.mutex.Lock().
@@ -341,12 +371,13 @@ func (c *BlockCache) Get(height int) *walletrpc.CompactBlock {
 // GetByHash returns the compact block that has the matching hash
 // if it's in the cache, else nil.
 func (c *BlockCache) GetByHash(hash []byte) *walletrpc.CompactBlock {
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
 
 	if hash == nil || len(hash) != 32 {
 		return nil
 	}
+
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
 
 	return c.readBlockByHash(hash)
 }
@@ -365,6 +396,22 @@ func (c *BlockCache) GetLatestHeight() int {
 // Sync ensures that the db files are flushed to disk, can be called unnecessarily.
 func (c *BlockCache) Sync() {
 	c.storeNewHeight(true)
+}
+
+// GetIdentity fetches the isdentity info (if we have it) out of levelDB
+func (c *BlockCache) GetIdentityFromRequest(request *walletrpc.GetIdentityRequest) (*walletrpc.GetIdentityResponse, error) {
+
+	name := request.Identity
+	identity := []byte(c.readIDByName([]byte(name)).String())
+
+	response := &walletrpc.GetIdentityResponse{}
+	err := json.Unmarshal(identity, &response.Identityinfo)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "error reading JSON response")
+	}
+
+	return response, nil
 }
 
 // Close is Currently used only for testing.

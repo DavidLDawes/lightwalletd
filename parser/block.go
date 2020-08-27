@@ -21,13 +21,17 @@ type Block struct {
 }
 
 type Identityprimary struct {
-	Version           int
-	Flags             int
-	Primaryaddresses  []string
-	Minimumsignatures int
-	Identityaddress   string
-	Parent            string
-	Name              string
+	Version             int
+	Flags               int
+	Primaryaddresses    []string
+	Minimumsignatures   int
+	Identityaddress     string
+	Parent              string
+	Name                string
+	Contentmap          map[string]string
+	Revocationauthority string
+	Recoveryauthority   string
+	Privateaddress      string
 }
 
 type ScriptPubKey struct {

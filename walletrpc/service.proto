@@ -77,6 +77,41 @@ message Duration {
     int64 intervalUs = 1;
 }
 
+message Identity {
+    string name = 1;
+    map<string, string> contentmap = 2;
+    repeated string primaryaddresses = 3;
+    uint32 minimumsignatures = 4;
+    string privateaddress = 5;
+    string revocationauthority = 6;
+    string recoveryauthority = 7;
+    uint32 flags = 8;
+    uint32 version = 9;
+    string parent = 10;
+}
+
+message GetIdentityRequest {
+    string identity = 1; // Name or address of identity
+}
+
+message IdentityInfo {
+    uint64 Version = 1;
+    uint64 Flags = 2;
+    repeated string Primaryaddresses = 3;
+	uint64 Minimumsignatures = 4;
+	string Identityaddress = 5;
+    string Parent = 6;
+    string Name = 7;
+    map<string, string> Contentmap = 8;
+    string revocationauthority = 9;
+    string recoveryauthority = 10;
+    string privateaddress = 11;
+}
+
+message GetIdentityResponse {
+    IdentityInfo identityinfo = 1;
+}
+
 // PingResponse is used to indicate concurrency, how many Ping rpcs
 // are executing upon entry and upon exit (after the delay).
 // This rpc is used for testing only.
@@ -88,6 +123,7 @@ message PingResponse {
 message Address {
     string address = 1;
 }
+
 message AddressList {
     repeated string addresses = 1;
 }
@@ -113,8 +149,12 @@ service CompactTxStreamer {
     rpc GetTaddressBalance(AddressList) returns (Balance) {}
     rpc GetTaddressBalanceStream(stream Address) returns (Balance) {}
 
+    // Identity
+    rpc GetIdentity(GetIdentityRequest) returns (GetIdentityResponse) {}
+
     // Return information about this lightwalletd instance and the blockchain
     rpc GetLightdInfo(Empty) returns (LightdInfo) {}
+
     // Testing-only
     rpc Ping(Duration) returns (PingResponse) {}
 }

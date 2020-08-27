@@ -317,40 +317,41 @@ If you're copying and pasting the above examples, be careful of the single quote
 # Load/Latency Testing
 Using [ghz, a "Simple gRPC benchmarking and load testing tool" ](https://github.com/bojand/ghz/releases) we can check latency and throughout under load, for example here we hammer on Geblock:
 ```
- ghz  --cacert cert.pem -d '{"height": 10}' -i walletrpc/service.proto,walletrpc/compact_formats -c 100 -n 100000 --call cash.z.wallet.sdk.rpc.CompactTxStreamer.GetBlock localhost:18232
+ghz  --cacert cert.pem -d '{"height": 10}' -i walletrpc/service.proto,walletrpc/compact_formats -c 20 -n 200000 --call cash.z.wallet.sdk.rpc.CompactTxStreamer.GetBlock localhost:18232
 
 Summary:
-  Count:	100000
-  Total:	4.08 s
-  Slowest:	21.67 ms
-  Fastest:	0.23 ms
-  Average:	3.96 ms
-  Requests/sec:	24519.14
+  Count:	200000
+  Total:	8.67 s
+  Slowest:	25.51 ms
+  Fastest:	0.16 ms
+  Average:	0.81 ms
+  Requests/sec:	23072.84
 
 Response time histogram:
-  0.227 [1]	|
-  2.371 [28853]	|∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
-  4.516 [29173]	|∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
-  6.660 [30424]	|∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
-  8.805 [9288]	|∎∎∎∎∎∎∎∎∎∎∎∎
-  10.949 [1898]	|∎∎
-  13.094 [302]	|
-  15.238 [52]	|
-  17.383 [8]	|
-  19.527 [0]	|
-  21.672 [1]	|
+  0.158 [1]	      |
+  2.693 [196383]	|∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+  5.228 [132]	    |
+  7.763 [10]	    |
+  10.298 [0]	    |
+  12.833 [0]	    |
+  15.368 [27]	    |
+  17.904 [1176]	  |
+  20.439 [1851]	  |
+  22.974 [347]	  |
+  25.509 [73]	    |
 
 Latency distribution:
-  10 % in 0.69 ms 
-  25 % in 1.75 ms 
-  50 % in 4.17 ms 
-  75 % in 5.41 ms 
-  90 % in 6.87 ms 
-  95 % in 7.83 ms 
-  99 % in 9.81 ms 
+  10 % in 0.28 ms 
+  25 % in 0.33 ms 
+  50 % in 0.42 ms 
+  75 % in 0.59 ms 
+  90 % in 0.85 ms 
+  95 % in 1.09 ms 
+  99 % in 18.20 ms 
 
 Status code distribution:
-  [OK]   100000 responses   
+  [OK]   200000 responses   
+
 ```
 
 
