@@ -178,14 +178,17 @@ func getBlockFromRPC(height int, cache *BlockCache) (*walletrpc.CompactBlock, er
 				Log.Fatalf("error parsing JSON getblockchaininfo response ", err)
 			}
 		}
-		for _, nextTx := range verboseBlock.Tx {
-			for _, nextOut := range nextTx.Vout {
-				scriptPubKey := nextOut.ScriptPubKey
-				idPrimary := scriptPubKey.Identityprimary
+		for i := 0; i < len(verboseBlock.Tx); i++ {
+			nextTx := &verboseBlock.Tx[i]
+			for j := 0; j < len(nextTx.Vout); j++ {
+				nextVOut := &nextTx.Vout[j]
+				idPrimary := &nextVOut.ScriptPubKey.IdentityPrimary
 				if len(idPrimary.Name) > 0 {
 					err = cache.persistID(idPrimary)
 					if err != nil {
-						Log.Fatalf("error storing identity info at height ", height, " for identity named '", idPrimary.Name, "' with error ", err)
+						Log.Fatalf("error storing identity info at height ",
+							height, " for identity named '", idPrimary.Name,
+							"' with error ", err)
 					}
 				}
 			}

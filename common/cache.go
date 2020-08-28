@@ -8,12 +8,10 @@ package common
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/json"
 	"hash/fnv"
 	"strconv"
 	"sync"
 
-	"github.com/Asherda/lightwalletd/parser"
 	"github.com/Asherda/lightwalletd/walletrpc"
 	"github.com/golang/protobuf/proto"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -174,7 +172,7 @@ func (c *BlockCache) readBlockByHash(hash []byte) *walletrpc.CompactBlock {
 
 // ReadIDByName gets identity information for the inpt name, if it exists.
 // Caller should hold (at least) c.mutex.RLock().
-func (c *BlockCache) ReadIDByName(name []byte) (*walletrpc.GetIdentityResponse, error) {
+func (c *BlockCache) ReadIDByName(name []byte) (*walletrpc.IdentityPrimary, error) {
 	if c.Ldb == nil {
 		return nil, nil
 	}
@@ -187,11 +185,11 @@ func (c *BlockCache) ReadIDByName(name []byte) (*walletrpc.GetIdentityResponse, 
 		return nil, err
 	}
 
-	id := &walletrpc.GetIdentityResponse{}
+	id := &walletrpc.IdentityPrimary{}
 	err = proto.Unmarshal(cacheResult, id)
 	if err != nil {
 		// Could be file corruption.
-		Log.Warning("identity unmarshal for name: ", name, ", attempted to unmarshal: ", cacheResult, " failed: ", err)
+		Log.Warning("identity unmarshal for name: ", string(name), ", attempted to unmarshal: ", string(cacheResult), " failed: ", err)
 		return nil, err
 	}
 
@@ -452,8 +450,8 @@ func (c *BlockCache) storeNewBlock(height int, block []byte) error {
 	return nil
 }
 
-func (c *BlockCache) persistID(idPrimary parser.Identityprimary) error {
-	id, err := json.Marshal(idPrimary)
+func (c *BlockCache) persistID(idPrimary *walletrpc.IdentityPrimary) error {
+	id, err := proto.Marshal(idPrimary)
 	if err != nil {
 		return err
 	}

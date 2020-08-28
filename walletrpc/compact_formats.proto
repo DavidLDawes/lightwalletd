@@ -53,3 +53,32 @@ message CompactOutput {
     bytes epk = 2;          // ephemeral public key
     bytes ciphertext = 3;   // ciphertext and zkproof
 }
+
+// IdentityPrimary packages all of the data from thre same JSON level for
+// an identity that includes the name of the identity.
+//
+// Names are dictated by the need to comply with verusd's JSON naming
+// schemes for identity. By matching the names the parsing is aautomatic.
+//
+// Some caveats
+//   1. It is likely including stuff it does not need
+//   2. It probably could use some of the JSON data from the
+//      higher level JSON bits that include IdentityInfo, or
+//      that include other bits that include IdentityInfo etc.
+//   3. We also may want to mine other sorts of identity details when we
+//      see those in blocks, they are ignored now
+//
+// TODO: Get schema items reviewed, see above points
+message IdentityPrimary {
+    uint64 Version = 1;
+    uint64 Flags = 2;
+    repeated string Primaryaddresses = 3;
+	uint64 Minimumsignatures = 4;
+	string Identityaddress = 5;
+    string Parent = 6;
+    string Name = 7;
+    map<string, string> Contentmap = 8;
+    string revocationauthority = 9;
+    string recoveryauthority = 10;
+    string privateaddress = 11;
+}

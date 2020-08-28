@@ -261,7 +261,7 @@ func (s *lwdStreamer) SendTransaction(ctx context.Context, rawtx *walletrpc.RawT
 	}, nil
 }
 
-func (s *lwdStreamer) GetIdentity(ctx context.Context, request *walletrpc.GetIdentityRequest) (*walletrpc.GetIdentityResponse, error) {
+func (s *lwdStreamer) GetIdentity(ctx context.Context, request *walletrpc.GetIdentityRequest) (*walletrpc.IdentityPrimary, error) {
 	result, err := s.cache.ReadIDByName([]byte(request.Identity))
 	if err != nil {
 		return nil, errors.New("GetIdentity failed to read from the levelDB cache")

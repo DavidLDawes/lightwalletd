@@ -20,23 +20,10 @@ type Block struct {
 	height int
 }
 
-type Identityprimary struct {
-	Version             int
-	Flags               int
-	Primaryaddresses    []string
-	Minimumsignatures   int
-	Identityaddress     string
-	Parent              string
-	Name                string
-	Contentmap          map[string]string
-	Revocationauthority string
-	Recoveryauthority   string
-	Privateaddress      string
-}
-
+// ScriptPubKey id an item that may apear in an array in the Vout JSON
 type ScriptPubKey struct {
 	Type            string
-	Identityprimary Identityprimary
+	IdentityPrimary walletrpc.IdentityPrimary
 	ReqSigs         int
 	Addresses       []string
 	Asm             string

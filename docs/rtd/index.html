@@ -194,6 +194,14 @@
                   <a href="#cash.z.wallet.sdk.rpc.CompactTx"><span class="badge">M</span>CompactTx</a>
                 </li>
               
+                <li>
+                  <a href="#cash.z.wallet.sdk.rpc.IdentityPrimary"><span class="badge">M</span>IdentityPrimary</a>
+                </li>
+              
+                <li>
+                  <a href="#cash.z.wallet.sdk.rpc.IdentityPrimary.ContentmapEntry"><span class="badge">M</span>IdentityPrimary.ContentmapEntry</a>
+                </li>
+              
               
               
               
@@ -278,26 +286,6 @@
               
                 <li>
                   <a href="#cash.z.wallet.sdk.rpc.GetIdentityRequest"><span class="badge">M</span>GetIdentityRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#cash.z.wallet.sdk.rpc.GetIdentityResponse"><span class="badge">M</span>GetIdentityResponse</a>
-                </li>
-              
-                <li>
-                  <a href="#cash.z.wallet.sdk.rpc.Identity"><span class="badge">M</span>Identity</a>
-                </li>
-              
-                <li>
-                  <a href="#cash.z.wallet.sdk.rpc.Identity.ContentmapEntry"><span class="badge">M</span>Identity.ContentmapEntry</a>
-                </li>
-              
-                <li>
-                  <a href="#cash.z.wallet.sdk.rpc.IdentityInfo"><span class="badge">M</span>IdentityInfo</a>
-                </li>
-              
-                <li>
-                  <a href="#cash.z.wallet.sdk.rpc.IdentityInfo.ContentmapEntry"><span class="badge">M</span>IdentityInfo.ContentmapEntry</a>
                 </li>
               
                 <li>
@@ -521,6 +509,131 @@ in a pure-Sapling context, the fee will be calculable as:
                   <td><a href="#cash.z.wallet.sdk.rpc.CompactOutput">CompactOutput</a></td>
                   <td>repeated</td>
                   <td><p>outputs </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="cash.z.wallet.sdk.rpc.IdentityPrimary">IdentityPrimary</h3>
+        <p>IdentityPrimary packages all of the data from thre same JSON level for</p><p>an identity that includes the name of the identity.</p><p>Names are dictated by the need to comply with verusd's JSON naming</p><p>schemes for identity. By matching the names the parsing is aautomatic.</p><p>Some caveats</p><p>1. It is likely including stuff it does not need</p><p>2. It probably could use some of the JSON data from the</p><p>higher level JSON bits that include IdentityInfo, or</p><p>that include other bits that include IdentityInfo etc.</p><p>3. We also may want to mine other sorts of identity details when we</p><p>see those in blocks, they are ignored now</p><p>TODO: Get schema items reviewed, see above points</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>Version</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>Flags</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>Primaryaddresses</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>Minimumsignatures</td>
+                  <td><a href="#uint64">uint64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>Identityaddress</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>Parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>Name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>Contentmap</td>
+                  <td><a href="#cash.z.wallet.sdk.rpc.IdentityPrimary.ContentmapEntry">IdentityPrimary.ContentmapEntry</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>revocationauthority</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>recoveryauthority</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>privateaddress</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="cash.z.wallet.sdk.rpc.IdentityPrimary.ContentmapEntry">IdentityPrimary.ContentmapEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -1048,273 +1161,6 @@ into a specified block on the next ApplyStaged().</p></td>
 
         
       
-        <h3 id="cash.z.wallet.sdk.rpc.GetIdentityResponse">GetIdentityResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>identityinfo</td>
-                  <td><a href="#cash.z.wallet.sdk.rpc.IdentityInfo">IdentityInfo</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="cash.z.wallet.sdk.rpc.Identity">Identity</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>contentmap</td>
-                  <td><a href="#cash.z.wallet.sdk.rpc.Identity.ContentmapEntry">Identity.ContentmapEntry</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>primaryaddresses</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>minimumsignatures</td>
-                  <td><a href="#uint32">uint32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>privateaddress</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>revocationauthority</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>recoveryauthority</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>flags</td>
-                  <td><a href="#uint32">uint32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>version</td>
-                  <td><a href="#uint32">uint32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="cash.z.wallet.sdk.rpc.Identity.ContentmapEntry">Identity.ContentmapEntry</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>key</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>value</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="cash.z.wallet.sdk.rpc.IdentityInfo">IdentityInfo</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>Version</td>
-                  <td><a href="#uint64">uint64</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>Flags</td>
-                  <td><a href="#uint64">uint64</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>Primaryaddresses</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>Minimumsignatures</td>
-                  <td><a href="#uint64">uint64</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>Identityaddress</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>Parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>Name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>Contentmap</td>
-                  <td><a href="#cash.z.wallet.sdk.rpc.IdentityInfo.ContentmapEntry">IdentityInfo.ContentmapEntry</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>revocationauthority</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>recoveryauthority</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>privateaddress</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="cash.z.wallet.sdk.rpc.IdentityInfo.ContentmapEntry">IdentityInfo.ContentmapEntry</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>key</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>value</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="cash.z.wallet.sdk.rpc.LightdInfo">LightdInfo</h3>
         <p>LightdInfo returns various information about this lightwalletd instance</p><p>and the state of the blockchain.</p>
 
@@ -1616,7 +1462,7 @@ into a specified block on the next ApplyStaged().</p></td>
               <tr>
                 <td>GetIdentity</td>
                 <td><a href="#cash.z.wallet.sdk.rpc.GetIdentityRequest">GetIdentityRequest</a></td>
-                <td><a href="#cash.z.wallet.sdk.rpc.GetIdentityResponse">GetIdentityResponse</a></td>
+                <td><a href="#cash.z.wallet.sdk.rpc.IdentityPrimary">IdentityPrimary</a></td>
                 <td><p>Identity</p></td>
               </tr>
             
