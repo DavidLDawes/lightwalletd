@@ -313,6 +313,39 @@ grpcurl --cacert cert.pem -d '{"height": 100}' localhost:18232  cash.z.wallet.sd
   "time": 1526887503
 }
 ```
+Note the hash value returned for the block above. We can also fetch a CompactBlock via it's has (note the describe above for hints):
+```
+grpcurl --cacert cert.pem -d '{"hash": "3qqfTq1mJ5daCLLmAs4X51iwSiGDnyE2xCgJDs8AAAA="}' localhost:18232  cash.z.wallet.sdk.rpc.CompactTxStreamer.GetBlock
+{
+  "height": "100",
+  "hash": "7oPZ6umU9UZ3nlzatRZ28EoUgY7OvdrDbUmn04AAAAA=",
+  "prevHash": "3qqfTq1mJ5daCLLmAs4X51iwSiGDnyE2xCgJDs8AAAA=",
+  "time": 1526887509,
+  "vtx": [
+    {
+      "hash": "AplRiznrdbaiAwZMa75EWkvP0oLRRJOK8w3cVcytusA="
+    }
+  ]
+}
+```
+
+Identity is supported. Once the blocks are ingested all of the identities found are stored via levelDB. You can query for an identity like so:
+```
+grpcurl --cacert cert.pem -d '{"identity": "DavidLDawes"}' localhost:18232  cash.z.wallet.sdk.rpc.CompactTxStreamer.GetIdentity
+{
+  "Version": "1",
+  "Primaryaddresses": [
+    "RJ8hupCh6wxWckw3ooMCwnDiQ1JuRKT56M"
+  ],
+  "Minimumsignatures": "1",
+  "Identityaddress": "iBZuGcyXE2PaejnEvDf8KEmpx7V9BmnMDB",
+  "Parent": "i5w5MuNik5NtLcYmNzcvaoixooEebB6MGV",
+  "Name": "DavidLDawes",
+  "revocationauthority": "iBZuGcyXE2PaejnEvDf8KEmpx7V9BmnMDB",
+  "recoveryauthority": "iBZuGcyXE2PaejnEvDf8KEmpx7V9BmnMDB",
+  "privateaddress": "zs168ch62304f86yzxnx6dp828nw7eqspq3xkeu5kcwxq7armznmgy700necapgku2nrm3xymvernq"
+}
+```
 If you're copying and pasting the above examples, be careful of the single quotes ' as they sometimes get converted into "more attractive left and right leaning single quotes" to surround things, which breaks GRPC.
 # Load/Latency Testing
 Using [ghz, a "Simple gRPC benchmarking and load testing tool" ](https://github.com/bojand/ghz/releases) we can check latency and throughout under load, for example here we hammer on Geblock:

@@ -120,7 +120,7 @@ func GetSaplingInfo() (int, int, string, string) {
 		blockchaininfo.Consensus.Nextblock
 }
 
-func getBlockFromRPC(height int, cache *BlockCache) (*walletrpc.CompactBlock, error) {
+func getBlockFromRPC(height int, cache *BlockCache, checkID bool) (*walletrpc.CompactBlock, *walletrpc.IdentityPrimary, error) {
 	params := make([]json.RawMessage, 2)
 	params[0] = json.RawMessage("\"" + strconv.Itoa(height) + "\"")
 	params[1] = json.RawMessage("0") // non-verbose (raw hex)
@@ -130,43 +130,36 @@ func getBlockFromRPC(height int, cache *BlockCache) (*walletrpc.CompactBlock, er
 	if rpcErr != nil {
 		// Check to see if we are requesting a height the verusd doesn't have yet
 		if (strings.Split(rpcErr.Error(), ":"))[0] == "-8" {
-			return nil, nil
+			return nil, nil, nil
 		}
-		return nil, errors.Wrap(rpcErr, "error requesting block")
+		return nil, nil, errors.Wrap(rpcErr, "error requesting block")
 	}
 
 	var blockDataHex string
 	err := json.Unmarshal(result, &blockDataHex)
 	if err != nil {
-		return nil, errors.Wrap(err, "error reading JSON response")
+		return nil, nil, errors.Wrap(err, "error reading JSON response")
 	}
 
 	blockData, err := hex.DecodeString(blockDataHex)
 	if err != nil {
-		return nil, errors.Wrap(err, "error decoding getblock output")
+		return nil, nil, errors.Wrap(err, "error decoding getblock output")
 	}
 
 	block := parser.NewBlock()
 	rest, err := block.ParseFromSlice(blockData)
 	if err != nil {
-		return nil, errors.Wrap(err, "error parsing block")
+		return nil, nil, errors.Wrap(err, "error parsing block")
 	}
 	if len(rest) != 0 {
-		return nil, errors.New("received overlong message")
+		return nil, nil, errors.New("received overlong message")
 	}
 
 	if block.GetHeight() != height {
-		return nil, errors.New("received unexpected height block")
+		return nil, nil, errors.New("received unexpected height block")
 	}
 
-	// Having this code here is a bit of a smell, hiding cache
-	// updates for identities in the RPC getBlock code is obscure.
-	// TODO: include a "also get identity" flag & simply return
-	// either the block & nil or the block & the identity
-	if height > 800199 {
-		// smelly but we added identity in block 800200
-		// so this optimizes ingestion quite a bitm, for
-		// the first 800K records anyway
+	if checkID {
 		vparams := make([]json.RawMessage, 2)
 		vparams[0] = json.RawMessage("\"" + strconv.Itoa(height) + "\"")
 		vparams[1] = json.RawMessage("2") // verbose JSON, includes Identities
@@ -175,7 +168,7 @@ func getBlockFromRPC(height int, cache *BlockCache) (*walletrpc.CompactBlock, er
 		if rpcVerboseErr == nil {
 			err := json.Unmarshal(verboseResult, &verboseBlock)
 			if err != nil {
-				Log.Fatalf("error parsing JSON getblockchaininfo response ", err)
+				return nil, nil, errors.New("failed to unmarshal JSON received from verusd via RPC ")
 			}
 		}
 		for i := 0; i < len(verboseBlock.Tx); i++ {
@@ -184,17 +177,14 @@ func getBlockFromRPC(height int, cache *BlockCache) (*walletrpc.CompactBlock, er
 				nextVOut := &nextTx.Vout[j]
 				idPrimary := &nextVOut.ScriptPubKey.IdentityPrimary
 				if len(idPrimary.Name) > 0 {
-					err = cache.persistID(idPrimary)
-					if err != nil {
-						Log.Fatalf("error storing identity info at height ",
-							height, " for identity named '", idPrimary.Name,
-							"' with error ", err)
-					}
+					return block.ToCompact(), idPrimary, nil
+				} else {
+					return block.ToCompact(), nil, nil
 				}
 			}
 		}
 	}
-	return block.ToCompact(), nil
+	return block.ToCompact(), nil, nil
 }
 
 var (
@@ -235,7 +225,7 @@ func BlockIngestor(c *BlockCache, rep int) {
 
 		height := c.GetNextHeight()
 
-		block, err := getBlockFromRPC(height, c)
+		block, id, err := getBlockFromRPC(height, c, height > 80199)
 		if err != nil {
 			Log.WithFields(logrus.Fields{
 				"height": height,
@@ -310,6 +300,14 @@ func BlockIngestor(c *BlockCache, rep int) {
 		if err := c.Add(height, block); err != nil {
 			Log.Fatal("Cache add failed:", err)
 		}
+
+		if id != nil {
+			err = c.PersistID(id)
+			if err != nil {
+				Log.Fatal("Cache add for identity failed:", err)
+			}
+		}
+
 		// Don't log these too often.
 		if time.Now().Sub(lastLog).Seconds() >= 4 && c.GetNextHeight() == height+1 && height != lastHeightLogged {
 			lastLog = time.Now()
@@ -320,8 +318,9 @@ func BlockIngestor(c *BlockCache, rep int) {
 }
 
 // GetBlock returns the compact block at the requested height, first by querying
-// the cache, then, if not found, will request the block from zcashd. It returns
-// nil if no block exists at this height.
+// the cache, then, if not found, it will request the block from verusd unless the
+// command line option --no-verusd is set. It returns nil if no block exists at the
+// requested height.
 func GetBlock(cache *BlockCache, height int) (*walletrpc.CompactBlock, error) {
 	// First, check the cache to see if we have the block
 	block := cache.Get(height)
@@ -329,16 +328,19 @@ func GetBlock(cache *BlockCache, height int) (*walletrpc.CompactBlock, error) {
 		return block, nil
 	}
 
-	// Not in the cache, ask zcashd
-	block, err := getBlockFromRPC(height, cache)
-	if err != nil {
-		return nil, err
+	// Not in the cache, ask verusd - unless verusd is off
+	if !cache.NoVerusd {
+		block, _, err := getBlockFromRPC(height, cache, height > 800199)
+		if err != nil {
+			return nil, err
+		}
+		if block == nil {
+			// Block height is too large
+			return nil, errors.New("block requested is newer than latest block")
+		}
+		return block, nil
 	}
-	if block == nil {
-		// Block height is too large
-		return nil, errors.New("block requested is newer than latest block")
-	}
-	return block, nil
+	return nil, nil
 }
 
 // GetBlockRange returns a sequence of consecutive blocks in the given range.

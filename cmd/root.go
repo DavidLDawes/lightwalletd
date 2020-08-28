@@ -218,7 +218,7 @@ func startServer(opts *common.Options) error {
 	db, err := leveldb.OpenFile(dbPath, nil)
 	defer db.Close()
 
-	cache := common.NewBlockCache(db, chainName, 1, opts.Redownload)
+	cache := common.NewBlockCache(db, chainName, 1, opts.Redownload, opts.NoVerusd)
 
 	// --no-verusd means no ingestor, so !opts.NoVerusd means yes, create ingestor
 	if !opts.NoVerusd {

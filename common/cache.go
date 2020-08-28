@@ -33,6 +33,7 @@ type BlockCache struct {
 	latestHash []byte      // hash of the most recent (highest height) block, for detecting reorgs.
 	Ldb        *leveldb.DB // levelDB connection
 	mutex      sync.RWMutex
+	NoVerusd   bool
 }
 
 // GetNextHeight returns the height of the lowest unobtained block.
@@ -225,10 +226,11 @@ func (c *BlockCache) Reset(startHeight int) {
 //
 // Multichain may go to per chain DB, so each cache has a levelDB connection
 // for it's own DB & we can do multiple chains in a single lwd easily.
-func NewBlockCache(db *leveldb.DB, chainName string, startHeight int, redownload bool) *BlockCache {
+func NewBlockCache(db *leveldb.DB, chainName string, startHeight int, redownload bool, noverusd bool) *BlockCache {
 	c := &BlockCache{}
 	c.Ldb = db
 	c.firstBlock = startHeight
+	c.NoVerusd = noverusd
 
 	// Fetch the cache highwater record for the VerusCOin chain cache
 	// H prefox for height, 76b809bb is the VerusCoin chain main branchID
@@ -450,7 +452,10 @@ func (c *BlockCache) storeNewBlock(height int, block []byte) error {
 	return nil
 }
 
-func (c *BlockCache) persistID(idPrimary *walletrpc.IdentityPrimary) error {
+// PersistID accepts an identityPrimary (defined in compact_blocks.prot,
+// generated as compact_blocks/pb.go) and persists that into levelDB.
+// The key is the letter I + the name, so mine is IDavidLDawes
+func (c *BlockCache) PersistID(idPrimary *walletrpc.IdentityPrimary) error {
 	id, err := proto.Marshal(idPrimary)
 	if err != nil {
 		return err
