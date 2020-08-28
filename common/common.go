@@ -159,25 +159,34 @@ func getBlockFromRPC(height int, cache *BlockCache) (*walletrpc.CompactBlock, er
 		return nil, errors.New("received unexpected height block")
 	}
 
-	vparams := make([]json.RawMessage, 2)
-	vparams[0] = json.RawMessage("\"" + strconv.Itoa(height) + "\"")
-	vparams[1] = json.RawMessage("2") // verbose JSON, includes Identities
-	verboseResult, rpcVerboseErr := RawRequest("getblock", vparams)
-	var verboseBlock parser.VerboseBlock
-	if rpcVerboseErr == nil {
-		err := json.Unmarshal(verboseResult, &verboseBlock)
-		if err != nil {
-			Log.Fatalf("error parsing JSON getblockchaininfo response ", err)
+	// Having this code here is a bit of a smell, hiding cache
+	// updates for identities in the RPC getBlock code is obscure.
+	// TODO: include a "also get identity" flag & simply return
+	// either the block & nil or the block & the identity
+	if height > 800199 {
+		// smelly but we added identity in block 800200
+		// so this optimizes ingestion quite a bitm, for
+		// the first 800K records anyway
+		vparams := make([]json.RawMessage, 2)
+		vparams[0] = json.RawMessage("\"" + strconv.Itoa(height) + "\"")
+		vparams[1] = json.RawMessage("2") // verbose JSON, includes Identities
+		verboseResult, rpcVerboseErr := RawRequest("getblock", vparams)
+		var verboseBlock parser.VerboseBlock
+		if rpcVerboseErr == nil {
+			err := json.Unmarshal(verboseResult, &verboseBlock)
+			if err != nil {
+				Log.Fatalf("error parsing JSON getblockchaininfo response ", err)
+			}
 		}
-	}
-	for _, nextTx := range verboseBlock.Tx {
-		for _, nextOut := range nextTx.Vout {
-			scriptPubKey := nextOut.ScriptPubKey
-			idPrimary := scriptPubKey.Identityprimary
-			if len(idPrimary.Name) > 0 {
-				err = cache.persistID(idPrimary)
-				if err != nil {
-					Log.Fatalf("error storing identity info at height ", height, " for identity named '", idPrimary.Name, "' with error ", err)
+		for _, nextTx := range verboseBlock.Tx {
+			for _, nextOut := range nextTx.Vout {
+				scriptPubKey := nextOut.ScriptPubKey
+				idPrimary := scriptPubKey.Identityprimary
+				if len(idPrimary.Name) > 0 {
+					err = cache.persistID(idPrimary)
+					if err != nil {
+						Log.Fatalf("error storing identity info at height ", height, " for identity named '", idPrimary.Name, "' with error ", err)
+					}
 				}
 			}
 		}

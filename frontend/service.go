@@ -21,10 +21,6 @@ import (
 	"github.com/Asherda/lightwalletd/walletrpc"
 )
 
-var (
-	ErrUnspecified = errors.New("request for unspecified identifier")
-)
-
 type lwdStreamer struct {
 	cache *common.BlockCache
 }
@@ -266,11 +262,9 @@ func (s *lwdStreamer) SendTransaction(ctx context.Context, rawtx *walletrpc.RawT
 }
 
 func (s *lwdStreamer) GetIdentity(ctx context.Context, request *walletrpc.GetIdentityRequest) (*walletrpc.GetIdentityResponse, error) {
-	result, rpcErr := s.cache.GetIdentityFromRequest(request)
-
-	if rpcErr != nil {
-		common.Log.Errorf("GetIdentity error: %s", rpcErr.Error())
-		return nil, errors.New((strings.Split(rpcErr.Error(), ":"))[0])
+	result, err := s.cache.ReadIDByName([]byte(request.Identity))
+	if err != nil {
+		return nil, errors.New("GetIdentity failed to read from the levelDB cache")
 	}
 	return result, nil
 }

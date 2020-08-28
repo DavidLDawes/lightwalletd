@@ -16,16 +16,16 @@ import (
 	"github.com/Asherda/lightwalletd/parser"
 	"github.com/Asherda/lightwalletd/walletrpc"
 	"github.com/golang/protobuf/proto"
-	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 )
 
 const (
 	blockHeightPrefix = "B"        // key is "B" + block height, value is block; see also H, block by hash
+	chainPrefix       = "C"        // key is "C" + chainID string (see VerusID below, current default and only)
 	blockHashPrefix   = "H"        // key is "H" + block hash, value is block; see also B, block by height
-	idPrefix          = "I"        // key is "I" + chain ID, value is height (more to come), see next (verusID)
-	verusID           = "76b809bb" // so we use I76b809bb as the chain ID, currently it just saves height
+	idPrefix          = "I"        // key is "I" + name (i.e. 'IDavidLDawes', leave @ off), key for identity
+	verusID           = "76b809bb" // so we use C76b809bb as the chain ID, currently it just saves height
 )
 
 // BlockCache contains a consecutive set of recent compact blocks in marshalled form.
@@ -172,10 +172,11 @@ func (c *BlockCache) readBlockByHash(hash []byte) *walletrpc.CompactBlock {
 	return block
 }
 
+// ReadIDByName gets identity information for the inpt name, if it exists.
 // Caller should hold (at least) c.mutex.RLock().
-func (c *BlockCache) readIDByName(name []byte) *walletrpc.GetIdentityResponse {
+func (c *BlockCache) ReadIDByName(name []byte) (*walletrpc.GetIdentityResponse, error) {
 	if c.Ldb == nil {
-		return nil
+		return nil, nil
 	}
 	nameForID := []byte([]byte(idPrefix))
 	nameForID = append(nameForID, name...)
@@ -183,22 +184,18 @@ func (c *BlockCache) readIDByName(name []byte) *walletrpc.GetIdentityResponse {
 	cacheResult, err := c.Ldb.Get(nameForID, nil)
 	if err != nil {
 		//Log.Info("identity fetch by name for name: ", name, " failed, no cache entry found")
-		return nil
-	}
-	if len(cacheResult) < 1 {
-		Log.Warning("identity fetch by name for name : ", name, " failed, result too short. ")
-		return nil
+		return nil, err
 	}
 
 	id := &walletrpc.GetIdentityResponse{}
 	err = proto.Unmarshal(cacheResult, id)
 	if err != nil {
 		// Could be file corruption.
-		Log.Warning("identity unmarshal for name: ", name, " failed: ", err)
-		return nil
+		Log.Warning("identity unmarshal for name: ", name, ", attempted to unmarshal: ", cacheResult, " failed: ", err)
+		return nil, err
 	}
 
-	return id
+	return id, nil
 }
 
 // Caller should hold c.mutex.Lock().
@@ -237,7 +234,7 @@ func NewBlockCache(db *leveldb.DB, chainName string, startHeight int, redownload
 
 	// Fetch the cache highwater record for the VerusCOin chain cache
 	// H prefox for height, 76b809bb is the VerusCoin chain main branchID
-	data, err := c.Ldb.Get([]byte(idPrefix+"76b809bb"), nil)
+	data, err := c.Ldb.Get([]byte(chainPrefix+"76b809bb"), nil)
 	if err != nil {
 		Log.Warning("No max cache height record, starting with no cache", err)
 		c.nextBlock = c.firstBlock
@@ -398,22 +395,6 @@ func (c *BlockCache) Sync() {
 	c.storeNewHeight(true)
 }
 
-// GetIdentity fetches the isdentity info (if we have it) out of levelDB
-func (c *BlockCache) GetIdentityFromRequest(request *walletrpc.GetIdentityRequest) (*walletrpc.GetIdentityResponse, error) {
-
-	name := request.Identity
-	identity := []byte(c.readIDByName([]byte(name)).String())
-
-	response := &walletrpc.GetIdentityResponse{}
-	err := json.Unmarshal(identity, &response.Identityinfo)
-
-	if err != nil {
-		return nil, errors.Wrap(err, "error reading JSON response")
-	}
-
-	return response, nil
-}
-
 // Close is Currently used only for testing.
 func (c *BlockCache) Close() {
 	if c.Ldb != nil {
@@ -451,7 +432,7 @@ func (c *BlockCache) flushBlock(id string, height int) {
 func (c *BlockCache) storeNewHeight(sync bool) error {
 	bytesHeight := make([]byte, 8)
 	binary.LittleEndian.PutUint64(bytesHeight, (uint64)(c.nextBlock&0xFFFFFFFFFFFFFFF))
-	return c.Ldb.Put([]byte(idPrefix+"76b809bb"), bytesHeight, &opt.WriteOptions{Sync: sync})
+	return c.Ldb.Put([]byte(chainPrefix+"76b809bb"), bytesHeight, &opt.WriteOptions{Sync: sync})
 }
 
 func (c *BlockCache) storeNewBlock(height int, block []byte) error {
