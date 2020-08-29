@@ -106,13 +106,13 @@ First, we need to reset darksidewalletd, specifying the sapling activation
 height, branch ID, and chain name that will be told to wallets when they ask:
 
 ```
-grpcurl -plaintext -d '{"saplingActivation": 663150,"branchID": "bad", "chainName":"x"}' localhost:9067 cash.z.wallet.sdk.rpc.DarksideStreamer/Reset
+grpcurl -plaintext -d '{"saplingActivation": 663150,"branchID": "bad", "chainName":"x"}' localhost:9067 vrsc.wallet.sdk.rpc.DarksideStreamer/Reset
 ```
 
 Next, we will stage the real mainnet block 663150. In ECC's example wallets, this block is used as a checkpoint so we need to use the real block to pass that check.
 
 ```
-grpcurl -plaintext -d '{"url": "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/basic-reorg/663150.txt"}' localhost:9067 cash.z.wallet.sdk.rpc.DarksideStreamer/StageBlocks
+grpcurl -plaintext -d '{"url": "https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/basic-reorg/663150.txt"}' localhost:9067 vrsc.wallet.sdk.rpc.DarksideStreamer/StageBlocks
 ```
 
 This has put block 663150 into darksidewalletd's staging area. The block has
@@ -122,7 +122,7 @@ lightwalletd, and thus any wallets connected will have no idea it exists yet.
 Next, we will use the `StageBlocksCreate` gRPC to generate 100 fake blocks on top of 663150 in darksidewalletd's staging area:
 
 ```
-grpcurl -plaintext -d '{"height":663151,"count":100}' localhost:9067 cash.z.wallet.sdk.rpc.DarksideStreamer/StageBlocksCreate
+grpcurl -plaintext -d '{"height":663151,"count":100}' localhost:9067 vrsc.wallet.sdk.rpc.DarksideStreamer/StageBlocksCreate
 ```
 
 Still, everything is in darksidewalletd's staging area, nothing has been
@@ -134,7 +134,7 @@ range of blocks we've staged; when we "apply" the staging area later on
 darksidewalletd will merge this transaction into the fake 663190 block.
 
 ```
-grpcurl -plaintext -d '{"height":663190,"url":"https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/recv/0821a89be7f2fc1311792c3fa1dd2171a8cdfb2effd98590cbd5ebcdcfcf491f.txt"}' localhost:9067 cash.z.wallet.sdk.rpc.DarksideStreamer/StageTransactions
+grpcurl -plaintext -d '{"height":663190,"url":"https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/recv/0821a89be7f2fc1311792c3fa1dd2171a8cdfb2effd98590cbd5ebcdcfcf491f.txt"}' localhost:9067 vrsc.wallet.sdk.rpc.DarksideStreamer/StageTransactions
 ```
 
 We have now finished filling darksidewalletd's staging area with the "before
@@ -146,7 +146,7 @@ connected. We will apply the staged blocks up to height 663210 (any higher
 staged blocks will remain in the staging area):
 
 ```
-grpcurl -plaintext -d '{"height":663210}' localhost:9067 cash.z.wallet.sdk.rpc.DarksideStreamer/ApplyStaged
+grpcurl -plaintext -d '{"height":663210}' localhost:9067 vrsc.wallet.sdk.rpc.DarksideStreamer/ApplyStaged
 ```
 
 Note that we could have done this in the opposite order, it would have been
@@ -157,7 +157,7 @@ that will have blocks staged for them before we "apply".
 Now we can check that the transaction is in block 663190:
 
 ```
-$ grpcurl -plaintext -d '{"height":663190}' localhost:9067 cash.z.wallet.sdk.rpc.CompactTxStreamer/GetBlock
+$ grpcurl -plaintext -d '{"height":663190}' localhost:9067 vrsc.wallet.sdk.rpc.CompactTxStreamer/GetBlock
 {
   "height": "663190",
   "hash": "Ax/AHLeTfnDuXWX3ZiYo+nWvh24lyMjvR0e2CAfqEok=",
@@ -200,20 +200,20 @@ blocks for heights 663180 through 663279. These are the blocks that will
 change after the reorg.
 
 ```
-grpcurl -plaintext -d '{"height":663180,"count":100}' localhost:9067 cash.z.wallet.sdk.rpc.DarksideStreamer/StageBlocksCreate
+grpcurl -plaintext -d '{"height":663180,"count":100}' localhost:9067 vrsc.wallet.sdk.rpc.DarksideStreamer/StageBlocksCreate
 ```
 
 Now, stage that same transaction as before, but this time to height 663195
 (previously we had put it in 663190):
 
 ```
-grpcurl -plaintext -d '{"height":663195,"url":"https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/recv/0821a89be7f2fc1311792c3fa1dd2171a8cdfb2effd98590cbd5ebcdcfcf491f.txt"}' localhost:9067 cash.z.wallet.sdk.rpc.DarksideStreamer/StageTransactions
+grpcurl -plaintext -d '{"height":663195,"url":"https://raw.githubusercontent.com/zcash-hackworks/darksidewalletd-test-data/master/transactions/recv/0821a89be7f2fc1311792c3fa1dd2171a8cdfb2effd98590cbd5ebcdcfcf491f.txt"}' localhost:9067 vrsc.wallet.sdk.rpc.DarksideStreamer/StageTransactions
 ```
 
 Finally, we can apply the staged blocks and transactions to trigger a reorg:
 
 ```
-grpcurl -plaintext -d '{"height":663210}' localhost:9067 cash.z.wallet.sdk.rpc.DarksideStreamer/ApplyStaged
+grpcurl -plaintext -d '{"height":663210}' localhost:9067 vrsc.wallet.sdk.rpc.DarksideStreamer/ApplyStaged
 ```
 
 This will simulate a reorg back to 663180 (new versions of 663180 and
@@ -228,7 +228,7 @@ it should also detect a reorg too.
 Now we can check that the transaction is no longer in 663190:
 
 ```
-$ grpcurl -plaintext -d '{"height":663190}' localhost:9067 cash.z.wallet.sdk.rpc.CompactTxStreamer/GetBlock
+$ grpcurl -plaintext -d '{"height":663190}' localhost:9067 vrsc.wallet.sdk.rpc.CompactTxStreamer/GetBlock
 {
   "height": "663190",
   "hash": "btosPfiJBX9m3nNSCP+vjAxWpEDS7Kfut9H7FY+mSYo=",
@@ -241,7 +241,7 @@ $
 Instead, it has "moved" to 663195:
 
 ```
-$ grpcurl -plaintext -d '{"height":663195}' localhost:9067 cash.z.wallet.sdk.rpc.CompactTxStreamer/GetBlock
+$ grpcurl -plaintext -d '{"height":663195}' localhost:9067 vrsc.wallet.sdk.rpc.CompactTxStreamer/GetBlock
 {
   "height": "663195",
   "hash": "CmcEQ/NZ9nSk+VdNfCEHvKu9MTNeWKoF1dZ7cWUTnCc=",
@@ -279,7 +279,7 @@ that the current height is 663210 just like we specified in our last call to
 `ApplyStaged`:
 
 ```
-$ grpcurl -plaintext -d '' localhost:9067 cash.z.wallet.sdk.rpc.CompactTxStreamer/GetLatestBlock
+$ grpcurl -plaintext -d '' localhost:9067 vrsc.wallet.sdk.rpc.CompactTxStreamer/GetLatestBlock
 {
   "height": "663210"
 }
@@ -288,13 +288,13 @@ $ grpcurl -plaintext -d '' localhost:9067 cash.z.wallet.sdk.rpc.CompactTxStreame
 Then apply 10 more of the blocks that are still in the staging area:
 
 ```
-grpcurl -plaintext -d '{"height":663220}' localhost:9067 cash.z.wallet.sdk.rpc.DarksideStreamer/ApplyStaged
+grpcurl -plaintext -d '{"height":663220}' localhost:9067 vrsc.wallet.sdk.rpc.DarksideStreamer/ApplyStaged
 ```
 
 And confirm that the current height has increased:
 
 ```
-$ grpcurl -plaintext -d '' localhost:9067 cash.z.wallet.sdk.rpc.CompactTxStreamer/GetLatestBlock
+$ grpcurl -plaintext -d '' localhost:9067 vrsc.wallet.sdk.rpc.CompactTxStreamer/GetLatestBlock
 {
   "height": "663220"
 }

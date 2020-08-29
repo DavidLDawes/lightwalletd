@@ -3,7 +3,7 @@
 // file COPYING or https://www.opensource.org/licenses/mit-license.php .
 
 syntax = "proto3";
-package cash.z.wallet.sdk.rpc;
+package vrsc.wallet.sdk.rpc;
 option go_package = ".;walletrpc";
 // Remember that proto3 fields are all optional. A field that is not present will be set to its zero value.
 // bytes fields of hashes are in canonical little-endian format.
@@ -46,10 +46,40 @@ message CompactSpend {
     bytes nf = 1;   // nullifier (see the Zcash protocol specification)
 }
 
-// output is a Sapling Output Description as described in section 7.4 of the
+// CompactOutput is a Sapling Output Description as described in section 7.4 of the
 // Zcash protocol spec. Total size is 948.
 message CompactOutput {
     bytes cmu = 1;          // note commitment u-coordinate
     bytes epk = 2;          // ephemeral public key
     bytes ciphertext = 3;   // ciphertext and zkproof
+}
+
+// Identity is simply the name, this is used for inputs to GRPC GetIdentity
+message Identity {
+    string name = 1;
+}
+
+// VerusdIdentity defines the structure of the JSON returned
+// by verusd's GetIdentity
+message VerusdIdentity {
+    string name = 1;
+    map<string, string> contentmap = 2;
+    repeated string primaryaddresses = 3;
+    uint32 minimumsignatures = 4;
+    string privateaddress = 5;
+    string revocationauthority = 6;
+    string recoveryauthority = 7;
+    uint32 flags = 8;
+    uint32 version = 9;
+    string parent = 10;
+}
+
+message IdentityInfo {
+    Identity identity = 1;
+    string status = 2;
+    bool canspendfor = 3;
+    bool cansignfor = 4;
+    uint64 blockheight = 5;
+    string txid = 6;
+    uint32 vout = 7;
 }
