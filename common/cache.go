@@ -288,7 +288,7 @@ func (c *BlockCache) Add(height int, block *walletrpc.CompactBlock) error {
 	bheight := int(block.Height)
 
 	// XXX check? TODO COINBASE-HEIGHT: restore this check after coinbase height is fixed
-	if false && bheight != height {
+	if bheight != height {
 		// This could only happen if verusd returned the wrong
 		// block (not the height we requested).
 		Log.Fatal("cache.Add wrong height: ", bheight, " expecting: ", height)
@@ -444,6 +444,7 @@ func (c *BlockCache) storeNewBlock(height int, block []byte) error {
 	hashID := make([]byte, 33)
 	hashID = append(hashID, []byte(blockHashPrefix)...)
 	hashID = append(hashID, c.latestHash...)
+
 	err = c.Ldb.Put(hashID, block, &opt.WriteOptions{Sync: false})
 	if err != nil {
 		Log.Fatal("hash write at height", height, "failed: ", err)

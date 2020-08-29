@@ -167,7 +167,7 @@ func startServer(opts *common.Options) error {
 		reflection.Register(server)
 	}
 
-	// Initialize Zcash RPC client. Right now (Jan 2018) this is only for
+	// Initialize verusd RPC client. Right now (Jan 2018) this is only for
 	// sending transactions, but in the future it could back a different type
 	// of block streamer.
 

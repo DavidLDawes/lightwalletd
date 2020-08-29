@@ -297,6 +297,13 @@ func BlockIngestor(c *BlockCache, rep int) {
 		// We have a valid block to add.
 		wait = true
 		reorgCount = 0
+
+		// Is it a rewrite?
+		checkBlock := c.readBlock(height)
+		if checkBlock != nil {
+			// the block (by height) is fine, the new one will overwrite it
+			// So get rid of dangling block-by-hash and identities
+		}
 		if err := c.Add(height, block); err != nil {
 			Log.Fatal("Cache add failed:", err)
 		}
