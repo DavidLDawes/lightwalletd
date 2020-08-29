@@ -222,8 +222,7 @@ func (c *BlockCache) Add(height int, block *walletrpc.CompactBlock) error {
 	}
 	bheight := int(block.Height)
 
-	// XXX check? TODO COINBASE-HEIGHT: restore this check after coinbase height is fixed
-	if false && bheight != height {
+	if bheight != height {
 		// This could only happen if verusd returned the wrong
 		// block (not the height we requested).
 		Log.Fatal("cache.Add wrong height: ", bheight, " expecting: ", height)
@@ -235,6 +234,7 @@ func (c *BlockCache) Add(height int, block *walletrpc.CompactBlock) error {
 	if err != nil {
 		return err
 	}
+	// prepend the checksum
 	checkSummed := checksum(height, data)
 	checkSummed = append(checkSummed, data...)
 	err = c.storeNewBlock(height, checkSummed)

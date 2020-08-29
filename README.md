@@ -246,32 +246,32 @@ You'll need to correct the paths and dig the user and password out of ~/.komodo/
 You can use [grcpurl, a command line utility for hitting GRPC endpoints](https://github.com/fullstorydev/grpcurl/releases) (like curl but specialized) to hit the GRPC endpoint. GRPC allows you to discover the detials interactively:
 ```
 grpcurl --cacert cert.pem  localhost:18232  list
-cash.z.wallet.sdk.rpc.CompactTxStreamer
+vrsc.wallet.sdk.rpc.CompactTxStreamer
 grpc.reflection.v1alpha.ServerReflection
 ```
 If you don't want to bother with certs then use the -insecure option:
 ```
 grpcurl insecure  localhost:18232  list
-cash.z.wallet.sdk.rpc.CompactTxStreamer
+vrsc.wallet.sdk.rpc.CompactTxStreamer
 grpc.reflection.v1alpha.ServerReflection
 ```
 We have a CompactTxServer, so let's look at that usingg the list command again:
 ```
-grpcurl -insecure localhost:18232  list cash.z.wallet.sdk.rpc.CompactTxStreamer
-cash.z.wallet.sdk.rpc.CompactTxStreamer.GetBlock
-cash.z.wallet.sdk.rpc.CompactTxStreamer.GetBlockRange
-cash.z.wallet.sdk.rpc.CompactTxStreamer.GetLatestBlock
-cash.z.wallet.sdk.rpc.CompactTxStreamer.GetLightdInfo
-cash.z.wallet.sdk.rpc.CompactTxStreamer.GetTaddressBalance
-cash.z.wallet.sdk.rpc.CompactTxStreamer.GetTaddressBalanceStream
-cash.z.wallet.sdk.rpc.CompactTxStreamer.GetTaddressTxids
-cash.z.wallet.sdk.rpc.CompactTxStreamer.GetTransaction
-cash.z.wallet.sdk.rpc.CompactTxStreamer.Ping
-cash.z.wallet.sdk.rpc.CompactTxStreamer.SendTransaction
+grpcurl -insecure localhost:18232  list vrsc.wallet.sdk.rpc.CompactTxStreamer
+vrsc.wallet.sdk.rpc.CompactTxStreamer.GetBlock
+vrsc.wallet.sdk.rpc.CompactTxStreamer.GetBlockRange
+vrsc.wallet.sdk.rpc.CompactTxStreamer.GetLatestBlock
+vrsc.wallet.sdk.rpc.CompactTxStreamer.GetLightdInfo
+vrsc.wallet.sdk.rpc.CompactTxStreamer.GetTaddressBalance
+vrsc.wallet.sdk.rpc.CompactTxStreamer.GetTaddressBalanceStream
+vrsc.wallet.sdk.rpc.CompactTxStreamer.GetTaddressTxids
+vrsc.wallet.sdk.rpc.CompactTxStreamer.GetTransaction
+vrsc.wallet.sdk.rpc.CompactTxStreamer.Ping
+vrsc.wallet.sdk.rpc.CompactTxStreamer.SendTransaction
 ```
 GetLightdInfo is the simplest as it has no parameters:
 ```
-grpcurl -insecure localhost:18232 cash.z.wallet.sdk.rpc.CompactTxStreamer.GetLightdInfo
+grpcurl -insecure localhost:18232 vrsc.wallet.sdk.rpc.CompactTxStreamer.GetLightdInfo
 {
   "version": "v0.0.0.0-dev",
   "vendor": "ECC LightWalletD",
@@ -284,20 +284,20 @@ grpcurl -insecure localhost:18232 cash.z.wallet.sdk.rpc.CompactTxStreamer.GetLig
 ```
 You can also get the endpoint described like so:
 ```
-grpcurl -insecure localhost:18232 describe cash.z.wallet.sdk.rpc.CompactTxStreamer.GetLightdInfo
-cash.z.wallet.sdk.rpc.CompactTxStreamer.GetLightdInfo is a method:
-rpc GetLightdInfo ( .cash.z.wallet.sdk.rpc.Empty ) returns ( .cash.z.wallet.sdk.rpc.LightdInfo );
+grpcurl -insecure localhost:18232 describe vrsc.wallet.sdk.rpc.CompactTxStreamer.GetLightdInfo
+vrsc.wallet.sdk.rpc.CompactTxStreamer.GetLightdInfo is a method:
+rpc GetLightdInfo ( .vrsc.wallet.sdk.rpc.Empty ) returns ( .vrsc.wallet.sdk.rpc.LightdInfo );
 ```
 Mostly you provide JSOn data with a -d flag, depending on the verb. Check the describe first for assistance, and use describe on parameters and return values too. For GetBlock:
 ```
-grpcurl --cacert cert.pem localhost:18232  describe cash.z.wallet.sdk.rpc.CompactTxStreamer.GetBlock
-cash.z.wallet.sdk.rpc.CompactTxStreamer.GetBlock is a method:
-rpc GetBlock ( .cash.z.wallet.sdk.rpc.BlockID ) returns ( .cash.z.wallet.sdk.rpc.CompactBlock );
+grpcurl --cacert cert.pem localhost:18232  describe vrsc.wallet.sdk.rpc.CompactTxStreamer.GetBlock
+vrsc.wallet.sdk.rpc.CompactTxStreamer.GetBlock is a method:
+rpc GetBlock ( .vrsc.wallet.sdk.rpc.BlockID ) returns ( .vrsc.wallet.sdk.rpc.CompactBlock );
 ```
 So drilling into what a BlockID (your input) is, we see:
 ```
-grpcurl --cacert cert.pem localhost:18232  describe cash.z.wallet.sdk.rpc.BlockID
-cash.z.wallet.sdk.rpc.BlockID is a message:
+grpcurl --cacert cert.pem localhost:18232  describe vrsc.wallet.sdk.rpc.BlockID
+vrsc.wallet.sdk.rpc.BlockID is a message:
 message BlockID {
   uint64 height = 1;
   bytes hash = 2;
@@ -305,7 +305,7 @@ message BlockID {
 ```
 We can use parameter 1 to request a block like so:
 ```
-grpcurl --cacert cert.pem -d '{"height": 100}' localhost:18232  cash.z.wallet.sdk.rpc.CompactTxStreamer.GetBlock
+grpcurl --cacert cert.pem -d '{"height": 100}' localhost:18232  vrsc.wallet.sdk.rpc.CompactTxStreamer.GetBlock
 {
   "height": "100",
   "hash": "3qqfTq1mJ5daCLLmAs4X51iwSiGDnyE2xCgJDs8AAAA=",
@@ -317,7 +317,7 @@ If you're copying and pasting the above examples, be careful of the single quote
 # Load/Latency Testing
 Using [ghz, a "Simple gRPC benchmarking and load testing tool" ](https://github.com/bojand/ghz/releases) we can check latency and throughout under load, for example here we hammer on Geblock:
 ```
- ghz  --cacert cert.pem -d '{"height": 10}' -i walletrpc/service.proto,walletrpc/compact_formats -c 100 -n 100000 --call cash.z.wallet.sdk.rpc.CompactTxStreamer.GetBlock localhost:18232
+ ghz  --cacert cert.pem -d '{"height": 10}' -i walletrpc/service.proto,walletrpc/compact_formats -c 100 -n 100000 --call vrsc.wallet.sdk.rpc.CompactTxStreamer.GetBlock localhost:18232
 
 Summary:
   Count:	100000
