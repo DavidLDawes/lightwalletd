@@ -7,4 +7,6 @@ test-log
 lwd-api.html
 *.orig
 __debug_bin
+.idea
+vendor
 .vscode

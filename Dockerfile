@@ -7,7 +7,7 @@
  #  USAGE:
  #
  #  To build image: make docker_img
- #  To run container: make docker_image_run
+ #  To run container: make docker_img_run
  #  
  #  This will place you into the container where you can run zcashd, zcash-cli, 
  #  lightwalletd server etc..
@@ -45,6 +45,18 @@ FROM golang:1.13 AS lightwalletd_base
 
 ADD . /go/src/github.com/asherda/lightwalletd
 WORKDIR /go/src/github.com/asherda/lightwalletd
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      apt-utils libboost-dev libboost-all-dev curl && \
+      curl https://download.libsodium.org/libsodium/releases/LATEST.tar.gz --output libsodium.tar.gz && \
+      tar -xzf libsodium.tar.gz && \
+      cd libsodium-stable && \
+      ./configure && \
+      make && make check && \
+      make install && \
+      ldconfig
+
+
 RUN make \
   && /usr/bin/install -c ./lightwalletd /usr/local/bin/ \
   && mkdir -p /var/lib/lightwalletd/db \

@@ -6,6 +6,7 @@ package common
 import (
 	"encoding/hex"
 	"encoding/json"
+	"github.com/syndtr/goleveldb/leveldb"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -55,10 +56,13 @@ func TestCache(t *testing.T) {
 		}
 		compacts = append(compacts, block.ToCompact())
 	}
+	// leveldb instances are safe for concurrent use.
+	db, err := leveldb.OpenFile("testdata", nil)
+	defer db.Close()
 
 	// Pretend Sapling starts at 289460.
 	os.RemoveAll(unitTestPath)
-	cache = NewBlockCache(unitTestPath, unitTestChain, 289460, true)
+	cache = NewBlockCache(db, unitTestChain, 289460, true)
 
 	// Initially cache is empty.
 	if cache.GetLatestHeight() != -1 {
@@ -75,7 +79,7 @@ func TestCache(t *testing.T) {
 	fillCache(t)
 
 	// Simulate a restart to ensure the db files are read correctly.
-	cache = NewBlockCache(unitTestPath, unitTestChain, 289460, false)
+	cache = NewBlockCache(db, unitTestChain, 289460, false)
 
 	// Should still be 6 blocks.
 	if cache.nextBlock != 289466 {
@@ -111,9 +115,6 @@ func reorgCache(t *testing.T) {
 	if cache.nextBlock != 289462 {
 		t.Fatal("unexpected nextBlock height")
 	}
-	if len(cache.starts) != 3 {
-		t.Fatal("unexpected len(cache.starts)")
-	}
 
 	// some "black-box" tests (using exported interfaces)
 	if cache.GetLatestHeight() != 289461 {
@@ -133,9 +134,6 @@ func reorgCache(t *testing.T) {
 	}
 	if cache.nextBlock != 289463 {
 		t.Fatal("unexpected nextBlock height")
-	}
-	if len(cache.starts) != 4 {
-		t.Fatal("unexpected len(cache.starts)")
 	}
 
 	if cache.GetLatestHeight() != 289462 {
@@ -164,9 +162,6 @@ func fillCache(t *testing.T) {
 		}
 		if cache.nextBlock != 289460+i+1 {
 			t.Fatal("unexpected nextBlock height")
-		}
-		if len(cache.starts) != i+2 {
-			t.Fatal("unexpected len(cache.starts)")
 		}
 
 		// some "black-box" tests (using exported interfaces)
